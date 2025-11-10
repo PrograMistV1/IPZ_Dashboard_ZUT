@@ -1,7 +1,7 @@
 export default function DashboardEmpty() {
   return (
     <div style={{ fontFamily: "Arial, sans-serif" }}>
-      {/* Шапка */}
+      {}
       <header
         style={{
           backgroundColor: "#282c34",
@@ -12,7 +12,7 @@ export default function DashboardEmpty() {
         <h1 style={{ margin: 0 }}>Dashboard</h1>
       </header>
 
-      {/* Основная часть */}
+      {}
       <main
         style={{
           display: "flex",
