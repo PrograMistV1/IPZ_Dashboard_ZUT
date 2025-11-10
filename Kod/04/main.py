@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 import requests
 
 app = FastAPI()
@@ -18,16 +19,40 @@ def get_sports_news():
 
     response = requests.get(url, params=params)
 
-    if response.status_code == 200:
-        data = response.json()
-        articles = data.get("articles", [])
-        return [
-            {
-                "title": article["title"],
-                "source": article["source"]["name"],
-                "url": article["url"]
-            }
-            for article in articles
-        ]
-    else:
-        return {"error": response.text}
+    data = response.json()
+    articles = data.get("articles", [])
+
+    html = """
+    <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Top Sports Headlines (USA)</title>
+        </head>
+        <body>
+            <h2>Top 3 Sports Headlines (USA)</h2>
+            <table border="1" cellpadding="8" cellspacing="0">
+                <tr>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Source</th>
+                    <th>Link</th>
+                </tr>
+    """
+
+    for i, a in enumerate(articles, 1):
+        html += f"""
+            <tr>
+                <td>{i}</td>
+                <td>{a['title']}</td>
+                <td>{a['source']['name']}</td>
+                <td><a href="{a['url']}" target="_blank">Read</a></td>
+            </tr>
+        """
+
+    html += """
+            </table>
+        </body>
+    </html>
+    """
+
+    return HTMLResponse(content=html)
