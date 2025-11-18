@@ -1,10 +1,14 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 import requests
+import os
+from dotenv import load_dotenv
 
 app = FastAPI()
 
-API_KEY ="5bb8cd2506744ccfb290d7c47df6e235"
+load_dotenv()
+
+API_KEY = os.getenv("NEWSAPI_KEY")
 
 @app.get("/")
 def get_sports_news():
@@ -56,3 +60,8 @@ def get_sports_news():
     """
 
     return HTMLResponse(content=html)
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="127.0.0.1", port=8000)
