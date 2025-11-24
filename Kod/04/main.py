@@ -40,40 +40,44 @@ def get_sports_news():
     
     articles = data.get("articles", [])
 
-    html = """
-    <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Top Sports Headlines (USA)</title>
-        </head>
-        <body>
-            <h2>Top 3 Sports Headlines (USA)</h2>
-            <table border="1" cellpadding="8" cellspacing="0">
-                <tr>
-                    <th>#</th>
-                    <th>Title</th>
-                    <th>Source</th>
-                    <th>Link</th>
-                </tr>
-    """
+    html_parts = [
+        """
+        <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Top Sports Headlines (USA)</title>
+            </head>
+            <body>
+                <h2>Top 3 Sports Headlines (USA)</h2>
+                <table border="1" cellpadding="8" cellspacing="0">
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Source</th>
+                        <th>Link</th>
+                    </tr>
+        """
+    ]
 
     for i, a in enumerate(articles, 1):
-        html += f"""
+        html_parts.append(f"""
             <tr>
                 <td>{i}</td>
-                <td>{a['title']}</td>
-                <td>{a['source']['name']}</td>
-                <td><a href="{a['url']}" target="_blank">Read</a></td>
+                <td>{a.get('title', '-')}</td>
+                <td>{a.get('source', {}).get('name', '-')}</td>
+                <td><a href="{a.get('url', '#')}" target="_blank">Read</a></td>
             </tr>
-        """
+        """)
 
-    html += """
-            </table>
-        </body>
-    </html>
-    """
+    html_parts.append("""
+                </table>
+            </body>
+        </html>
+    """)
 
-    return HTMLResponse(content=html)
+    final_html = "".join(html_parts)
+
+    return HTMLResponse(content=final_html)
 
 if __name__ == "__main__":
     import uvicorn

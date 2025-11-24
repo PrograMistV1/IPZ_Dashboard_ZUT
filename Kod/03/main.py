@@ -12,22 +12,24 @@ def get_currency_table():
     end_date = date.today()
     start_date = end_date - timedelta(days=14)
 
-    html = """
-    <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Kursy walut NBP</title>
-        </head>
-        <body>
-            <h2>Kursy walut NBP – ostatnie 10 dni</h2>
-            <table border="1" cellpadding="5" cellspacing="0">
-                <tr>
-                    <th>Data</th>
-    """
+    html_parts = [
+        """
+        <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Kursy walut NBP</title>
+            </head>
+            <body>
+                <h2>Kursy walut NBP – ostatnie 10 dni</h2>
+                <table border="1" cellpadding="5" cellspacing="0">
+                    <tr>
+                        <th>Data</th>
+        """
+    ]
 
     for curr in CURRENCIES:
-        html += f"<th>{curr}</th>"
-    html += "</tr>"
+        html_parts.append(f"<th>{curr}</th>")
+    html_parts.append("</tr>")
     rates_by_date = {}
 
     for code in CURRENCIES:
@@ -52,19 +54,19 @@ def get_currency_table():
             rates_by_date[day][code] = rate
 
     for day in sorted(rates_by_date.keys(), reverse=True)[:10]:
-        html += f"<tr><td>{day}</td>"
+        html_parts.append(f"<tr><td>{day}</td>")
         for curr in CURRENCIES:
             value = rates_by_date[day].get(curr, "-")
-            html += f"<td>{value}</td>"
-        html += "</tr>"
+            html_parts.append(f"<td>{value}</td>")
+        html_parts.append("</tr>")
 
-    html += """
-            </table>
-        </body>
-    </html>
-    """
-
-    return HTMLResponse(content=html)
+    html_parts.append("""
+                </table>
+            </body>
+        </html>
+    """)
+    final_html = "".join(html_parts)
+    return HTMLResponse(content=final_html)
 
 if __name__ == "__main__":
     import uvicorn
