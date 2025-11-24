@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 import requests
 import os
@@ -21,9 +21,23 @@ def get_sports_news():
         "apiKey": API_KEY
     }
 
-    response = requests.get(url, params=params)
-
-    data = response.json()
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="NewsAPI timeout")
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(status_code=503, detail="Connection error to NewsAPI")
+    except requests.exceptions.HTTPError as e:
+        raise HTTPException(status_code=response.status_code, detail=f"HTTP error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+    
+    try:
+        data = response.json()
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Invalid JSON from NewsAPI")
+    
     articles = data.get("articles", [])
 
     html = """

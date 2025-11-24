@@ -32,15 +32,24 @@ def get_currency_table():
 
     for code in CURRENCIES:
         url = f"https://api.nbp.pl/api/exchangerates/rates/A/{code}/{start_date}/{end_date}/?format=json"
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            for r in data["rates"]:
-                day = r["effectiveDate"]
-                rate = r["mid"]
-                if day not in rates_by_date:
-                    rates_by_date[day] = {}
-                rates_by_date[day][code] = rate
+        try:
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()   
+        except requests.exceptions.Timeout:
+            print(f"Timeout przy pobieraniu kursu {code}")
+            continue
+        except requests.exceptions.RequestException as e:
+            print(f"Błąd przy pobieraniu kursu {code}: {e}")
+            continue
+
+        data = response.json()
+
+        for r in data["rates"]:
+            day = r["effectiveDate"]
+            rate = r["mid"]
+            if day not in rates_by_date:
+                rates_by_date[day] = {}
+            rates_by_date[day][code] = rate
 
     for day in sorted(rates_by_date.keys(), reverse=True)[:10]:
         html += f"<tr><td>{day}</td>"
