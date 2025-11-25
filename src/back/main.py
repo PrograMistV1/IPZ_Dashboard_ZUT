@@ -39,6 +39,29 @@ def get_rates(req: RateRequest):
     if start > end:
         raise HTTPException(status_code=400, detail="Data od musi być wcześniejsza niż data do")
 
+    db = SessionLocal()
+
+    try:
+        db_results = db.query(Kursy).filter(
+            Kursy.currency == req.currency,
+            Kursy.date >= start,
+            Kursy.date <= end
+        ).all()
+    except Exception as e:
+        db.close()
+        raise HTTPException(status_code=500, detail=f"Błąd bazy danych: {e}")
+
+    if db_results:
+        db.close()
+        return {
+            "source": "database",
+            "currency": req.currency,
+            "rates": [
+                {"date": r.date, "rate": r.rate}
+                for r in db_results
+            ]
+        }
+
     url = f"https://api.nbp.pl/api/exchangerates/rates/A/{req.currency}/{start}/{end}/?format=json"
 
     try:
@@ -54,14 +77,10 @@ def get_rates(req: RateRequest):
     except ValueError:
         raise HTTPException(status_code=500, detail="Niepoprawny JSON z API NBP")
 
-
     rates = data.get("rates", [])
 
     if not rates:
         raise HTTPException(status_code=404, detail="Brak danych dla tego zakresu dat")
-
-    db = SessionLocal()
-    saved = []
 
     try:
         for r in rates:
@@ -72,8 +91,6 @@ def get_rates(req: RateRequest):
                 rate=r["mid"],
             )
             db.add(obj)
-            saved.append({"date": r["effectiveDate"], "rate": r["mid"]})
-
         db.commit()
     except Exception as e:
         db.rollback()
@@ -82,9 +99,12 @@ def get_rates(req: RateRequest):
         db.close()
 
     return {
+        "source": "nbp_api",
         "currency": req.currency,
-        "saved_items": len(saved),
-        "rates": saved
+        "rates": [
+            {"date": r["effectiveDate"], "rate": r["mid"]}
+            for r in rates
+        ]
     }
 
 
