@@ -19,10 +19,12 @@ app.add_middleware(
 
 VALID_CURRENCIES = {"USD", "EUR", "GBP", "CHF", "JPY"}
 
+
 class RateRequest(BaseModel):
     currency: str
     date_from: str
     date_to: str
+
 
 @app.post("/rates")
 def get_rates(req: RateRequest):
@@ -41,6 +43,8 @@ def get_rates(req: RateRequest):
 
     db = SessionLocal()
 
+    total_days = (end - start).days + 1  
+
     try:
         db_results = db.query(Kursy).filter(
             Kursy.currency == req.currency,
@@ -51,7 +55,7 @@ def get_rates(req: RateRequest):
         db.close()
         raise HTTPException(status_code=500, detail=f"Błąd bazy danych: {e}")
 
-    if db_results:
+    if len(db_results) == total_days:
         db.close()
         return {
             "source": "database",
@@ -82,29 +86,45 @@ def get_rates(req: RateRequest):
     if not rates:
         raise HTTPException(status_code=404, detail="Brak danych dla tego zakresu dat")
 
+    final_results = []
+
     try:
         for r in rates:
-            obj = Kursy(
-                currency=req.currency,
-                date=r["effectiveDate"],
-                source="NBP",
-                rate=r["mid"],
-            )
-            db.add(obj)
+            date = r["effectiveDate"]
+            rate = r["mid"]
+
+            existing = db.query(Kursy).filter(
+                Kursy.currency == req.currency,
+                Kursy.date == date
+            ).first()
+
+            if not existing:
+                obj = Kursy(
+                    currency=req.currency,
+                    date=date,
+                    source="NBP",
+                    rate=rate
+                )
+                db.add(obj)
+
+            final_results.append({
+                "date": date,
+                "rate": rate
+            })
+
         db.commit()
+
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Błąd zapisu do bazy: {e}")
+
     finally:
         db.close()
 
     return {
         "source": "nbp_api",
         "currency": req.currency,
-        "rates": [
-            {"date": r["effectiveDate"], "rate": r["mid"]}
-            for r in rates
-        ]
+        "rates": final_results
     }
 
 
