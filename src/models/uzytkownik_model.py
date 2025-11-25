@@ -11,5 +11,3 @@ class Uzytkownik(Base):
     email = Column(String(120), unique=True, nullable=False)
     imie = Column(String(50))
     nazwisko = Column(String(50))
-    rola = Column(String(20), default="user")
-    data_utworzenia = Column(Date, default=date.today)
