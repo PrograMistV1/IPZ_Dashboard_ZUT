@@ -5,6 +5,9 @@ from datetime import datetime
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.models.database import SessionLocal
+from src.models.kursy_model import Kursy
+
 app = FastAPI()
 
 app.add_middleware(
@@ -20,7 +23,6 @@ class RateRequest(BaseModel):
     currency: str
     date_from: str
     date_to: str
-
 
 @app.post("/rates")
 def get_rates(req: RateRequest):
@@ -53,17 +55,36 @@ def get_rates(req: RateRequest):
         raise HTTPException(status_code=500, detail="Niepoprawny JSON z API NBP")
 
 
-    rates = [
-        {"date": r["effectiveDate"], "rate": r["mid"]}
-        for r in data.get("rates", [])
-    ]
+    rates = data.get("rates", [])
 
     if not rates:
         raise HTTPException(status_code=404, detail="Brak danych dla tego zakresu dat")
 
+    db = SessionLocal()
+    saved = []
+
+    try:
+        for r in rates:
+            obj = Kursy(
+                currency=req.currency,
+                date=r["effectiveDate"],
+                source="NBP",
+                rate=r["mid"],
+            )
+            db.add(obj)
+            saved.append({"date": r["effectiveDate"], "rate": r["mid"]})
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Błąd zapisu do bazy: {e}")
+    finally:
+        db.close()
+
     return {
         "currency": req.currency,
-        "rates": rates
+        "saved_items": len(saved),
+        "rates": saved
     }
 
 
