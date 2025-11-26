@@ -3,4 +3,5 @@
 fastapi>=0.95.2
 uvicorn[standard]>=0.20.0
 requests>=2.31.0
+sqlalchemy>=1.4.54
 
