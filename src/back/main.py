@@ -5,6 +5,8 @@ from datetime import datetime
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.models.base import Base
+from src.models.database import engine
 from src.models.database import SessionLocal
 from src.models.kursy_model import Kursy
 
@@ -28,7 +30,6 @@ class RateRequest(BaseModel):
 
 @app.post("/rates")
 def get_rates(req: RateRequest):
-
     if req.currency not in VALID_CURRENCIES:
         raise HTTPException(status_code=400, detail="Nieobsługiwana waluta")
 
@@ -39,18 +40,22 @@ def get_rates(req: RateRequest):
         raise HTTPException(status_code=400, detail="Niepoprawny format daty")
 
     if start > end:
-        raise HTTPException(status_code=400, detail="Data od musi być wcześniejsza niż data do")
+        raise HTTPException(
+            status_code=400, detail="Data od musi być wcześniejsza niż data do"
+        )
 
     db = SessionLocal()
 
-    total_days = (end - start).days + 1  
+    total_days = (end - start).days + 1
 
     try:
-        db_results = db.query(Kursy).filter(
-            Kursy.currency == req.currency,
-            Kursy.date >= start,
-            Kursy.date <= end
-        ).all()
+        db_results = (
+            db.query(Kursy)
+            .filter(
+                Kursy.currency == req.currency, Kursy.date >= start, Kursy.date <= end
+            )
+            .all()
+        )
     except Exception as e:
         db.close()
         raise HTTPException(status_code=500, detail=f"Błąd bazy danych: {e}")
@@ -60,10 +65,7 @@ def get_rates(req: RateRequest):
         return {
             "source": "database",
             "currency": req.currency,
-            "rates": [
-                {"date": r.date, "rate": r.rate}
-                for r in db_results
-            ]
+            "rates": [{"date": r.date, "rate": r.rate} for r in db_results],
         }
 
     url = f"https://api.nbp.pl/api/exchangerates/rates/A/{req.currency}/{start}/{end}/?format=json"
@@ -93,24 +95,17 @@ def get_rates(req: RateRequest):
             date = r["effectiveDate"]
             rate = r["mid"]
 
-            existing = db.query(Kursy).filter(
-                Kursy.currency == req.currency,
-                Kursy.date == date
-            ).first()
+            existing = (
+                db.query(Kursy)
+                .filter(Kursy.currency == req.currency, Kursy.date == date)
+                .first()
+            )
 
             if not existing:
-                obj = Kursy(
-                    currency=req.currency,
-                    date=date,
-                    source="NBP",
-                    rate=rate
-                )
+                obj = Kursy(currency=req.currency, date=date, source="NBP", rate=rate)
                 db.add(obj)
 
-            final_results.append({
-                "date": date,
-                "rate": rate
-            })
+            final_results.append({"date": date, "rate": rate})
 
         db.commit()
 
@@ -121,13 +116,11 @@ def get_rates(req: RateRequest):
     finally:
         db.close()
 
-    return {
-        "source": "nbp_api",
-        "currency": req.currency,
-        "rates": final_results
-    }
+    return {"source": "nbp_api", "currency": req.currency, "rates": final_results}
 
 
 if __name__ == "__main__":
     import uvicorn
+
+    Base.metadata.create_all(bind=engine)
     uvicorn.run(app, host="127.0.0.1", port=8000)
