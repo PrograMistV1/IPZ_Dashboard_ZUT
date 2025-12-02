@@ -26,14 +26,10 @@ class RateRequest(BaseModel):
     date_to: str
 
 
-@app.post("/rates")
-def get_rates(req: RateRequest, db: Session = Depends(get_db)):
-    if req.currency not in VALID_CURRENCIES:
-        raise HTTPException(status_code=400, detail="Unsupported currency")
-
+def validate_dates(date_from: str, date_to: str) -> tuple[date, date]:
     try:
-        start = datetime.strptime(req.date_from, "%Y-%m-%d").date()
-        end = datetime.strptime(req.date_to, "%Y-%m-%d").date()
+        start = datetime.strptime(date_from, "%Y-%m-%d").date()
+        end = datetime.strptime(date_to, "%Y-%m-%d").date()
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format")
 
@@ -46,26 +42,23 @@ def get_rates(req: RateRequest, db: Session = Depends(get_db)):
             status_code=400, detail="Start date must be earlier than end date"
         )
 
-    total_days = (end - start).days + 1
+    return start, end
 
-    db_results = (
+
+def get_rates_from_db(db: Session, currency: str, start: date, end: date):
+    return (
         db.query(CurrencyRate)
         .filter(
-            CurrencyRate.currency == req.currency,
+            CurrencyRate.currency == currency,
             CurrencyRate.date >= start,
             CurrencyRate.date <= end,
         )
         .all()
     )
 
-    if len(db_results) == total_days:
-        return {
-            "source": "database",
-            "currency": req.currency,
-            "rates": [{"date": r.date, "rate": r.rate} for r in db_results],
-        }
 
-    url = f"https://api.nbp.pl/api/exchangerates/rates/A/{req.currency}/{start}/{end}/?format=json"
+def fetch_rates_from_nbp(currency: str, start: date, end: date):
+    url = f"https://api.nbp.pl/api/exchangerates/rates/A/{currency}/{start}/{end}/?format=json"
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status()
@@ -81,8 +74,11 @@ def get_rates(req: RateRequest, db: Session = Depends(get_db)):
     if not rates:
         raise HTTPException(status_code=404, detail="No data for this date range")
 
-    final_results = []
+    return rates
 
+
+def save_rates_to_db(db: Session, currency: str, rates: list[dict]):
+    results = []
     try:
         for r in rates:
             rate_date = r["effectiveDate"]
@@ -91,24 +87,44 @@ def get_rates(req: RateRequest, db: Session = Depends(get_db)):
             existing = (
                 db.query(CurrencyRate)
                 .filter(
-                    CurrencyRate.currency == req.currency,
-                    CurrencyRate.date == rate_date,
+                    CurrencyRate.currency == currency, CurrencyRate.date == rate_date
                 )
                 .first()
             )
 
             if not existing:
                 obj = CurrencyRate(
-                    currency=req.currency, date=rate_date, source="NBP", rate=rate
+                    currency=currency, date=rate_date, source="NBP", rate=rate
                 )
                 db.add(obj)
 
-            final_results.append({"date": rate_date, "rate": rate})
+            results.append({"date": rate_date, "rate": rate})
 
         db.commit()
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+    return results
+
+
+@app.post("/rates")
+def get_rates(req: RateRequest, db: Session = Depends(get_db)):
+    if req.currency not in VALID_CURRENCIES:
+        raise HTTPException(status_code=400, detail="Unsupported currency")
+
+    start, end = validate_dates(req.date_from, req.date_to)
+    db_results = get_rates_from_db(db, req.currency, start, end)
+
+    if len(db_results) == (end - start).days + 1:
+        return {
+            "source": "database",
+            "currency": req.currency,
+            "rates": [{"date": r.date, "rate": r.rate} for r in db_results],
+        }
+
+    rates = fetch_rates_from_nbp(req.currency, start, end)
+    final_results = save_rates_to_db(db, req.currency, rates)
 
     return {"source": "nbp_api", "currency": req.currency, "rates": final_results}
 
