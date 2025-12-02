@@ -10,6 +10,7 @@ load_dotenv()
 
 API_KEY = os.getenv("NEWSAPI_KEY")
 
+
 @app.get("/")
 def get_sports_news():
     url = "https://newsapi.org/v2/top-headlines"
@@ -18,7 +19,7 @@ def get_sports_news():
         "category": "sports",
         "language": "en",
         "pageSize": 3,
-        "apiKey": API_KEY
+        "apiKey": API_KEY,
     }
 
     try:
@@ -32,12 +33,12 @@ def get_sports_news():
         raise HTTPException(status_code=response.status_code, detail=f"HTTP error: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
-    
+
     try:
         data = response.json()
     except ValueError:
         raise HTTPException(status_code=500, detail="Invalid JSON from NewsAPI")
-    
+
     articles = data.get("articles", [])
 
     html_parts = [
@@ -63,9 +64,9 @@ def get_sports_news():
         html_parts.append(f"""
             <tr>
                 <td>{i}</td>
-                <td>{a.get('title', '-')}</td>
-                <td>{a.get('source', {}).get('name', '-')}</td>
-                <td><a href="{a.get('url', '#')}" target="_blank">Read</a></td>
+                <td>{a.get("title", "-")}</td>
+                <td>{a.get("source", {}).get("name", "-")}</td>
+                <td><a href="{a.get("url", "#")}" target="_blank">Read</a></td>
             </tr>
         """)
 
@@ -78,6 +79,7 @@ def get_sports_news():
     final_html = "".join(html_parts)
 
     return HTMLResponse(content=final_html)
+
 
 if __name__ == "__main__":
     import uvicorn

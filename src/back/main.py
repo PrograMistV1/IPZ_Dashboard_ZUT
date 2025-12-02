@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.models.base import Base
 from src.models.database import engine
 from src.models.database import SessionLocal
-from src.models.kursy_model import Kursy
+from src.models.CurrencyRate import CurrencyRate
 
 app = FastAPI()
 
@@ -50,9 +50,11 @@ def get_rates(req: RateRequest):
 
     try:
         db_results = (
-            db.query(Kursy)
+            db.query(CurrencyRate)
             .filter(
-                Kursy.currency == req.currency, Kursy.date >= start, Kursy.date <= end
+                CurrencyRate.currency == req.currency,
+                CurrencyRate.date >= start,
+                CurrencyRate.date <= end,
             )
             .all()
         )
@@ -96,13 +98,17 @@ def get_rates(req: RateRequest):
             rate = r["mid"]
 
             existing = (
-                db.query(Kursy)
-                .filter(Kursy.currency == req.currency, Kursy.date == date)
+                db.query(CurrencyRate)
+                .filter(
+                    CurrencyRate.currency == req.currency, CurrencyRate.date == date
+                )
                 .first()
             )
 
             if not existing:
-                obj = Kursy(currency=req.currency, date=date, source="NBP", rate=rate)
+                obj = CurrencyRate(
+                    currency=req.currency, date=date, source="NBP", rate=rate
+                )
                 db.add(obj)
 
             final_results.append({"date": date, "rate": rate})

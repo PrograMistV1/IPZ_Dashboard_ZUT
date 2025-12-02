@@ -7,6 +7,7 @@ app = FastAPI()
 
 CURRENCIES = ["USD", "EUR", "GBP", "CHF", "JPY"]
 
+
 @app.get("/", response_class=HTMLResponse)
 def get_currency_table():
     end_date = date.today()
@@ -36,7 +37,7 @@ def get_currency_table():
         url = f"https://api.nbp.pl/api/exchangerates/rates/A/{code}/{start_date}/{end_date}/?format=json"
         try:
             response = requests.get(url, timeout=5)
-            response.raise_for_status()   
+            response.raise_for_status()
         except requests.exceptions.Timeout:
             print(f"Timeout przy pobieraniu kursu {code}")
             continue
@@ -67,6 +68,7 @@ def get_currency_table():
     """)
     final_html = "".join(html_parts)
     return HTMLResponse(content=final_html)
+
 
 if __name__ == "__main__":
     import uvicorn
