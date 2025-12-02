@@ -9,6 +9,7 @@ from src.models.CurrencyRate import CurrencyRate
 from src.db import get_db, init_db
 
 from src.back.logger.logger import BackendLogger
+
 log = BackendLogger()
 
 log.info("main", "Starting backend and initializing logger")
@@ -118,7 +119,7 @@ def get_rates(req: RateRequest, db: Session = Depends(get_db)):
     log.info("rates_endpoint", "Received request for rates")
 
     if req.currency not in VALID_CURRENCIES:
-        log.debug("rates_endpoint", f"Invalid currency: {req.currency}")  
+        log.debug("rates_endpoint", f"Invalid currency: {req.currency}")
         raise HTTPException(status_code=400, detail="Unsupported currency")
 
     start, end = validate_dates(req.date_from, req.date_to)
