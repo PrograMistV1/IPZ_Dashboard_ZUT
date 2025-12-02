@@ -8,6 +8,11 @@ from sqlalchemy.orm import Session
 from src.models.CurrencyRate import CurrencyRate
 from src.db import get_db, init_db
 
+from src.back.logger.logger import BackendLogger
+log = BackendLogger()
+
+log.info("main", "Starting backend and initializing logger")
+
 app = FastAPI()
 
 app.add_middleware(
@@ -110,11 +115,17 @@ def save_rates_to_db(db: Session, currency: str, rates: list[dict]):
 
 @app.post("/rates")
 def get_rates(req: RateRequest, db: Session = Depends(get_db)):
+    log.info("rates_endpoint", "Received request for rates")
+
     if req.currency not in VALID_CURRENCIES:
+        log.debug("rates_endpoint", f"Invalid currency: {req.currency}")  
         raise HTTPException(status_code=400, detail="Unsupported currency")
 
     start, end = validate_dates(req.date_from, req.date_to)
+    log.debug("rates_endpoint", f"Validated dates: {start} - {end}")
+
     db_results = get_rates_from_db(db, req.currency, start, end)
+    log.info("rates_endpoint", f"Fetched {len(db_results)} records from DB")
 
     if len(db_results) == (end - start).days + 1:
         return {
@@ -123,10 +134,14 @@ def get_rates(req: RateRequest, db: Session = Depends(get_db)):
             "rates": [{"date": r.date, "rate": r.rate} for r in db_results],
         }
 
-    rates = fetch_rates_from_nbp(req.currency, start, end)
-    final_results = save_rates_to_db(db, req.currency, rates)
+    try:
+        rates = fetch_rates_from_nbp(req.currency, start, end)
+        final_results = save_rates_to_db(db, req.currency, rates)
+        return {"source": "nbp_api", "currency": req.currency, "rates": final_results}
 
-    return {"source": "nbp_api", "currency": req.currency, "rates": final_results}
+    except Exception as e:
+        log.error("rates_endpoint", f"Unexpected error: {e}")
+        raise
 
 
 if __name__ == "__main__":
