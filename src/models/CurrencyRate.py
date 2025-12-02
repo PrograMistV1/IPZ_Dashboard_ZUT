@@ -1,26 +1,29 @@
-from sqlalchemy import Column, String, Float, Date, PrimaryKeyConstraint
-from sqlalchemy.orm import validates
+from sqlalchemy import String, Float, Date, PrimaryKeyConstraint
+from sqlalchemy.orm import validates, Mapped, mapped_column
+import datetime
 
-from src.models.base import Base
+from src.db.database import Base
 
 
 class CurrencyRate(Base):
     __tablename__ = "currency_rates"
 
-    currency_symbol = Column(String(1), nullable=False)
-    load_date = Column(Date, nullable=False)
-    source = Column(String(50), nullable=False)
-    exchange_rate = Column(Float, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    rate: Mapped[float] = mapped_column(Float, nullable=False)
 
-    __table_args__ = (PrimaryKeyConstraint("currency_symbol", "load_date", "source"),)
+    __table_args__ = (PrimaryKeyConstraint("currency", "date", "source"),)
 
-    @validates("currency_symbol")
+    @validates("currency")
     def validate_currency(self, key, value):
         if not value or not isinstance(value, str):
             raise ValueError("Invalid currency symbol.")
+        if len(value) != 3:
+            raise ValueError("Currency symbol must be 3 characters long.")
         return value
 
-    @validates("exchange_rate")
+    @validates("rate")
     def validate_rate(self, key, value):
         if value <= 0:
             raise ValueError("Exchange rate must be a positive number.")
@@ -29,9 +32,9 @@ class CurrencyRate(Base):
     def __repr__(self):
         return (
             f"CurrencyRate("
-            f"currency_symbol='{self.currency_symbol}', "
-            f"load_date={self.load_date}, "
-            f"exchange_rate={self.exchange_rate}, "
+            f"currency='{self.currency}', "
+            f"date={self.date}, "
+            f"rate={self.rate}, "
             f"source='{self.source}'"
             f")"
         )
