@@ -2,7 +2,7 @@ from sqlalchemy import String, Float, Date, PrimaryKeyConstraint
 from sqlalchemy.orm import validates, Mapped, mapped_column
 import datetime
 
-from src.db.database import Base
+from src.db import Base
 
 
 class CurrencyRate(Base):

@@ -1,1 +1,1 @@
-from .database import get_db, init_db  # noqa: F401
+from .database import get_db, init_db, Base  # noqa: F401
