@@ -37,8 +37,10 @@ def get_sports_news():
 
     try:
         data = response.json()
-    except ValueError:
-        raise HTTPException(status_code=500, detail="Invalid JSON from NewsAPI")
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=500, detail="Invalid JSON from NewsAPI"
+        ) from exc
 
     articles = data.get("articles", [])
 
