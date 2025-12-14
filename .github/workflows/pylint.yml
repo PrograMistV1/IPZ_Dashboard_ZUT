@@ -20,5 +20,7 @@ jobs:
           pip install -r requirements.txt
           pip install pylint
       - name: Analysing the code with pylint
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           pylint --disable=all --enable=F,E $(git ls-files '*.py') --rcfile=.github/workflows/.pylintrc
