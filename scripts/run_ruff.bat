@@ -22,7 +22,7 @@ ruff check "%TARGET_PATH%" ^
   --exclude "%REPO_ROOT%\src\front" ^
   --exclude "%REPO_ROOT%\Szkice" ^
   --exclude "%REPO_ROOT%\logs" ^
-  --exclude "%REPO_ROOT%\**\__pycache__" ^
+  --exclude "__pycache__" ^
   --line-length 120
 exit /b %errorlevel%
 

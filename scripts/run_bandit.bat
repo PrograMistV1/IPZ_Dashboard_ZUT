@@ -19,7 +19,7 @@ if errorlevel 1 (
 
 REM Run bandit with explicit excludes
 bandit -r "%TARGET_PATH%" ^
-  -x "%REPO_ROOT%\src\front,%REPO_ROOT%\Szkice,%REPO_ROOT%\logs,%REPO_ROOT%\**\__pycache__" ^
+  -x "%REPO_ROOT%\src\front,%REPO_ROOT%\Szkice,%REPO_ROOT%\logs,%REPO_ROOT%\.venv,%REPO_ROOT%\**\__pycache__" ^
   -lll
 exit /b %errorlevel%
 
