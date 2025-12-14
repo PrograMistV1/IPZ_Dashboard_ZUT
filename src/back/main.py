@@ -36,8 +36,8 @@ def validate_dates(date_from: str, date_to: str) -> tuple[date, date]:
     try:
         start = datetime.strptime(date_from, "%Y-%m-%d").date()
         end = datetime.strptime(date_to, "%Y-%m-%d").date()
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid date format") from exc
 
     today = date.today()
     if start > today or end > today:
@@ -69,12 +69,16 @@ def fetch_rates_from_nbp(currency: str, start: date, end: date):
         response = requests.get(url, timeout=5)
         response.raise_for_status()
         data = response.json()
-    except requests.exceptions.Timeout:
-        raise HTTPException(status_code=504, detail="Timeout connecting to NBP API")
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=503, detail=f"NBP API error: {e}")
-    except ValueError:
-        raise HTTPException(status_code=500, detail="Invalid JSON from NBP API")
+    except requests.exceptions.Timeout as exc:
+        raise HTTPException(
+            status_code=504, detail="Timeout connecting to NBP API"
+        ) from exc
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(status_code=503, detail=f"NBP API error: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=500, detail="Invalid JSON from NBP API"
+        ) from exc
 
     rates = data.get("rates", [])
     if not rates:
@@ -107,9 +111,9 @@ def save_rates_to_db(db: Session, currency: str, rates: list[dict]):
             results.append({"date": rate_date, "rate": rate})
 
         db.commit()
-    except Exception as e:
+    except Exception as exc:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {exc}") from exc
 
     return results
 
@@ -139,10 +143,9 @@ def get_rates(req: RateRequest, db: Session = Depends(get_db)):
         rates = fetch_rates_from_nbp(req.currency, start, end)
         final_results = save_rates_to_db(db, req.currency, rates)
         return {"source": "nbp_api", "currency": req.currency, "rates": final_results}
-
-    except Exception as e:
-        log.error("rates_endpoint", f"Unexpected error: {e}")
-        raise
+    except Exception as exc:
+        log.error("rates_endpoint", f"Unexpected error: {exc}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {exc}") from exc
 
 
 if __name__ == "__main__":
