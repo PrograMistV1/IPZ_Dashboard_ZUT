@@ -10,8 +10,6 @@ jobs:
         python-version: [ "3.12" ]
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:
@@ -25,18 +23,4 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep '\.py$' || true)
-
-          if [ -n "$CHANGED_FILES" ]; then
-            echo "Checking changed files:"
-            echo "$CHANGED_FILES"
-
-            FILE_ARRAY=()
-            while IFS= read -r line; do
-              FILE_ARRAY+=("$line")
-            done <<< "$CHANGED_FILES"
-
-            pylint "${FILE_ARRAY[@]}" --rcfile=.github/workflows/.pylintrc --fail-under=7
-          else
-            echo "No Python files changed."
-          fi
+          pylint $(git ls-files '*.py') --rcfile=.github/workflows/.pylintrc --fail-under=9.0
