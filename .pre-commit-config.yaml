@@ -10,7 +10,11 @@ repos:
     rev: 7.3.0
     hooks:
       - id: flake8
-        args: [ "src/" ]
+        args: [
+          "--max-line-length", "120",
+          "--extend-exclude", ".git,__pycache__,.venv,venv,env,.mypy_cache,.ruff_cache,.pytest_cache,build,dist,node_modules,src/front,Szkice,logs",
+          "src/"
+        ]
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.9.2
