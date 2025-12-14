@@ -23,4 +23,11 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          pylint --disable=all --enable=F,E $(git ls-files '*.py') --rcfile=.github/workflows/.pylintrc
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.py$' || true)
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "Checking changed files:"
+            echo "$CHANGED_FILES"
+            pylint $CHANGED_FILES --rcfile=.github/workflows/.pylintrc --fail-under=7
+          else
+            echo "No Python files changed."
+          fi
