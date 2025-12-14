@@ -1,8 +1,9 @@
+import os
+
+import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
-import requests
-import os
-from dotenv import load_dotenv
 
 app = FastAPI()
 

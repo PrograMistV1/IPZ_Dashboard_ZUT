@@ -1,7 +1,8 @@
+from datetime import date, timedelta
+
+import requests
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-import requests
-from datetime import date, timedelta
 
 app = FastAPI()
 

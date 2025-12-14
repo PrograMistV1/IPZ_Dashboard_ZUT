@@ -1,6 +1,7 @@
+import datetime
+
 from sqlalchemy import String, Float, Date, PrimaryKeyConstraint
 from sqlalchemy.orm import validates, Mapped, mapped_column
-import datetime
 
 from src.db import Base
 
@@ -16,7 +17,7 @@ class CurrencyRate(Base):
     __table_args__ = (PrimaryKeyConstraint("currency", "date", "source"),)
 
     @validates("currency")
-    def validate_currency(self, key, value):
+    def validate_currency(self, _, value):
         if not value or not isinstance(value, str):
             raise ValueError("Invalid currency symbol.")
         if len(value) != 3:
@@ -24,7 +25,7 @@ class CurrencyRate(Base):
         return value
 
     @validates("rate")
-    def validate_rate(self, key, value):
+    def validate_rate(self, _, value):
         if value <= 0:
             raise ValueError("Exchange rate must be a positive number.")
         return value

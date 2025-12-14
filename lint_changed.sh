@@ -8,7 +8,13 @@ CHANGED_FILES=$(git diff --name-only --diff-filter=ACM HEAD | grep '\.py$'; git 
 if [ -n "$CHANGED_FILES" ]; then
     echo "Checking changed files:"
     echo "$CHANGED_FILES"
-    pylint "$CHANGED_FILES" --rcfile=.github/workflows/.pylintrc --fail-under=7
+
+    FILE_ARRAY=()
+    while IFS= read -r line; do
+        FILE_ARRAY+=("$line")
+    done <<< "$CHANGED_FILES"
+
+    pylint "${FILE_ARRAY[@]}" --rcfile=.github/workflows/.pylintrc --fail-under=7
 else
     echo "No Python files changed."
 fi

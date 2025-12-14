@@ -1,14 +1,14 @@
 from datetime import datetime, date
+
 import requests
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from src.models.CurrencyRate import CurrencyRate
-from src.db import get_db, init_db
-
 from src.back.logger.logger import BackendLogger
+from src.db import get_db, init_db
+from src.models.currency_rate import CurrencyRate
 
 log = BackendLogger()
 

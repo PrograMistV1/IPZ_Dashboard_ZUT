@@ -15,13 +15,13 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String(50), nullable=True)
 
     @validates("username")
-    def validate_username(self, key, value):
+    def validate_username(self, _, value):
         if not value or not isinstance(value, str):
             raise ValueError("Username must be a non-empty string.")
         return value
 
     @validates("password")
-    def validate_password(self, key, value):
+    def validate_password(self, _, value):
         if not value or not isinstance(value, str):
             raise ValueError("Password must be a non-empty string.")
         if len(value) < 8:
@@ -29,7 +29,7 @@ class User(Base):
         return value
 
     @validates("email")
-    def validate_email(self, key, value):
+    def validate_email(self, _, value):
         if not value or not isinstance(value, str):
             raise ValueError("Email must be a non-empty string.")
         if "@" not in value:

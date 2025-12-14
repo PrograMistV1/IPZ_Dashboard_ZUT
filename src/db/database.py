@@ -19,7 +19,7 @@ Base = declarative_base()
 # Private session factory. Do not use directly!
 # To work with the database, use the get_db() function,
 # it will automatically open and close the session securely.
-_SessionLocal = sessionmaker(
+_session_local = sessionmaker(
     bind=_engine, autocommit=False, autoflush=False, future=True
 )
 
@@ -39,7 +39,7 @@ def init_db():
 
 
 def get_db():
-    db = _SessionLocal()
+    db = _session_local()
     try:
         yield db
     finally:
