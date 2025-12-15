@@ -14,3 +14,15 @@
 [2025-12-02 22:33:03] [INFO] [logger] [rates_endpoint] Received request for rates
 [2025-12-02 22:33:03] [DEBUG] [logger] [rates_endpoint] Validated dates: 2025-11-03 - 2025-11-07
 [2025-12-02 22:33:03] [INFO] [logger] [rates_endpoint] Fetched 5 records from DB
+[2025-12-10 08:54:01] [INFO] [logger] [main] Starting backend and initializing logger
+[2025-12-10 08:56:22] [INFO] [logger] [rates_endpoint] Received request for rates
+[2025-12-10 08:56:22] [DEBUG] [logger] [rates_endpoint] Validated dates: 2025-12-01 - 2025-12-09
+[2025-12-10 08:56:22] [INFO] [logger] [rates_endpoint] Fetched 2 records from DB
+[2025-12-16 00:05:03] [INFO] [logger] [main] Starting backend and initializing logger
+[2025-12-16 00:05:10] [INFO] [logger] [rates_endpoint] Received request for rates
+[2025-12-16 00:05:10] [DEBUG] [logger] [rates_endpoint] Validated dates: 2025-12-14 - 2025-12-15
+[2025-12-16 00:05:10] [INFO] [logger] [rates_endpoint] Fetched 0 records from DB
+[2025-12-16 00:05:13] [INFO] [logger] [rates_endpoint] Received request for rates
+[2025-12-16 00:05:13] [DEBUG] [logger] [rates_endpoint] Validated dates: 2025-12-14 - 2025-12-15
+[2025-12-16 00:05:13] [INFO] [logger] [rates_endpoint] Fetched 1 records from DB
+[2025-12-16 00:41:14] [INFO] [logger] [main] Starting backend and initializing logger
