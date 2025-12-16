@@ -37,8 +37,6 @@ class RegisterRequest(BaseModel):
     username: str
     email: str
     password: str
-    first_name: str | None = None
-    last_name: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -177,8 +175,6 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         username=req.username,
         email=req.email,
         password=req.password,
-        first_name=req.first_name,
-        last_name=req.last_name,
     )
 
     db.add(user)

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import "./App.css";
+import Login from "./Login";
+import Register from "./Register";
 
 function App() {
   const [currency, setCurrency] = useState("USD");
@@ -8,6 +10,15 @@ function App() {
   const [rates, setRates] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [mode, setMode] = useState("login");
+
+  if (!user) {
+    if (mode === "login") {
+      return <Login onLogin={setUser} onRegister={() => setMode("register")} />;
+    }
+    return <Register onBackToLogin={() => setMode("login")} />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
