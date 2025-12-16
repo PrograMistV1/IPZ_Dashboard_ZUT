@@ -1,4 +1,4 @@
-from datetime import datetime, date
+import os
 
 import requests
 from fastapi import FastAPI, HTTPException, Depends
@@ -13,6 +13,21 @@ from src.models.user import User
 
 from src.models.login_history import LoginHistory
 from fastapi import Request
+
+from jose import jwt, JWTError
+from datetime import datetime, timedelta, date
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is not set")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+security = HTTPBearer()
 
 log = BackendLogger()
 
@@ -45,6 +60,31 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+def create_access_token(user_id: int):
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Nieprawidłowa sesja")
+
+        return user_id
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Nieprawidłowa sesja")
 
 
 def validate_dates(date_from: str, date_to: str) -> tuple[date, date]:
@@ -193,6 +233,8 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     if not user or user.password != req.password:
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
+    token = create_access_token(user.id)
+
     db.add(
         LoginHistory(
             user_id=user.id,
@@ -203,16 +245,23 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     return {
-        "message": "Login successful",
+        "access_token": token,
         "user_id": user.id,
         "username": user.username,
     }
 
 
-@app.get("/auth/login-history/{user_id}")
-def get_login_history(user_id: int, db: Session = Depends(get_db)):
-    log.info("login_history", f"Fetching login history for user {user_id}")
-    results = (
+@app.post("/auth/logout")
+def logout():
+    return {"message": "Logged out"}
+
+
+@app.get("/auth/login-history")
+def get_login_history(
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    history = (
         db.query(LoginHistory)
         .filter(LoginHistory.user_id == user_id)
         .order_by(LoginHistory.login_time.desc())
@@ -221,13 +270,11 @@ def get_login_history(user_id: int, db: Session = Depends(get_db)):
 
     return [
         {
-            "id": r.id,
-            "user_id": r.user_id,
-            "login_time": r.login_time.isoformat(),
-            "ip_address": r.ip_address,
-            "user_agent": r.user_agent,
+            "login_time": h.login_time.isoformat(),
+            "ip_address": h.ip_address,
+            "user_agent": h.user_agent,
         }
-        for r in results
+        for h in history
     ]
 
 

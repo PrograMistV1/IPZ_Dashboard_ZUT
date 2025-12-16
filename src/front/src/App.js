@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import Login from "./Login";
 import Register from "./Register";
@@ -15,13 +15,20 @@ function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [loginHistory, setLoginHistory] = useState([]);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setUser({ logged: true });
+    }
+  }, []);
+
   if (!user) {
     if (mode === "login") {
       return <Login onLogin={setUser} onRegister={() => setMode("register")} />;
     }
     return <Register onBackToLogin={() => setMode("login")} />;
   }
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -62,11 +69,23 @@ function App() {
       setShowHistory(false);
       return;
     }
-
     try {
+      const token = localStorage.getItem("token");
+
       const response = await fetch(
-        `http://127.0.0.1:8000/auth/login-history/${user.user_id}`
+        "http://127.0.0.1:8000/auth/login-history",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
+      if (response.status === 401) {
+        setError("Nieprawidłowa sesja");
+        localStorage.removeItem("token");
+        setUser(null);
+        return;
+      }
 
       const data = await response.json();
       setLoginHistory(data);
@@ -76,12 +95,20 @@ function App() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+  };
+
   return (
     <div className="container">
       <div className="header">
         <h1>Kursy walut NBP</h1>
         <button className="history-btn" onClick={fetchLoginHistory}>
           Historia logowań
+        </button>
+        <button onClick={handleLogout} style={{ marginLeft: "10px" }}>
+          Logout
         </button>
       </div>
 

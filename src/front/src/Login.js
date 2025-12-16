@@ -26,6 +26,7 @@ function Login({ onLogin, onRegister }) {
       }
 
       const data = await response.json();
+      localStorage.setItem("token", data.access_token);
       onLogin(data);
     } catch {
       setError("Backend connection error");
