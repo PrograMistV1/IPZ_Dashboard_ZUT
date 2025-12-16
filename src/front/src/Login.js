@@ -22,10 +22,11 @@ function Login({ onLogin, onRegister }) {
 
       if (!response.ok) {
         setError("Invalid username or password");
-        return;
+      return;
       }
 
-      onLogin(username); 
+      const data = await response.json();
+      onLogin(data);
     } catch {
       setError("Backend connection error");
     }

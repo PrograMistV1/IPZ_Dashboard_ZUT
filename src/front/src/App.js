@@ -12,6 +12,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [mode, setMode] = useState("login");
+  const [showHistory, setShowHistory] = useState(false);
+  const [loginHistory, setLoginHistory] = useState([]);
 
   if (!user) {
     if (mode === "login") {
@@ -55,9 +57,33 @@ function App() {
     setLoading(false);
   };
 
+  const fetchLoginHistory = async () => {
+    if (showHistory) {
+      setShowHistory(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/auth/login-history/${user.user_id}`
+      );
+
+      const data = await response.json();
+      setLoginHistory(data);
+      setShowHistory(true);
+    } catch {
+      setError("Nie udało się pobrać historii logowań");
+    }
+  };
+
   return (
     <div className="container">
-      <h1>Kursy walut NBP</h1>
+      <div className="header">
+        <h1>Kursy walut NBP</h1>
+        <button className="history-btn" onClick={fetchLoginHistory}>
+          Historia logowań
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit} className="form">
         <label>Waluta:</label>
@@ -90,6 +116,27 @@ function App() {
 
       {loading && <p>Ładowanie...</p>}
       {error && <p className="error">{error}</p>}
+
+      {showHistory && (
+        <div className="history">
+          <h3>Historia logowań</h3>
+
+          {loginHistory.length === 0 ? (
+            <p>Brak danych</p>
+          ) : (
+            loginHistory.map((h, idx) => (
+              <div key={idx} className="history-item">
+                <b>{new Date(h.login_time).toLocaleString()}</b>
+                <br />
+                IP: {h.ip_address}
+                <br />
+                {h.user_agent}
+                <hr />
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {rates.length > 0 && (
         <table>

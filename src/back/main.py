@@ -11,6 +11,9 @@ from src.db import get_db, init_db
 from src.models.currency_rate import CurrencyRate
 from src.models.user import User
 
+from src.models.login_history import LoginHistory
+from fastapi import Request
+
 log = BackendLogger()
 
 log.info("main", "Starting backend and initializing logger")
@@ -184,17 +187,48 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/auth/login")
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username).first()
 
     if not user or user.password != req.password:
         raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    db.add(
+        LoginHistory(
+            user_id=user.id,
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+        )
+    )
+    db.commit()
 
     return {
         "message": "Login successful",
         "user_id": user.id,
         "username": user.username,
     }
+
+
+@app.get("/auth/login-history/{user_id}")
+def get_login_history(user_id: int, db: Session = Depends(get_db)):
+    log.info("login_history", f"Fetching login history for user {user_id}")
+    results = (
+        db.query(LoginHistory)
+        .filter(LoginHistory.user_id == user_id)
+        .order_by(LoginHistory.login_time.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": r.id,
+            "user_id": r.user_id,
+            "login_time": r.login_time.isoformat(),
+            "ip_address": r.ip_address,
+            "user_agent": r.user_agent,
+        }
+        for r in results
+    ]
 
 
 if __name__ == "__main__":
