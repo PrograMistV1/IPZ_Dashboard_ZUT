@@ -32,6 +32,7 @@ class User(Base):
             raise ValueError("Email must be a non-empty string.")
         if "@" not in value or "." not in value:
             raise ValueError("Invalid email format")
+        return value
 
     def __repr__(self):
         return f"User(id={self.id}, username='{self.username}', email='{self.email}')"
