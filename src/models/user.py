@@ -11,8 +11,6 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
-    first_name: Mapped[str] = mapped_column(String(50), nullable=True)
-    last_name: Mapped[str] = mapped_column(String(50), nullable=True)
 
     @validates("username")
     def validate_username(self, _, value):
@@ -32,17 +30,8 @@ class User(Base):
     def validate_email(self, _, value):
         if not value or not isinstance(value, str):
             raise ValueError("Email must be a non-empty string.")
-        if "@" not in value:
-            raise ValueError("Invalid email format.")
-        return value
+        if "@" not in value or "." not in value:
+            raise ValueError("Invalid email format")
 
     def __repr__(self):
-        return (
-            f"User("
-            f"id={self.id}, "
-            f"username='{self.username}', "
-            f"email='{self.email}', "
-            f"first_name='{self.first_name}', "
-            f"last_name='{self.last_name}'"
-            f")"
-        )
+        return f"User(id={self.id}, username='{self.username}', email='{self.email}')"

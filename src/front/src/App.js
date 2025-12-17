@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
+import Login from "./Login";
+import Register from "./Register";
 
 function App() {
   const [currency, setCurrency] = useState("USD");
@@ -8,7 +10,26 @@ function App() {
   const [rates, setRates] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [mode, setMode] = useState("login");
+  const [showHistory, setShowHistory] = useState(false);
+  const [loginHistory, setLoginHistory] = useState([]);
+  const [accountInfo, setAccountInfo] = useState(null);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setUser({ logged: true });
+    }
+  }, []);
+
+  if (!user) {
+    if (mode === "login") {
+      return <Login onLogin={setUser} onRegister={() => setMode("register")} />;
+    }
+    return <Register onBackToLogin={() => setMode("login")} />;
+  }
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -44,9 +65,81 @@ function App() {
     setLoading(false);
   };
 
+  const fetchLoginHistory = async () => {
+    if (showHistory) {
+      setShowHistory(false);
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/auth/login-history",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status === 401) {
+        setError("Nieprawidłowa sesja");
+        localStorage.removeItem("token");
+        setUser(null);
+        return;
+      }
+
+      const data = await response.json();
+      setLoginHistory(data);
+      setShowHistory(true);
+    } catch {
+      setError("Nie udało się pobrać historii logowań");
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+  };
+
+  const fetchAccountInfo = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/auth/me",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status === 401) {
+        setError("Nieautoryzowana operacja");
+        localStorage.removeItem("token");
+        setUser(null);
+        return;
+      }
+      const data = await response.json();
+      setAccountInfo(data);
+    } catch {
+      setError("Nie udało się pobrać informacji o koncie");
+    }
+  };
+
   return (
     <div className="container">
-      <h1>Kursy walut NBP</h1>
+      <div className="header">
+        <h1>Kursy walut NBP</h1>
+        <button className="history-btn" onClick={fetchLoginHistory}>
+          Historia logowań
+        </button>
+        <button onClick={handleLogout} style={{ marginLeft: "10px" }}>
+          Logout
+        </button>
+        <button onClick={fetchAccountInfo} style={{ marginLeft: "10px" }}>
+          Informacje o koncie
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit} className="form">
         <label>Waluta:</label>
@@ -79,6 +172,34 @@ function App() {
 
       {loading && <p>Ładowanie...</p>}
       {error && <p className="error">{error}</p>}
+
+      {accountInfo && (
+        <div className="account-info">
+          <h3>Informacje o koncie</h3>
+          <p><b>Login:</b> {accountInfo.login}</p>
+        </div>
+      )}
+      
+      {showHistory && (
+        <div className="history">
+          <h3>Historia logowań</h3>
+
+          {loginHistory.length === 0 ? (
+            <p>Brak danych</p>
+          ) : (
+            loginHistory.map((h, idx) => (
+              <div key={idx} className="history-item">
+                <b>{new Date(h.login_time).toLocaleString()}</b>
+                <br />
+                IP: {h.ip_address}
+                <br />
+                {h.user_agent}
+                <hr />
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {rates.length > 0 && (
         <table>

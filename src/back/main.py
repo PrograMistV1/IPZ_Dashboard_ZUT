@@ -1,4 +1,4 @@
-from datetime import datetime, date
+import os
 
 import requests
 from fastapi import FastAPI, HTTPException, Depends
@@ -9,6 +9,25 @@ from sqlalchemy.orm import Session
 from src.back.logger.logger import BackendLogger
 from src.db import get_db, init_db
 from src.models.currency_rate import CurrencyRate
+from src.models.user import User
+
+from src.models.login_history import LoginHistory
+from fastapi import Request
+
+from jose import jwt, JWTError
+from datetime import datetime, timedelta, date
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is not set")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+security = HTTPBearer()
 
 log = BackendLogger()
 
@@ -30,6 +49,42 @@ class RateRequest(BaseModel):
     currency: str
     date_from: str
     date_to: str
+
+
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+def create_access_token(user_id: int):
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Nieprawidłowa sesja")
+
+        return user_id
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Nieprawidłowa sesja")
 
 
 def validate_dates(date_from: str, date_to: str) -> tuple[date, date]:
@@ -146,6 +201,94 @@ def get_rates(req: RateRequest, db: Session = Depends(get_db)):
     except Exception as exc:
         log.error("rates_endpoint", f"Unexpected error: {exc}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {exc}") from exc
+
+
+@app.post("/auth/register")
+def register(req: RegisterRequest, db: Session = Depends(get_db)):
+    existing = (
+        db.query(User)
+        .filter((User.username == req.username) | (User.email == req.email))
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    user = User(
+        username=req.username,
+        email=req.email,
+        password=req.password,
+    )
+
+    db.add(user)
+    db.commit()
+
+    return {"message": "User registered successfully"}
+
+
+@app.post("/auth/login")
+def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == req.username).first()
+
+    if not user or user.password != req.password:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    token = create_access_token(user.id)
+
+    db.add(
+        LoginHistory(
+            user_id=user.id,
+            ip_address=request.client.host,
+            user_agent=request.headers.get("user-agent"),
+        )
+    )
+    db.commit()
+
+    return {
+        "access_token": token,
+        "user_id": user.id,
+        "username": user.username,
+    }
+
+
+@app.post("/auth/logout")
+def logout():
+    return {"message": "Logged out"}
+
+
+@app.get("/auth/login-history")
+def get_login_history(
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    history = (
+        db.query(LoginHistory)
+        .filter(LoginHistory.user_id == user_id)
+        .order_by(LoginHistory.login_time.desc())
+        .all()
+    )
+
+    return [
+        {
+            "login_time": h.login_time.isoformat(),
+            "ip_address": h.ip_address,
+            "user_agent": h.user_agent,
+        }
+        for h in history
+    ]
+
+
+@app.get("/auth/me")
+def get_my_account(
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"login": user.username}
 
 
 if __name__ == "__main__":
