@@ -99,3 +99,5 @@
 [2025-12-16 22:52:52] [INFO] [logger] [login_history] Fetching login history for user 1
 [2025-12-16 22:54:48] [INFO] [logger] [login_history] Fetching login history for user 1
 [2025-12-16 23:30:54] [INFO] [logger] [main] Starting backend and initializing logger
+[2025-12-16 23:51:41] [INFO] [logger] [main] Starting backend and initializing logger
+[2025-12-17 01:47:24] [INFO] [logger] [main] Starting backend and initializing logger

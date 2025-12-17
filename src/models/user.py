@@ -30,9 +30,8 @@ class User(Base):
     def validate_email(self, _, value):
         if not value or not isinstance(value, str):
             raise ValueError("Email must be a non-empty string.")
-        if "@" not in value:
-            raise ValueError("Invalid email format.")
-        return value
+        if "@" not in value or "." not in value:
+            raise ValueError("Invalid email format")
 
     def __repr__(self):
         return f"User(id={self.id}, username='{self.username}', email='{self.email}')"

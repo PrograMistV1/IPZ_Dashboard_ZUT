@@ -14,6 +14,7 @@ function App() {
   const [mode, setMode] = useState("login");
   const [showHistory, setShowHistory] = useState(false);
   const [loginHistory, setLoginHistory] = useState([]);
+  const [accountInfo, setAccountInfo] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -100,6 +101,31 @@ function App() {
     setUser(null);
   };
 
+  const fetchAccountInfo = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/auth/me",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.status === 401) {
+        setError("Nieautoryzowana operacja");
+        localStorage.removeItem("token");
+        setUser(null);
+        return;
+      }
+      const data = await response.json();
+      setAccountInfo(data);
+    } catch {
+      setError("Nie udało się pobrać informacji o koncie");
+    }
+  };
+
   return (
     <div className="container">
       <div className="header">
@@ -109,6 +135,9 @@ function App() {
         </button>
         <button onClick={handleLogout} style={{ marginLeft: "10px" }}>
           Logout
+        </button>
+        <button onClick={fetchAccountInfo} style={{ marginLeft: "10px" }}>
+          Informacje o koncie
         </button>
       </div>
 
@@ -144,6 +173,13 @@ function App() {
       {loading && <p>Ładowanie...</p>}
       {error && <p className="error">{error}</p>}
 
+      {accountInfo && (
+        <div className="account-info">
+          <h3>Informacje o koncie</h3>
+          <p><b>Login:</b> {accountInfo.login}</p>
+        </div>
+      )}
+      
       {showHistory && (
         <div className="history">
           <h3>Historia logowań</h3>
