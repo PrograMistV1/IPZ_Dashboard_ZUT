@@ -1,226 +1,173 @@
-import React, { useState, useEffect } from "react";
-import "./App.css";
-import Login from "./Login";
-import Register from "./Register";
+import React, {useEffect, useState} from "react";
+import "./styles/App.css";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import {useRates} from "./hooks/useRates";
+import {useUserData} from "./hooks/useUserData";
+import {tokenManager} from "./utils/tokenManager";
 
 function App() {
-  const [currency, setCurrency] = useState("USD");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [rates, setRates] = useState([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(null);
-  const [mode, setMode] = useState("login");
-  const [showHistory, setShowHistory] = useState(false);
-  const [loginHistory, setLoginHistory] = useState([]);
-  const [accountInfo, setAccountInfo] = useState(null);
+    const [currency, setCurrency] = useState("USD");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
+    const [user, setUser] = useState(null);
+    const [mode, setMode] = useState("login");
+    const [showHistory, setShowHistory] = useState(false);
+    const [appError, setAppError] = useState("");
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setUser({ logged: true });
+    const {rates, loading, error: ratesError, fetchRates} = useRates();
+    const {
+        accountInfo,
+        loginHistory,
+        error: userDataError,
+        fetchAccountInfo,
+        fetchLoginHistory
+    } = useUserData(handleLogoutRequired);
+
+    useEffect(() => {
+        if (tokenManager.hasToken()) {
+            setUser({logged: true});
+        }
+    }, []);
+
+    function handleLogoutRequired() {
+        setUser(null);
+        tokenManager.removeToken();
+        setAppError("Session expired, please login again");
     }
-  }, []);
 
-  if (!user) {
-    if (mode === "login") {
-      return <Login onLogin={setUser} onRegister={() => setMode("register")} />;
+    if (!user) {
+        if (mode === "login") {
+            return <Login onLogin={setUser} onRegister={() => setMode("register")}/>;
+        }
+        return <Register onBackToLogin={() => setMode("login")}/>;
     }
-    return <Register onBackToLogin={() => setMode("login")} />;
-  }
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setRates([]);
-    setLoading(true);
 
-    const payload = {
-      currency: currency,
-      date_from: dateFrom,
-      date_to: dateTo,
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setAppError("");
+        fetchRates(currency, dateFrom, dateTo);
     };
 
-    try {
-      const response = await fetch("http://127.0.0.1:8000/rates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        setError(err.detail || "Błąd serwera");
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
-      setRates(data.rates);
-    } catch (err) {
-      setError("Błąd połączenia z backendem");
-    }
-
-    setLoading(false);
-  };
-
-  const fetchLoginHistory = async () => {
-    if (showHistory) {
-      setShowHistory(false);
-      return;
-    }
-    try {
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        "http://127.0.0.1:8000/auth/login-history",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.status === 401) {
-        setError("Nieprawidłowa sesja");
-        localStorage.removeItem("token");
+    const handleLogout = () => {
+        tokenManager.removeToken();
         setUser(null);
-        return;
-      }
+    };
 
-      const data = await response.json();
-      setLoginHistory(data);
-      setShowHistory(true);
-    } catch {
-      setError("Nie udało się pobrać historii logowań");
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-  };
-
-  const fetchAccountInfo = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        "http://127.0.0.1:8000/auth/me",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+    const handleFetchHistory = async () => {
+        if (showHistory) {
+            setShowHistory(false);
+            return;
         }
-      );
-      if (response.status === 401) {
-        setError("Nieautoryzowana operacja");
-        localStorage.removeItem("token");
-        setUser(null);
-        return;
-      }
-      const data = await response.json();
-      setAccountInfo(data);
-    } catch {
-      setError("Nie udało się pobrać informacji o koncie");
-    }
-  };
+        await fetchLoginHistory();
+        setShowHistory(true);
+    };
 
-  return (
-    <div className="container">
-      <div className="header">
-        <h1>Kursy walut NBP</h1>
-        <button className="history-btn" onClick={fetchLoginHistory}>
-          Historia logowań
-        </button>
-        <button onClick={handleLogout} style={{ marginLeft: "10px" }}>
-          Logout
-        </button>
-        <button onClick={fetchAccountInfo} style={{ marginLeft: "10px" }}>
-          Informacje o koncie
-        </button>
-      </div>
+    const handleFetchAccount = async () => {
+        await fetchAccountInfo();
+    };
 
-      <form onSubmit={handleSubmit} className="form">
-        <label>Waluta:</label>
-        <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="GBP">GBP</option>
-          <option value="CHF">CHF</option>
-          <option value="JPY">JPY</option>
-        </select>
+    const displayError = appError || ratesError || userDataError;
 
-        <label>Data od:</label>
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          required
-        />
+    return (
+        <div className="container">
+            <div className="header-buttons">
+                <button className="history-btn" onClick={handleFetchHistory}>
+                    Login History
+                </button>
+                <button onClick={handleFetchAccount}>
+                    Account Info
+                </button>
+                <button className="logout-btn" onClick={handleLogout}>
+                    Logout
+                </button>
+            </div>
 
-        <label>Data do:</label>
-        <input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          required
-        />
+            <form onSubmit={handleSubmit} className="form">
+                <label>Currency:</label>
+                <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="CHF">CHF</option>
+                    <option value="JPY">JPY</option>
+                </select>
 
-        <button type="submit">Pobierz</button>
-      </form>
+                <label>From Date:</label>
+                <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    required
+                />
 
-      {loading && <p>Ładowanie...</p>}
-      {error && <p className="error">{error}</p>}
+                <label>To Date:</label>
+                <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    required
+                />
 
-      {accountInfo && (
-        <div className="account-info">
-          <h3>Informacje o koncie</h3>
-          <p><b>Login:</b> {accountInfo.login}</p>
+                <button type="submit" disabled={loading}>
+                    {loading ? "Fetching..." : "Fetch"}
+                </button>
+            </form>
+
+            {loading && <p className="loading">Loading...</p>}
+
+            {displayError && <p className="error">{displayError}</p>}
+
+            {accountInfo && (
+                <div className="account-info">
+                    <h3>Account Info</h3>
+                    <p>
+                        <b>Username:</b> {accountInfo.login}
+                    </p>
+                </div>
+            )}
+
+            {showHistory && (
+                <div className="history">
+                    <h3>Login History</h3>
+                    {loginHistory.length === 0 ? (
+                        <p>No data</p>
+                    ) : (
+                        loginHistory.map((h, idx) => (
+                            <div key={idx} className="history-item">
+                                <b>{new Date(h.login_time).toLocaleString()}</b>
+                                <br/>
+                                IP: {h.ip_address}
+                                <br/>
+                                {h.user_agent}
+                                <hr/>
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+
+            {rates.length > 0 && (
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Rate</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {rates.map((item, idx) => (
+                        <tr key={idx}>
+                            <td>{item.date}</td>
+                            <td>{item.rate}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            )}
         </div>
-      )}
-      
-      {showHistory && (
-        <div className="history">
-          <h3>Historia logowań</h3>
-
-          {loginHistory.length === 0 ? (
-            <p>Brak danych</p>
-          ) : (
-            loginHistory.map((h, idx) => (
-              <div key={idx} className="history-item">
-                <b>{new Date(h.login_time).toLocaleString()}</b>
-                <br />
-                IP: {h.ip_address}
-                <br />
-                {h.user_agent}
-                <hr />
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {rates.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Kurs</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rates.map((item, idx) => (
-              <tr key={idx}>
-                <td>{item.date}</td>
-                <td>{item.rate}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
+    );
 }
 
 export default App;
+

@@ -9,7 +9,7 @@ body {
     padding: 20px;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
 }
 
 .auth-box h2 {
@@ -22,6 +22,7 @@ body {
     margin: 10px 0;
     box-sizing: border-box;
 }
+
 .auth-box button {
     width: 100%;
     padding: 10px;
@@ -36,7 +37,7 @@ body {
 }
 
 .link {
-  color: #2563eb;          
-  cursor: pointer;        
-  text-decoration: underline;
+    color: #2563eb;
+    cursor: pointer;
+    text-decoration: underline;
 }
