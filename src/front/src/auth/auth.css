@@ -1,0 +1,140 @@
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a;
+}
+
+.auth-box {
+  background: #020617;
+  padding: 32px;
+  width: 320px;
+  border-radius: 10px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+  color: #e5e7eb;
+}
+
+.auth-box h2 {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.auth-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-box input {
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  background: #020617;
+  color: white;
+  outline: 1px solid #1e293b;
+}
+
+.auth-box button {
+  margin-top: 10px;
+  padding: 10px;
+  background: #2563eb;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+
+.auth-box button:disabled {
+  background: #334155;
+  cursor: not-allowed;
+}
+
+.auth-footer {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.auth-footer span {
+  color: #60a5fa;
+  cursor: pointer;
+}
+
+.auth-error {
+  margin-top: 10px;
+  color: #f87171;
+  font-size: 14px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.modal-content {
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+.history-row {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.history-meta {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.login-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.login-history-list li {
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.login-history-list .muted {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* ===== Login history page ===== */
+
+.auth-box table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.auth-box th,
+.auth-box td {
+  padding: 10px;
+  text-align: left;
+  color: #e5e7eb;
+  border-bottom: 1px solid #1e293b;
+}
+
+.auth-box th {
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.auth-box tr:hover td {
+  background: #020617;
+}

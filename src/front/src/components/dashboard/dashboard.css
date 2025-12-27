@@ -1,0 +1,86 @@
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(280px, 1fr)
+  );
+  gap: 16px;
+}
+
+.widget-slot {
+  background: #ffffff;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  color: #333;
+  font-size: 14px;
+}
+
+.widget-slot button {
+  border: 1px dashed #aaa;
+  background: transparent;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dashboard-info {
+  margin-top: 24px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  max-width: 420px;
+}
+
+.dashboard-info-section {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #333;
+}
+
+.dashboard-info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.dashboard-info-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.dashboard-info-actions button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  cursor: pointer;
+}
+
+.dashboard-info-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dashboard-widget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.dashboard-widget-row button {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
