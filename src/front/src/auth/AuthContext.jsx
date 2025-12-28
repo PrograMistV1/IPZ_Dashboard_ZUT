@@ -24,7 +24,6 @@ export function AuthProvider({ children }) {
       body: JSON.stringify({ username, password }),
     });
   } catch (err) {
-    // если 401 / 422 / что угодно
     throw new Error("LOGIN_FAILED");
   }
 

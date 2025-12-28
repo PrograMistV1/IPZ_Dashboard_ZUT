@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import CurrencyLineChart from "./CurrencyLineChart";
 import "./currencyWidget.css";
 
-export default function CurrencyWidget() {
-  const [currency, setCurrency] = useState("USD");
+export default function CurrencyWidget({ configuration }) {
+  const [currency, setCurrency] = useState(configuration?.currency || "USD");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [rates, setRates] = useState([]);

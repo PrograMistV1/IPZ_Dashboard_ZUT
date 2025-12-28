@@ -10,8 +10,11 @@ from src.back.logger.logger import BackendLogger
 from src.db import get_db, init_db
 from src.models.currency_rate import CurrencyRate
 from src.models.user import User
+from src.models.dashboard import Dashboard
+from src.models.widget import Widget
 
 from src.models.login_history import LoginHistory
+from src.models.audit_log import AuditLog
 from fastapi import Request
 
 from jose import jwt, JWTError
@@ -222,8 +225,13 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
 
     db.add(user)
     db.commit()
+    db.refresh(user)
 
-    return {"message": "User registered successfully"}
+    dashboard = Dashboard(user_id=user.id, name="My dashboard")
+    db.add(dashboard)
+    db.commit()
+
+    return {"message": "User registered successfully", "dashboard_id": dashboard.id}
 
 
 @app.post("/auth/login")
@@ -289,6 +297,194 @@ def get_my_account(
         raise HTTPException(status_code=404, detail="User not found")
 
     return {"login": user.username}
+
+
+class WidgetCreateRequest(BaseModel):
+    type: str
+    configuration: dict | None = None
+    position: int | None = None
+    enabled: bool | None = True
+
+
+@app.get("/api/dashboards")
+def list_dashboards(
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ds = db.query(Dashboard).filter(Dashboard.user_id == user_id).all()
+
+    result = []
+    for d in ds:
+        widgets = (
+            db.query(Widget)
+            .filter(Widget.dashboard_id == d.id)
+            .order_by(Widget.position)
+            .all()
+        )
+        result.append(
+            {
+                "id": d.id,
+                "name": d.name,
+                "created_at": d.created_at.isoformat(),
+                "updated_at": d.updated_at.isoformat(),
+                "widgets": [
+                    {
+                        "id": w.id,
+                        "type": w.type,
+                        "configuration": w.configuration,
+                        "enabled": w.enabled,
+                        "position": w.position,
+                    }
+                    for w in widgets
+                ],
+            }
+        )
+
+    return result
+
+
+@app.get("/api/dashboards/{dashboard_id}")
+def get_dashboard(
+    dashboard_id: int,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    widgets = (
+        db.query(Widget)
+        .filter(Widget.dashboard_id == dashboard_id)
+        .order_by(Widget.position)
+        .all()
+    )
+
+    return {
+        "id": dashboard.id,
+        "name": dashboard.name,
+        "created_at": dashboard.created_at.isoformat(),
+        "updated_at": dashboard.updated_at.isoformat(),
+        "widgets": [
+            {
+                "id": w.id,
+                "type": w.type,
+                "configuration": w.configuration,
+                "enabled": w.enabled,
+                "position": w.position,
+            }
+            for w in widgets
+        ],
+    }
+
+
+@app.post("/api/dashboards/{dashboard_id}/widgets", status_code=201)
+def create_widget(
+    dashboard_id: int,
+    req: WidgetCreateRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    type_map = {
+        "kursy": "rates",
+        "rates": "rates",
+        "currency": "rates",
+        "news": "news",
+        "historia": "history",
+        "history": "history",
+        "historia_operacji": "history",
+        "historia-operacji": "history",
+    }
+
+    widget_type = type_map.get(req.type.lower()) if isinstance(req.type, str) else None
+
+    if not widget_type:
+        raise HTTPException(status_code=400, detail="Unsupported widget type")
+
+    config = req.configuration or {}
+    if not isinstance(config, dict):
+        raise HTTPException(status_code=400, detail="Invalid configuration format")
+
+    if widget_type == "rates":
+        currency = config.get("currency")
+        if not currency:
+            raise HTTPException(
+                status_code=400, detail="'currency' is required for rates widget"
+            )
+        if currency not in VALID_CURRENCIES:
+            raise HTTPException(status_code=400, detail="Unsupported currency")
+
+    if widget_type == "news":
+        category = config.get("category")
+        if not category:
+            raise HTTPException(
+                status_code=400, detail="'category' is required for news widget"
+            )
+
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if req.position is None:
+        max_pos = (
+            db.query(Widget.position)
+            .filter(Widget.dashboard_id == dashboard_id)
+            .order_by(Widget.position.desc())
+            .limit(1)
+            .first()
+        )
+        next_pos = (max_pos[0] + 1) if max_pos else 1
+    else:
+        if req.position < 0:
+            raise HTTPException(status_code=400, detail="Position must be >= 0")
+        next_pos = req.position
+
+    enabled = bool(req.enabled) if req.enabled is not None else True
+
+    widget = Widget(
+        dashboard_id=dashboard_id,
+        type=widget_type,
+        configuration=config,
+        position=next_pos,
+        enabled=enabled,
+    )
+
+    try:
+        db.add(widget)
+        db.commit()
+        db.refresh(widget)
+
+        audit = AuditLog(
+            user_id=user_id,
+            dashboard_id=dashboard_id,
+            widget_id=widget.id,
+            action="create",
+        )
+        db.add(audit)
+        db.commit()
+
+        log.info(
+            "create_widget",
+            f"User {user_id} created widget {widget.id} on dashboard {dashboard_id}",
+        )
+
+        return {
+            "id": widget.id,
+            "type": widget.type,
+            "configuration": widget.configuration,
+            "enabled": widget.enabled,
+            "position": widget.position,
+        }
+    except Exception as exc:
+        db.rollback()
+        log.error("create_widget", f"Error creating widget: {exc}")
+        raise HTTPException(status_code=500, detail=f"Database error: {exc}") from exc
 
 
 if __name__ == "__main__":

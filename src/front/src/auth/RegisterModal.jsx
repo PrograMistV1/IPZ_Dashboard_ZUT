@@ -19,7 +19,7 @@ export default function RegisterModal() {
       await apiFetch("/auth/register", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json", // <- ОБЯЗАТЕЛЬНО
+          "Content-Type": "application/json", 
         },
         body: JSON.stringify({
           username,
@@ -28,7 +28,6 @@ export default function RegisterModal() {
         }),
       });
 
-      // после успешной регистрации
       setMode("login");
     } catch (err) {
       setError("Registration failed");
