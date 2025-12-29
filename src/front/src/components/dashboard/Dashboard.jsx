@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import DashboardGrid from "./DashboardGrid";
 import DashboardInfoPanel from "./DashboardInfoPanel";
 import * as dashboardService from "../../services/dashboard";
+import { tokenManager } from "../../services/tokenManager";
 
 export default function Dashboard() {
   const [slotsCount, setSlotsCount] = useState(4);
@@ -9,43 +10,93 @@ export default function Dashboard() {
   const [dashboardId, setDashboardId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const addSlot = () => {
-    setSlotsCount((c) => {
-      const newCount = Math.min(c + 1, 8);
+  /* ===================== SLOTS ===================== */
 
-      if (dashboardId) {
-        dashboardService
-          .updateDashboard(dashboardId, { slotsCount: newCount })
-          .catch((err) =>
-            console.error("Failed to update slotsCount", err)
-          );
-      }
+  const addSlot = async () => {
+    if (!dashboardId || slotsCount >= 8) return;
 
-      return newCount;
-    });
+    const newCount = slotsCount + 1;
+    setSlotsCount(newCount);
+
+    try {
+      await dashboardService.updateDashboard(dashboardId, {
+        slotsCount: newCount,
+      });
+    } catch (err) {
+      console.error("Failed to update slotsCount", err);
+    }
   };
 
-  const removeSlot = () => {
-    setSlotsCount((c) => {
-      const newCount = Math.max(c - 1, 1);
+  const removeSlot = async () => {
+    if (!dashboardId || slotsCount <= 1) return;
 
-      if (dashboardId) {
-        dashboardService
-          .updateDashboard(dashboardId, { slotsCount: newCount })
-          .catch((err) =>
-            console.error("Failed to update slotsCount", err)
-          );
-      }
+    const lastSlot = slotsCount;
+    const widget = widgets[lastSlot];
+    const token = tokenManager.get();
+    if (!token) {
+      console.error("No access token");
+      return;
+    }
 
-      return newCount;
-    });
+    // 1. Если в слоте есть виджет — удаляем его
+    if (widget) {
+      await fetch(
+        `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widget.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${tokenManager.get()}`,
+          },
+        }
+      );
+
+      setWidgets((prev) => {
+        const copy = { ...prev };
+        delete copy[lastSlot];
+        return copy;
+      });
+    }
+
+    // 2. Уменьшаем slotsCount
+    const newCount = slotsCount - 1;
+    setSlotsCount(newCount);
+
+    try {
+      await dashboardService.updateDashboard(dashboardId, {
+        slotsCount: newCount,
+      });
+    } catch (err) {
+      console.error("Failed to update slotsCount", err);
+    }
   };
 
-  const clearWidget = (slot) => {
-    setWidgets((prev) => ({
-      ...prev,
-      [slot]: null,
-    }));
+  /* ===================== WIDGETS ===================== */
+
+  const clearWidget = async (slot) => {
+    const widget = widgets[slot];
+    if (!widget || !dashboardId) return;
+
+    const token = tokenManager.get();
+    if (!token) {
+      console.error("No access token");
+      return;
+    }
+
+    await fetch(
+      `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widget.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenManager.get()}`,
+        },
+      }
+    );
+
+    setWidgets((prev) => {
+      const copy = { ...prev };
+      delete copy[slot];
+      return copy;
+    });
   };
 
   const mapServerTypeToRegistry = (type) => {
@@ -54,25 +105,29 @@ export default function Dashboard() {
     return type;
   };
 
+  /* ===================== LOAD ===================== */
+
   const loadDashboards = async () => {
     setLoading(true);
     try {
       const list = await dashboardService.getDashboards();
       if (Array.isArray(list) && list.length > 0) {
         const d = list[0];
+
         setDashboardId(d.id);
         setSlotsCount(d.slotsCount ?? 4);
 
         const newWidgets = {};
         (d.widgets || []).forEach((w) => {
-          const slot = w.position || 1;
-          newWidgets[slot] = {
-            id: w.id,
-            type: mapServerTypeToRegistry(w.type),
-            configuration: w.configuration,
-            enabled: w.enabled,
-            position: w.position,
-          };
+          if (w.position) {
+            newWidgets[w.position] = {
+              id: w.id,
+              type: mapServerTypeToRegistry(w.type),
+              configuration: w.configuration,
+              enabled: w.enabled,
+              position: w.position,
+            };
+          }
         });
 
         setWidgets(newWidgets);
@@ -87,65 +142,67 @@ export default function Dashboard() {
     loadDashboards();
   }, []);
 
+  /* ===================== ADD WIDGET ===================== */
+
   useEffect(() => {
     const handler = async (e) => {
-      const freeSlot =
-        Object.values(widgets).filter(Boolean).length + 1;
+      if (!dashboardId) return;
 
-      if (freeSlot <= slotsCount && dashboardId) {
-        const selectedType = e.detail;
-        let config = {};
+      const { type, slot } = e.detail || {};
+      if (!type || !slot) return;
+      if (slot > slotsCount || widgets[slot]) return;
 
-        if (selectedType === "news") {
-          const category = window.prompt(
-            "Enter news category (e.g. tech)",
-            "tech"
-          );
-          if (!category) return;
-          config.category = category;
-        }
+      let config = {};
 
-        try {
-          const serverType =
-            selectedType === "currency" ? "rates" : selectedType;
+      if (type === "news") {
+        const category = window.prompt(
+          "Enter news category (e.g. tech)",
+          "tech"
+        );
+        if (!category) return;
+        config.category = category;
+      }
 
-          const created = await dashboardService.createWidget(
-            dashboardId,
-            {
-              type: serverType,
-              configuration: config,
-              position: freeSlot,
-            }
-          );
+      try {
+        const serverType = type === "currency" ? "rates" : type;
 
-          setWidgets((prev) => ({
-            ...prev,
-            [freeSlot]: {
-              id: created.id,
-              type: mapServerTypeToRegistry(created.type),
-              configuration: created.configuration,
-              enabled: created.enabled,
-              position: created.position,
-            },
-          }));
-        } catch (err) {
-          console.error("Failed to create widget", err);
-          alert(err.message || "Failed to create widget");
-        }
+        const created = await dashboardService.createWidget(
+          dashboardId,
+          {
+            type: serverType,
+            configuration: config,
+            position: slot,
+          }
+        );
+
+        setWidgets((prev) => ({
+          ...prev,
+          [slot]: {
+            id: created.id,
+            type: mapServerTypeToRegistry(created.type),
+            configuration: created.configuration,
+            enabled: created.enabled,
+            position: created.position,
+          },
+        }));
+      } catch (err) {
+        console.error("Failed to create widget", err);
+        alert(err.message || "Failed to create widget");
       }
     };
 
     window.addEventListener("add-widget", handler);
     return () =>
       window.removeEventListener("add-widget", handler);
-  }, [widgets, slotsCount, dashboardId]);
+  }, [dashboardId, slotsCount, widgets]);
+
+  /* ===================== RENDER ===================== */
 
   return (
     <>
       <DashboardGrid
         slotsCount={slotsCount}
         widgets={widgets}
-        setWidgets={setWidgets}
       />
 
       <DashboardInfoPanel

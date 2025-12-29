@@ -1,4 +1,4 @@
-import React, { useState} from "react";
+import React, { useEffect, useState } from "react";
 import CurrencyLineChart from "./CurrencyLineChart";
 import "./currencyWidget.css";
 import { updateWidget } from "../../services/dashboard";
@@ -11,23 +11,12 @@ export default function CurrencyWidget({ widgetId, configuration }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [showValue, setShowValue] = useState(configuration?.showValue ?? true);
-  const [showChart, setShowChart] = useState(configuration?.showChart ?? true);
-  const [showTable, setShowTable] = useState(configuration?.showTable ?? true);
+  const [showValue, setShowValue] = useState(configuration?.showValue ?? false);
+  const [showChart, setShowChart] = useState(configuration?.showChart ?? false);
+  const [showTable, setShowTable] = useState(configuration?.showTable ?? false);
 
-  
-  
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const fetchRates = async () => {
     setError("");
-    setRates([]);
-
-    if (!currency) {
-      setError("Select currency first");
-      setLoading(false);
-      return;
-    }
     setLoading(true);
 
     try {
@@ -48,22 +37,51 @@ export default function CurrencyWidget({ widgetId, configuration }) {
 
       const data = await response.json();
       setRates(data.rates || []);
-
-      await updateWidget(widgetId, {
-        configuration: {
-          currency,
-          dateFrom,
-          dateTo,
-          showValue,
-          showChart,
-          showTable,
-        },
-      });
     } catch (err) {
       setError(err.message || "Backend error");
     }
 
     setLoading(false);
+  };
+
+  useEffect(() => {
+    if (currency && dateFrom && dateTo) {
+      fetchRates();
+    }
+  }, [currency, dateFrom, dateTo]);
+
+  useEffect(() => {
+    updateWidget(widgetId, {
+      configuration: {
+       currency,
+       dateFrom,
+       dateTo,
+       showValue,
+       showChart,
+       showTable,
+      },
+    });
+  }, [showValue, showChart, showTable]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!currency) {
+      setError("Select currency first");
+      return;
+    }
+
+    await fetchRates();
+
+    await updateWidget(widgetId, {
+      configuration: {
+        currency,
+        dateFrom,
+        dateTo,
+        showValue,
+        showChart,
+        showTable,
+      },
+    });
   };
 
   const latestRate =
@@ -110,7 +128,7 @@ export default function CurrencyWidget({ widgetId, configuration }) {
           <input
             type="checkbox"
             checked={showValue}
-            onChange={() => setShowValue(v => !v)}
+            onChange={() => setShowValue((v) => !v)}
           />
           Value
         </label>
@@ -119,7 +137,7 @@ export default function CurrencyWidget({ widgetId, configuration }) {
           <input
             type="checkbox"
             checked={showChart}
-            onChange={() => setShowChart(v => !v)}
+            onChange={() => setShowChart((v) => !v)}
           />
           Chart
         </label>
@@ -128,7 +146,7 @@ export default function CurrencyWidget({ widgetId, configuration }) {
           <input
             type="checkbox"
             checked={showTable}
-            onChange={() => setShowTable(v => !v)}
+            onChange={() => setShowTable((v) => !v)}
           />
           Table
         </label>

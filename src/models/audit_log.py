@@ -19,9 +19,7 @@ class AuditLog(Base):
         Integer, ForeignKey("dashboards.id", ondelete="CASCADE"), nullable=False
     )
 
-    widget_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("widgets.id", ondelete="CASCADE"), nullable=True
-    )
+    widget_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     action: Mapped[str] = mapped_column(String(50), nullable=False)
 

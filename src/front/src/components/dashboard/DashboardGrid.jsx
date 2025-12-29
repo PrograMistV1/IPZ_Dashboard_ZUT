@@ -16,7 +16,7 @@ export default function DashboardGrid({
   );
 
   const addWidget = (slot, type) => {
-    const event = new CustomEvent("add-widget", { detail: type });
+    const event = new CustomEvent("add-widget", { detail: { type, slot } });
     window.dispatchEvent(event);
     setAddSlot(null);
   };

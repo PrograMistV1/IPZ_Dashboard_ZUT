@@ -476,6 +476,27 @@ def create_widget(
 
     enabled = bool(req.enabled) if req.enabled is not None else True
 
+    # If client requested a specific position and that position is already occupied,
+    # shift existing widgets at or after next_pos to the right to avoid collisions.
+    if req.position is not None:
+        occupied = (
+            db.query(Widget)
+            .filter(Widget.dashboard_id == dashboard_id, Widget.position == next_pos)
+            .first()
+        )
+        if occupied:
+            widgets_to_shift = (
+                db.query(Widget)
+                .filter(
+                    Widget.dashboard_id == dashboard_id, Widget.position >= next_pos
+                )
+                .order_by(Widget.position.desc())
+                .all()
+            )
+            for w in widgets_to_shift:
+                w.position = w.position + 1
+            db.commit()
+
     widget = Widget(
         dashboard_id=dashboard_id,
         type=widget_type,
@@ -514,6 +535,45 @@ def create_widget(
         db.rollback()
         log.error("create_widget", f"Error creating widget: {exc}")
         raise HTTPException(status_code=500, detail=f"Database error: {exc}") from exc
+
+
+@app.delete("/api/dashboards/{dashboard_id}/widgets/{widget_id}")
+def delete_widget(
+    dashboard_id: int,
+    widget_id: int,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    widget = (
+        db.query(Widget)
+        .filter(Widget.id == widget_id, Widget.dashboard_id == dashboard_id)
+        .first()
+    )
+    if not widget:
+        raise HTTPException(status_code=404, detail="Widget not found")
+
+    # Delete widget and leave its slot empty. We do not shift other widgets —
+    # this preserves empty slots so UI can show an empty slot after deletion.
+    db.delete(widget)
+
+    audit = AuditLog(
+        user_id=user_id,
+        dashboard_id=dashboard_id,
+        widget_id=widget_id,
+        action="delete",
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return {"status": "ok"}
 
 
 class WidgetUpdateRequest(BaseModel):

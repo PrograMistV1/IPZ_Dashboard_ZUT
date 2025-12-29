@@ -18,7 +18,7 @@ export default function AddWidgetPanel({
   return (
     <div className="modal-backdrop">
       <div className="modal">
-        <h3>Add widget</h3>
+        <h3>Add widget (Slot {slot})</h3>
 
         {Object.entries(
           widgetRegistry
