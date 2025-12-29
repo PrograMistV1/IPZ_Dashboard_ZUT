@@ -1,24 +1,33 @@
-import React, { useState } from "react";
+import React, { useState} from "react";
 import CurrencyLineChart from "./CurrencyLineChart";
 import "./currencyWidget.css";
+import { updateWidget } from "../../services/dashboard";
 
-export default function CurrencyWidget({ configuration }) {
-  const [currency, setCurrency] = useState(configuration?.currency || "USD");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+export default function CurrencyWidget({ widgetId, configuration }) {
+  const [currency, setCurrency] = useState(configuration?.currency || "");
+  const [dateFrom, setDateFrom] = useState(configuration?.dateFrom || "");
+  const [dateTo, setDateTo] = useState(configuration?.dateTo || "");
   const [rates, setRates] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // переключатели отображения
-  const [showValue, setShowValue] = useState(true);
-  const [showChart, setShowChart] = useState(true);
-  const [showTable, setShowTable] = useState(true);
+  const [showValue, setShowValue] = useState(configuration?.showValue ?? true);
+  const [showChart, setShowChart] = useState(configuration?.showChart ?? true);
+  const [showTable, setShowTable] = useState(configuration?.showTable ?? true);
+
+  
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setRates([]);
+
+    if (!currency) {
+      setError("Select currency first");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -39,6 +48,17 @@ export default function CurrencyWidget({ configuration }) {
 
       const data = await response.json();
       setRates(data.rates || []);
+
+      await updateWidget(widgetId, {
+        configuration: {
+          currency,
+          dateFrom,
+          dateTo,
+          showValue,
+          showChart,
+          showTable,
+        },
+      });
     } catch (err) {
       setError(err.message || "Backend error");
     }
@@ -58,6 +78,9 @@ export default function CurrencyWidget({ configuration }) {
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
         >
+          <option value="" disabled>
+            Select currency
+          </option>
           <option value="USD">USD</option>
           <option value="EUR">EUR</option>
           <option value="GBP">GBP</option>

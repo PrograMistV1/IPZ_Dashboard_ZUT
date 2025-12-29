@@ -325,6 +325,7 @@ def list_dashboards(
             {
                 "id": d.id,
                 "name": d.name,
+                "slotsCount": d.slots_count,
                 "created_at": d.created_at.isoformat(),
                 "updated_at": d.updated_at.isoformat(),
                 "widgets": [
@@ -367,6 +368,7 @@ def get_dashboard(
     return {
         "id": dashboard.id,
         "name": dashboard.name,
+        "slotsCount": dashboard.slots_count,
         "created_at": dashboard.created_at.isoformat(),
         "updated_at": dashboard.updated_at.isoformat(),
         "widgets": [
@@ -379,6 +381,37 @@ def get_dashboard(
             }
             for w in widgets
         ],
+    }
+
+
+class DashboardUpdateRequest(BaseModel):
+    slotsCount: int | None = None
+
+
+@app.patch("/api/dashboards/{dashboard_id}")
+def update_dashboard(
+    dashboard_id: int,
+    req: DashboardUpdateRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if req.slotsCount is not None:
+        dashboard.slots_count = req.slotsCount
+
+    db.commit()
+    db.refresh(dashboard)
+
+    return {
+        "id": dashboard.id,
+        "slotsCount": dashboard.slots_count,
     }
 
 
@@ -411,11 +444,7 @@ def create_widget(
 
     if widget_type == "rates":
         currency = config.get("currency")
-        if not currency:
-            raise HTTPException(
-                status_code=400, detail="'currency' is required for rates widget"
-            )
-        if currency not in VALID_CURRENCIES:
+        if currency and currency not in VALID_CURRENCIES:
             raise HTTPException(status_code=400, detail="Unsupported currency")
 
     if widget_type == "news":
@@ -485,6 +514,37 @@ def create_widget(
         db.rollback()
         log.error("create_widget", f"Error creating widget: {exc}")
         raise HTTPException(status_code=500, detail=f"Database error: {exc}") from exc
+
+
+class WidgetUpdateRequest(BaseModel):
+    configuration: dict | None = None
+
+
+@app.patch("/api/widgets/{widget_id}")
+def update_widget(
+    widget_id: int,
+    req: WidgetUpdateRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    widget = db.query(Widget).filter(Widget.id == widget_id).first()
+    if not widget:
+        raise HTTPException(404, "Widget not found")
+
+    dashboard = db.query(Dashboard).filter(Dashboard.id == widget.dashboard_id).first()
+    if dashboard.user_id != user_id:
+        raise HTTPException(403, "Forbidden")
+
+    if req.configuration is not None:
+        widget.configuration = req.configuration
+
+    db.commit()
+    db.refresh(widget)
+
+    return {
+        "id": widget.id,
+        "configuration": widget.configuration,
+    }
 
 
 if __name__ == "__main__":

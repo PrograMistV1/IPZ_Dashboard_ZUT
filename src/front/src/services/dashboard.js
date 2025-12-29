@@ -15,3 +15,17 @@ export async function createWidget(dashboardId, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function updateWidget(widgetId, payload) {
+  return apiFetch(`/api/widgets/${widgetId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateDashboard(dashboardId, payload) {
+  return apiFetch(`/api/dashboards/${dashboardId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}

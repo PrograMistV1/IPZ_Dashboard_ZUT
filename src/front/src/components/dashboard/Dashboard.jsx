@@ -9,11 +9,37 @@ export default function Dashboard() {
   const [dashboardId, setDashboardId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const addSlot = () =>
-    setSlotsCount((c) => Math.min(c + 1, 8));
+  const addSlot = () => {
+    setSlotsCount((c) => {
+      const newCount = Math.min(c + 1, 8);
 
-  const removeSlot = () =>
-    setSlotsCount((c) => Math.max(c - 1, 1));
+      if (dashboardId) {
+        dashboardService
+          .updateDashboard(dashboardId, { slotsCount: newCount })
+          .catch((err) =>
+            console.error("Failed to update slotsCount", err)
+          );
+      }
+
+      return newCount;
+    });
+  };
+
+  const removeSlot = () => {
+    setSlotsCount((c) => {
+      const newCount = Math.max(c - 1, 1);
+
+      if (dashboardId) {
+        dashboardService
+          .updateDashboard(dashboardId, { slotsCount: newCount })
+          .catch((err) =>
+            console.error("Failed to update slotsCount", err)
+          );
+      }
+
+      return newCount;
+    });
+  };
 
   const clearWidget = (slot) => {
     setWidgets((prev) => ({
@@ -35,6 +61,7 @@ export default function Dashboard() {
       if (Array.isArray(list) && list.length > 0) {
         const d = list[0];
         setDashboardId(d.id);
+        setSlotsCount(d.slotsCount ?? 4);
 
         const newWidgets = {};
         (d.widgets || []).forEach((w) => {
@@ -53,7 +80,6 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Failed to load dashboards", err);
     }
-
     setLoading(false);
   };
 
@@ -61,36 +87,36 @@ export default function Dashboard() {
     loadDashboards();
   }, []);
 
-  // 🔗 слушаем события от Sidebar (временно)
   useEffect(() => {
     const handler = async (e) => {
       const freeSlot =
         Object.values(widgets).filter(Boolean).length + 1;
 
       if (freeSlot <= slotsCount && dashboardId) {
-        const selectedType = e.detail; // e.g. 'currency' or 'news'
-
-        // Ask for configuration required by certain widget types
+        const selectedType = e.detail;
         let config = {};
-        if (selectedType === "currency") {
-          const currency = window.prompt("Enter currency code (USD, EUR, ...)", "USD");
-          if (!currency) return;
-          config.currency = currency.toUpperCase();
-        }
 
         if (selectedType === "news") {
-          const category = window.prompt("Enter news category (e.g. tech)", "tech");
+          const category = window.prompt(
+            "Enter news category (e.g. tech)",
+            "tech"
+          );
           if (!category) return;
           config.category = category;
         }
 
         try {
-          const serverType = selectedType === "currency" ? "rates" : selectedType;
-          const created = await dashboardService.createWidget(dashboardId, {
-            type: serverType,
-            configuration: config,
-            position: freeSlot,
-          });
+          const serverType =
+            selectedType === "currency" ? "rates" : selectedType;
+
+          const created = await dashboardService.createWidget(
+            dashboardId,
+            {
+              type: serverType,
+              configuration: config,
+              position: freeSlot,
+            }
+          );
 
           setWidgets((prev) => ({
             ...prev,
@@ -110,7 +136,8 @@ export default function Dashboard() {
     };
 
     window.addEventListener("add-widget", handler);
-    return () => window.removeEventListener("add-widget", handler);
+    return () =>
+      window.removeEventListener("add-widget", handler);
   }, [widgets, slotsCount, dashboardId]);
 
   return (

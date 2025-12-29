@@ -16,7 +16,6 @@ export default function DashboardGrid({
   );
 
   const addWidget = (slot, type) => {
-    // Inform parent via programmatic event — parent handles server call
     const event = new CustomEvent("add-widget", { detail: type });
     window.dispatchEvent(event);
     setAddSlot(null);
@@ -38,7 +37,10 @@ export default function DashboardGrid({
                 key={slot}
                 className="widget-slot"
               >
-                <Widget configuration={widgetData.configuration} />
+                <Widget
+                  widgetId={widgetData.id}
+                  configuration={widgetData.configuration}
+                />
               </div>
             );
           }
