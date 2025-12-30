@@ -51,38 +51,19 @@ export default function CurrencyWidget({ widgetId, configuration }) {
   }, [currency, dateFrom, dateTo]);
 
   useEffect(() => {
+    if (!widgetId) return;
+
     updateWidget(widgetId, {
-      configuration: {
-       currency,
-       dateFrom,
-       dateTo,
-       showValue,
-       showChart,
-       showTable,
-      },
-    });
-  }, [showValue, showChart, showTable]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!currency) {
-      setError("Select currency first");
-      return;
-    }
-
-    await fetchRates();
-
-    await updateWidget(widgetId, {
       configuration: {
         currency,
         dateFrom,
         dateTo,
         showValue,
         showChart,
-        showTable,
+       showTable,
       },
     });
-  };
+  }, [currency, dateFrom, dateTo, showValue, showChart, showTable]);
 
   const latestRate =
     rates.length > 0 ? rates[rates.length - 1].rate : null;
@@ -91,7 +72,7 @@ export default function CurrencyWidget({ widgetId, configuration }) {
     <div className="currency-widget">
       <h3>Currency rates (NBP)</h3>
 
-      <form onSubmit={handleSubmit} className="currency-form">
+      <div className="currency-form">
         <select
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
@@ -120,8 +101,7 @@ export default function CurrencyWidget({ widgetId, configuration }) {
           required
         />
 
-        <button type="submit">Fetch</button>
-      </form>
+      </div>
 
       <div className="currency-toggles">
         <label>

@@ -10,8 +10,6 @@ export default function Dashboard() {
   const [dashboardId, setDashboardId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  /* ===================== SLOTS ===================== */
-
   const addSlot = async () => {
     if (!dashboardId || slotsCount >= 8) return;
 
@@ -38,7 +36,6 @@ export default function Dashboard() {
       return;
     }
 
-    // 1. Если в слоте есть виджет — удаляем его
     if (widget) {
       await fetch(
         `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widget.id}`,
@@ -57,7 +54,6 @@ export default function Dashboard() {
       });
     }
 
-    // 2. Уменьшаем slotsCount
     const newCount = slotsCount - 1;
     setSlotsCount(newCount);
 
@@ -69,8 +65,6 @@ export default function Dashboard() {
       console.error("Failed to update slotsCount", err);
     }
   };
-
-  /* ===================== WIDGETS ===================== */
 
   const clearWidget = async (slot) => {
     const widget = widgets[slot];
@@ -104,8 +98,6 @@ export default function Dashboard() {
     if (type === "news") return "news";
     return type;
   };
-
-  /* ===================== LOAD ===================== */
 
   const loadDashboards = async () => {
     setLoading(true);
@@ -141,8 +133,6 @@ export default function Dashboard() {
   useEffect(() => {
     loadDashboards();
   }, []);
-
-  /* ===================== ADD WIDGET ===================== */
 
   useEffect(() => {
     const handler = async (e) => {
@@ -195,8 +185,6 @@ export default function Dashboard() {
     return () =>
       window.removeEventListener("add-widget", handler);
   }, [dashboardId, slotsCount, widgets]);
-
-  /* ===================== RENDER ===================== */
 
   return (
     <>
