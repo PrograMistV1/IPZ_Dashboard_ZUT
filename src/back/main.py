@@ -1,27 +1,24 @@
 import os
+from datetime import datetime, timedelta, date
 
 import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import jwt, JWTError
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from src.back.logger.logger import BackendLogger
 from src.db import get_db, init_db
-from src.models.currency_rate import CurrencyRate
-from src.models.user import User
-from src.models.dashboard import Dashboard
-from src.models.widget import Widget
-
-from src.models.login_history import LoginHistory
 from src.models.audit_log import AuditLog
-from fastapi import Request
-
-from jose import jwt, JWTError
-from datetime import datetime, timedelta, date
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
-from dotenv import load_dotenv
+from src.models.currency_rate import CurrencyRate
+from src.models.dashboard import Dashboard
+from src.models.login_history import LoginHistory
+from src.models.user import User
+from src.models.widget import Widget
 
 load_dotenv()
 
@@ -82,12 +79,12 @@ def get_current_user(
         user_id = payload.get("user_id")
 
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Nieprawidłowa sesja")
+            raise HTTPException(status_code=401, detail="Invalid session")
 
         return user_id
 
     except JWTError:
-        raise HTTPException(status_code=401, detail="Nieprawidłowa sesja")
+        raise HTTPException(status_code=401, detail="Invalid session")
 
 
 def validate_dates(date_from: str, date_to: str) -> tuple[date, date]:
@@ -415,14 +412,12 @@ def create_widget(
     db: Session = Depends(get_db),
 ):
     type_map = {
-        "kursy": "rates",
         "rates": "rates",
         "currency": "rates",
         "news": "news",
-        "historia": "history",
         "history": "history",
-        "historia_operacji": "history",
-        "historia-operacji": "history",
+        "history_operations": "history",
+        "history-operations": "history",
     }
 
     widget_type = type_map.get(req.type.lower()) if isinstance(req.type, str) else None

@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import Integer, String, Boolean, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column, validates, relationship
-from datetime import datetime, timezone
 
 from src.db import Base
 
