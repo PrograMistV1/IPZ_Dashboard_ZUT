@@ -306,21 +306,38 @@ class WidgetCreateRequest(BaseModel):
     enabled: bool | None = True
 
 
+def get_widgets_for_dashboard(db: Session, dashboard_id: int):
+    return (
+        db.query(Widget)
+        .filter(Widget.dashboard_id == dashboard_id)
+        .order_by(Widget.position)
+        .all()
+    )
+
+
+def serialize_widgets(widgets: list[Widget]):
+    return [
+        {
+            "id": w.id,
+            "type": w.type,
+            "configuration": w.configuration,
+            "enabled": w.enabled,
+            "position": w.position,
+        }
+        for w in widgets
+    ]
+
+
 @app.get("/api/dashboards")
 def list_dashboards(
     user_id: int = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    ds = db.query(Dashboard).filter(Dashboard.user_id == user_id).all()
+    dashboards = db.query(Dashboard).filter(Dashboard.user_id == user_id).all()
 
     result = []
-    for d in ds:
-        widgets = (
-            db.query(Widget)
-            .filter(Widget.dashboard_id == d.id)
-            .order_by(Widget.position)
-            .all()
-        )
+    for d in dashboards:
+        widgets = get_widgets_for_dashboard(db, d.id)
         result.append(
             {
                 "id": d.id,
@@ -328,16 +345,7 @@ def list_dashboards(
                 "slotsCount": d.slots_count,
                 "created_at": d.created_at.isoformat(),
                 "updated_at": d.updated_at.isoformat(),
-                "widgets": [
-                    {
-                        "id": w.id,
-                        "type": w.type,
-                        "configuration": w.configuration,
-                        "enabled": w.enabled,
-                        "position": w.position,
-                    }
-                    for w in widgets
-                ],
+                "widgets": serialize_widgets(widgets),
             }
         )
 
@@ -351,19 +359,12 @@ def get_dashboard(
     db: Session = Depends(get_db),
 ):
     dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
-
     if not dashboard:
         raise HTTPException(status_code=404, detail="Dashboard not found")
-
     if dashboard.user_id != user_id:
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    widgets = (
-        db.query(Widget)
-        .filter(Widget.dashboard_id == dashboard_id)
-        .order_by(Widget.position)
-        .all()
-    )
+    widgets = get_widgets_for_dashboard(db, dashboard_id)
 
     return {
         "id": dashboard.id,
@@ -371,16 +372,7 @@ def get_dashboard(
         "slotsCount": dashboard.slots_count,
         "created_at": dashboard.created_at.isoformat(),
         "updated_at": dashboard.updated_at.isoformat(),
-        "widgets": [
-            {
-                "id": w.id,
-                "type": w.type,
-                "configuration": w.configuration,
-                "enabled": w.enabled,
-                "position": w.position,
-            }
-            for w in widgets
-        ],
+        "widgets": serialize_widgets(widgets),
     }
 
 
@@ -592,6 +584,9 @@ def update_widget(
         raise HTTPException(404, "Widget not found")
 
     dashboard = db.query(Dashboard).filter(Dashboard.id == widget.dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(404, "Dashboard not found")
+
     if dashboard.user_id != user_id:
         raise HTTPException(403, "Forbidden")
 
