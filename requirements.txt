@@ -5,6 +5,7 @@ python-dotenv
 SQLAlchemy
 PyMySQL
 pydantic
-python-jose[cryptography]
 PyYAML
 pre-commit
+email-validator
+python-jose

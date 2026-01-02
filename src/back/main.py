@@ -1,24 +1,24 @@
 import os
+from datetime import datetime, timedelta, date
 
 import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import jwt, JWTError
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from src.back.logger.logger import BackendLogger
 from src.db import get_db, init_db
+from src.models.audit_log import AuditLog
 from src.models.currency_rate import CurrencyRate
-from src.models.user import User
-
+from src.models.dashboard import Dashboard
 from src.models.login_history import LoginHistory
-from fastapi import Request
-
-from jose import jwt, JWTError
-from datetime import datetime, timedelta, date
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
-from dotenv import load_dotenv
+from src.models.user import User
+from src.models.widget import Widget
 
 load_dotenv()
 
@@ -53,7 +53,7 @@ class RateRequest(BaseModel):
 
 class RegisterRequest(BaseModel):
     username: str
-    email: str
+    email: EmailStr
     password: str
 
 
@@ -79,12 +79,12 @@ def get_current_user(
         user_id = payload.get("user_id")
 
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Nieprawidłowa sesja")
+            raise HTTPException(status_code=401, detail="Invalid session")
 
         return user_id
 
     except JWTError:
-        raise HTTPException(status_code=401, detail="Nieprawidłowa sesja")
+        raise HTTPException(status_code=401, detail="Invalid session")
 
 
 def validate_dates(date_from: str, date_to: str) -> tuple[date, date]:
@@ -222,8 +222,13 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
 
     db.add(user)
     db.commit()
+    db.refresh(user)
 
-    return {"message": "User registered successfully"}
+    dashboard = Dashboard(user_id=user.id, name="My dashboard")
+    db.add(dashboard)
+    db.commit()
+
+    return {"message": "User registered successfully", "dashboard_id": dashboard.id}
 
 
 @app.post("/auth/login")
@@ -289,6 +294,307 @@ def get_my_account(
         raise HTTPException(status_code=404, detail="User not found")
 
     return {"login": user.username}
+
+
+class WidgetCreateRequest(BaseModel):
+    type: str
+    configuration: dict | None = None
+    position: int | None = None
+    enabled: bool | None = True
+
+
+def get_widgets_for_dashboard(db: Session, dashboard_id: int):
+    return (
+        db.query(Widget)
+        .filter(Widget.dashboard_id == dashboard_id)
+        .order_by(Widget.position)
+        .all()
+    )
+
+
+def serialize_widgets(widgets: list[Widget]):
+    return [
+        {
+            "id": w.id,
+            "type": w.type,
+            "configuration": w.configuration,
+            "enabled": w.enabled,
+            "position": w.position,
+        }
+        for w in widgets
+    ]
+
+
+@app.get("/api/dashboards")
+def list_dashboards(
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboards = db.query(Dashboard).filter(Dashboard.user_id == user_id).all()
+
+    result = []
+    for d in dashboards:
+        widgets = get_widgets_for_dashboard(db, d.id)
+        result.append(
+            {
+                "id": d.id,
+                "name": d.name,
+                "slotsCount": d.slots_count,
+                "created_at": d.created_at.isoformat(),
+                "updated_at": d.updated_at.isoformat(),
+                "widgets": serialize_widgets(widgets),
+            }
+        )
+
+    return result
+
+
+@app.get("/api/dashboards/{dashboard_id}")
+def get_dashboard(
+    dashboard_id: int,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    widgets = get_widgets_for_dashboard(db, dashboard_id)
+
+    return {
+        "id": dashboard.id,
+        "name": dashboard.name,
+        "slotsCount": dashboard.slots_count,
+        "created_at": dashboard.created_at.isoformat(),
+        "updated_at": dashboard.updated_at.isoformat(),
+        "widgets": serialize_widgets(widgets),
+    }
+
+
+class DashboardUpdateRequest(BaseModel):
+    slotsCount: int | None = None
+
+
+@app.patch("/api/dashboards/{dashboard_id}")
+def update_dashboard(
+    dashboard_id: int,
+    req: DashboardUpdateRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if req.slotsCount is not None:
+        dashboard.slots_count = req.slotsCount
+
+    db.commit()
+    db.refresh(dashboard)
+
+    return {
+        "id": dashboard.id,
+        "slotsCount": dashboard.slots_count,
+    }
+
+
+@app.post("/api/dashboards/{dashboard_id}/widgets", status_code=201)
+def create_widget(
+    dashboard_id: int,
+    req: WidgetCreateRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    type_map = {
+        "rates": "rates",
+        "currency": "rates",
+        "news": "news",
+        "history": "history",
+        "history_operations": "history",
+        "history-operations": "history",
+    }
+
+    widget_type = type_map.get(req.type.lower()) if isinstance(req.type, str) else None
+
+    if not widget_type:
+        raise HTTPException(status_code=400, detail="Unsupported widget type")
+
+    config = req.configuration or {}
+    if not isinstance(config, dict):
+        raise HTTPException(status_code=400, detail="Invalid configuration format")
+
+    if widget_type == "rates":
+        currency = config.get("currency")
+        if currency and currency not in VALID_CURRENCIES:
+            raise HTTPException(status_code=400, detail="Unsupported currency")
+
+    if widget_type == "news":
+        category = config.get("category")
+        if not category:
+            raise HTTPException(
+                status_code=400, detail="'category' is required for news widget"
+            )
+
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if req.position is None:
+        max_pos = (
+            db.query(Widget.position)
+            .filter(Widget.dashboard_id == dashboard_id)
+            .order_by(Widget.position.desc())
+            .limit(1)
+            .first()
+        )
+        next_pos = (max_pos[0] + 1) if max_pos else 1
+    else:
+        if req.position < 0:
+            raise HTTPException(status_code=400, detail="Position must be >= 0")
+        next_pos = req.position
+
+    enabled = bool(req.enabled) if req.enabled is not None else True
+
+    # If client requested a specific position and that position is already occupied,
+    # shift existing widgets at or after next_pos to the right to avoid collisions.
+    if req.position is not None:
+        occupied = (
+            db.query(Widget)
+            .filter(Widget.dashboard_id == dashboard_id, Widget.position == next_pos)
+            .first()
+        )
+        if occupied:
+            widgets_to_shift = (
+                db.query(Widget)
+                .filter(
+                    Widget.dashboard_id == dashboard_id, Widget.position >= next_pos
+                )
+                .order_by(Widget.position.desc())
+                .all()
+            )
+            for w in widgets_to_shift:
+                w.position = w.position + 1
+            db.commit()
+
+    widget = Widget(
+        dashboard_id=dashboard_id,
+        type=widget_type,
+        configuration=config,
+        position=next_pos,
+        enabled=enabled,
+    )
+
+    try:
+        db.add(widget)
+        db.commit()
+        db.refresh(widget)
+
+        audit = AuditLog(
+            user_id=user_id,
+            dashboard_id=dashboard_id,
+            widget_id=widget.id,
+            action="create",
+        )
+        db.add(audit)
+        db.commit()
+
+        log.info(
+            "create_widget",
+            f"User {user_id} created widget {widget.id} on dashboard {dashboard_id}",
+        )
+
+        return {
+            "id": widget.id,
+            "type": widget.type,
+            "configuration": widget.configuration,
+            "enabled": widget.enabled,
+            "position": widget.position,
+        }
+    except Exception as exc:
+        db.rollback()
+        log.error("create_widget", f"Error creating widget: {exc}")
+        raise HTTPException(status_code=500, detail=f"Database error: {exc}") from exc
+
+
+@app.delete("/api/dashboards/{dashboard_id}/widgets/{widget_id}")
+def delete_widget(
+    dashboard_id: int,
+    widget_id: int,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    widget = (
+        db.query(Widget)
+        .filter(Widget.id == widget_id, Widget.dashboard_id == dashboard_id)
+        .first()
+    )
+    if not widget:
+        raise HTTPException(status_code=404, detail="Widget not found")
+
+    # Delete widget and leave its slot empty. We do not shift other widgets —
+    # this preserves empty slots so UI can show an empty slot after deletion.
+    db.delete(widget)
+
+    audit = AuditLog(
+        user_id=user_id,
+        dashboard_id=dashboard_id,
+        widget_id=widget_id,
+        action="delete",
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return {"status": "ok"}
+
+
+class WidgetUpdateRequest(BaseModel):
+    configuration: dict | None = None
+
+
+@app.patch("/api/widgets/{widget_id}")
+def update_widget(
+    widget_id: int,
+    req: WidgetUpdateRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    widget = db.query(Widget).filter(Widget.id == widget_id).first()
+    if not widget:
+        raise HTTPException(404, "Widget not found")
+
+    dashboard = db.query(Dashboard).filter(Dashboard.id == widget.dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(404, "Dashboard not found")
+
+    if dashboard.user_id != user_id:
+        raise HTTPException(403, "Forbidden")
+
+    if req.configuration is not None:
+        widget.configuration = req.configuration
+
+    db.commit()
+    db.refresh(widget)
+
+    return {
+        "id": widget.id,
+        "configuration": widget.configuration,
+    }
 
 
 if __name__ == "__main__":
