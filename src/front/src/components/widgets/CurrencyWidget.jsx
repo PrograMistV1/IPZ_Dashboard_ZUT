@@ -1,19 +1,43 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import CurrencyLineChart from "./CurrencyLineChart";
+import CurrencyCandleChart from "./CurrencyCandleChart";
 import "./currencyWidget.css";
 import { updateWidget } from "../../services/dashboard";
 
-export default function CurrencyWidget({ widgetId, configuration }) {
-  const [currency, setCurrency] = useState(configuration?.currency || "");
-  const [dateFrom, setDateFrom] = useState(configuration?.dateFrom || "");
-  const [dateTo, setDateTo] = useState(configuration?.dateTo || "");
+export default function CurrencyWidget({
+  widgetId,
+  configuration,
+  onUpdate,
+}) {
+  const isMountedRef = useRef(false);
+
+  const [currency, setCurrency] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [rates, setRates] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [showValue, setShowValue] = useState(configuration?.showValue ?? false);
-  const [showChart, setShowChart] = useState(configuration?.showChart ?? false);
-  const [showTable, setShowTable] = useState(configuration?.showTable ?? false);
+  const [showValue, setShowValue] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+  const [showTable, setShowTable] = useState(false);
+  const [chartType, setChartType] = useState("line");
+
+  useEffect(() => {
+    if (!widgetId) return;
+
+    setCurrency(configuration?.currency || "");
+    setDateFrom(configuration?.dateFrom || "");
+    setDateTo(configuration?.dateTo || "");
+    setShowValue(configuration?.showValue ?? false);
+    setShowChart(configuration?.showChart ?? false);
+    setShowTable(configuration?.showTable ?? false);
+    setChartType(configuration?.chartType || "line");
+    setRates([]);
+    setError("");
+
+    isMountedRef.current = true;
+  }, [widgetId]);
 
   const fetchRates = async () => {
     setError("");
@@ -51,19 +75,33 @@ export default function CurrencyWidget({ widgetId, configuration }) {
   }, [currency, dateFrom, dateTo]);
 
   useEffect(() => {
-    if (!widgetId) return;
+    if (!widgetId || !isMountedRef.current) return;
 
-    updateWidget(widgetId, {
-      configuration: {
-        currency,
-        dateFrom,
-        dateTo,
-        showValue,
-        showChart,
-       showTable,
-      },
-    });
-  }, [currency, dateFrom, dateTo, showValue, showChart, showTable]);
+    const newConfig = {
+      currency,
+      dateFrom,
+      dateTo,
+      showValue,
+      showChart,
+      showTable,
+      chartType,
+    };
+
+    updateWidget(widgetId, { configuration: newConfig });
+
+    if (onUpdate) {
+      onUpdate(widgetId, newConfig);
+    }
+  }, [
+    currency,
+    dateFrom,
+    dateTo,
+    showValue,
+    showChart,
+    showTable,
+    chartType,
+    widgetId,
+  ]);
 
   const latestRate =
     rates.length > 0 ? rates[rates.length - 1].rate : null;
@@ -73,10 +111,7 @@ export default function CurrencyWidget({ widgetId, configuration }) {
       <h3>Currency rates (NBP)</h3>
 
       <div className="currency-form">
-        <select
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-        >
+        <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
           <option value="" disabled>
             Select currency
           </option>
@@ -91,28 +126,16 @@ export default function CurrencyWidget({ widgetId, configuration }) {
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
-          required
         />
 
         <input
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
-          required
         />
-
       </div>
 
       <div className="currency-toggles">
-        <label>
-          <input
-            type="checkbox"
-            checked={showValue}
-            onChange={() => setShowValue((v) => !v)}
-          />
-          Value
-        </label>
-
         <label>
           <input
             type="checkbox"
@@ -120,6 +143,37 @@ export default function CurrencyWidget({ widgetId, configuration }) {
             onChange={() => setShowChart((v) => !v)}
           />
           Chart
+        </label>
+
+        {showChart && (
+          <>
+            <label>
+              <input
+                type="radio"
+                checked={chartType === "line"}
+                onChange={() => setChartType("line")}
+              />
+              Line
+            </label>
+
+            <label>
+              <input
+                type="radio"
+                checked={chartType === "candle"}
+                onChange={() => setChartType("candle")}
+              />
+              Candle
+            </label>
+          </>
+        )}
+
+        <label>
+          <input
+            type="checkbox"
+            checked={showValue}
+            onChange={() => setShowValue((v) => !v)}
+          />
+          Value
         </label>
 
         <label>
@@ -141,8 +195,12 @@ export default function CurrencyWidget({ widgetId, configuration }) {
         </div>
       )}
 
-      {showChart && rates.length > 1 && (
+      {showChart && chartType === "line" && rates.length > 1 && (
         <CurrencyLineChart rates={rates} />
+      )}
+
+      {showChart && chartType === "candle" && rates.length > 1 && (
+        <CurrencyCandleChart rates={rates} />
       )}
 
       {showTable && rates.length > 0 && (

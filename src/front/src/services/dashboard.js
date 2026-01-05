@@ -29,3 +29,13 @@ export async function updateDashboard(dashboardId, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function reorderWidgets(dashboardId, widgets) {
+  return apiFetch(
+    `/api/dashboards/${dashboardId}/widgets/reorder`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ widgets }),
+    }
+  );
+}

@@ -7,48 +7,45 @@ export default function AddWidgetPanel({
   onAdd,
   onClose,
 }) {
-  const [type, setType] =
-    useState(null);
-
-  const confirm = () => {
-    if (!type) return;
-    onAdd(type);
-  };
+  const [type, setType] = useState(null);
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal">
-        <h3>Add widget (Slot {slot})</h3>
+    <div className="add-widget-panel">
+      <div className="add-widget-title">
+        Add widget (Slot {slot})
+      </div>
 
-        {Object.entries(
-          widgetRegistry
-        ).map(([key, w]) => (
-          <button
-            key={key}
-            onClick={() =>
-              setType(key)
-            }
-            className={
-              type === key
-                ? "active"
-                : ""
-            }
-          >
-            {w.title}
-          </button>
-        ))}
+      <div className="add-widget-grid">
+        {Object.entries(widgetRegistry).map(
+          ([key, w]) => (
+            <button
+              key={key}
+              onClick={() => setType((prev) => (prev === key ? null : key))}
+              className={
+                type === key
+                  ? "widget-type active"
+                  : "widget-type"
+              }
+            >
+              {w.title}
+            </button>
+          )
+        )}
 
-        <div className="panel-actions">
-          <button
-            onClick={confirm}
-            disabled={!type}
-          >
-            Add
-          </button>
-          <button onClick={onClose}>
-            Cancel
-          </button>
-        </div>
+        <button
+          className="widget-action"
+          disabled={!type}
+          onClick={() => onAdd(type)}
+        >
+          Add
+        </button>
+
+        <button
+          className="widget-action"
+          onClick={onClose}
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );

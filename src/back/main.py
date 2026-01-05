@@ -305,6 +305,9 @@ class WidgetCreateRequest(BaseModel):
     position: int | None = None
     enabled: bool | None = True
 
+class WidgetsReorderRequest(BaseModel):
+    widgets: list[dict]
+
 
 @app.get("/api/dashboards")
 def list_dashboards(
@@ -573,6 +576,36 @@ def delete_widget(
 
     db.commit()
 
+    return {"status": "ok"}
+
+@app.patch("/api/dashboards/{dashboard_id}/widgets/reorder")
+def reorder_widgets(
+    dashboard_id: int,
+    req: WidgetsReorderRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    for w in req.widgets:
+        widget = (
+            db.query(Widget)
+            .filter(
+                Widget.id == w["id"],
+                Widget.dashboard_id == dashboard_id,
+            )
+            .first()
+        )
+        if widget:
+            widget.position = w["position"]
+
+    db.commit()
     return {"status": "ok"}
 
 
