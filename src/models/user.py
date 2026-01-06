@@ -1,6 +1,7 @@
 from sqlalchemy import String, Integer
 from sqlalchemy.orm import validates, Mapped, mapped_column
 
+from src.back.core.password import hash_password, verify_password
 from src.db import Base
 
 
@@ -24,7 +25,7 @@ class User(Base):
             raise ValueError("Password must be a non-empty string.")
         if len(value) < 8:
             raise ValueError("Password must be at least 8 characters long.")
-        return value
+        return hash_password(value)
 
     @validates("email")
     def validate_email(self, _, value):
@@ -33,6 +34,9 @@ class User(Base):
         if "@" not in value or "." not in value:
             raise ValueError("Invalid email format")
         return value
+
+    def check_password(self, plain_password: str) -> bool:
+        return verify_password(plain_password, self.password)
 
     def __repr__(self):
         return f"User(id={self.id}, username='{self.username}', email='{self.email}')"
