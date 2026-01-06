@@ -1,35 +1,30 @@
-import React from "react";
-import { widgetRegistry } from "../widgets/registry";
+import React, { useState } from "react";
+import DashboardInfoPanel from "../dashboard/DashboardInfoPanel";
 import "./layout.css";
 
-export default function SideBar() {
-  const addWidget = (type) => {
-    window.dispatchEvent(
-      new CustomEvent("add-widget", {
-        detail: type,
-      })
-    );
-  };
+export default function SideBar({ dashboardInfo }) {
+  const [open, setOpen] = useState(false);
 
   return (
     <aside className="sidebar">
       <div className="sidebar-section">
-        <strong>Widgets</strong>
+        <strong>Tools</strong>
       </div>
 
       <ul className="sidebar-menu">
-        {Object.entries(widgetRegistry).map(
-          ([key, widget]) => (
-            <li
-              key={key}
-              className="sidebar-item"
-              onClick={() => addWidget(key)}
-            >
-              {widget.title}
-            </li>
-          )
-        )}
+        <li
+          className="sidebar-item"
+          onClick={() => setOpen((v) => !v)}
+        >
+          Dashboard info
+        </li>
       </ul>
+
+      {open && dashboardInfo && (
+        <div className="sidebar-info-panel">
+          <DashboardInfoPanel {...dashboardInfo} />
+        </div>
+      )}
     </aside>
   );
 }
