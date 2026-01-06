@@ -105,7 +105,7 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username).first()
 
-    if not user or user.password != req.password:
+    if not user or not user.check_password(req.password):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     token = create_access_token(user.id)
