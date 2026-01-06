@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import CurrencyLineChart from "./CurrencyLineChart";
 import CurrencyCandleChart from "./CurrencyCandleChart";
 import "./currencyWidget.css";
@@ -37,9 +37,10 @@ export default function CurrencyWidget({
     setError("");
 
     isMountedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widgetId]);
 
-  const fetchRates = async () => {
+  const fetchRates = useCallback(async () => {
     setError("");
     setLoading(true);
 
@@ -66,13 +67,13 @@ export default function CurrencyWidget({
     }
 
     setLoading(false);
-  };
+  }, [currency, dateFrom, dateTo]);
 
   useEffect(() => {
     if (currency && dateFrom && dateTo) {
       fetchRates();
     }
-  }, [currency, dateFrom, dateTo]);
+  }, [currency, dateFrom, dateTo, fetchRates]);
 
   useEffect(() => {
     if (!widgetId || !isMountedRef.current) return;
@@ -92,6 +93,7 @@ export default function CurrencyWidget({
     if (onUpdate) {
       onUpdate(widgetId, newConfig);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currency,
     dateFrom,

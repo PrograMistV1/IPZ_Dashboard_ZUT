@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import DashboardGrid from "./DashboardGrid";
-import DashboardInfoPanel from "./DashboardInfoPanel";
 import * as dashboardService from "../../services/dashboard";
 import { tokenManager } from "../../services/tokenManager";
 
