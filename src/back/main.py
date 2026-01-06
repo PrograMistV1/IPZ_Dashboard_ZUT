@@ -1,14 +1,17 @@
 import os
 from datetime import datetime, timedelta, date
+from typing import LiteralString, cast
 
 import requests
 from dotenv import load_dotenv
+from email_validator import validate_email, EmailNotValidError
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, field_validator
+from pydantic_core import PydanticCustomError
 from sqlalchemy.orm import Session
 
 from src.back.logger.logger import BackendLogger
@@ -50,16 +53,85 @@ class RateRequest(BaseModel):
     date_from: str
     date_to: str
 
+    @field_validator("currency")
+    @classmethod
+    def currency_validator(cls, v: str):
+        if not v or not isinstance(v, str):
+            raise PydanticCustomError("value_error", "Currency must be provided.")
+        v = v.upper().strip()
+        if v not in VALID_CURRENCIES:
+            raise PydanticCustomError("value_error", "Unsupported currency.")
+        return v
+
+    @field_validator("date_from", "date_to")
+    @classmethod
+    def date_format_validator(cls, v: str):
+        if not v or not isinstance(v, str):
+            raise PydanticCustomError("value_error", "Date must be provided.")
+        try:
+            datetime.strptime(v, "%Y-%m-%d")
+        except ValueError:
+            raise PydanticCustomError(
+                "value_error", "Invalid date format, expected YYYY-MM-DD."
+            )
+        return v
+
 
 class RegisterRequest(BaseModel):
     username: str
-    email: EmailStr
+    email: str
     password: str
+
+    @field_validator("username")
+    @classmethod
+    def username_validator(cls, v: str):
+        if not v or not isinstance(v, str):
+            raise PydanticCustomError("value_error", "Username must be provided.")
+        v = v.strip()
+        if len(v) < 3 or len(v) > 64:
+            raise PydanticCustomError("value_error", "Username length must be 3-64.")
+
+        import re
+
+        if not re.fullmatch(r"[A-Za-z0-9_\-]+", v):
+            raise PydanticCustomError("value_error", "Invalid username characters.")
+        return v
+
+    @field_validator("email")
+    @classmethod
+    def email_validator(cls, v):
+        if not v:
+            raise PydanticCustomError("value_error", "Email must be provided.")
+        try:
+            validate_email(v, check_deliverability=False)
+        except EmailNotValidError as e:
+            raise PydanticCustomError("value_error", cast(LiteralString, str(e)))
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def password_validator(cls, v):
+        if not v or not isinstance(v, str):
+            raise PydanticCustomError("value_error", "Password must be provided.")
+        if len(v) < 8:
+            raise PydanticCustomError(
+                "value_error", "Password must be at least 8 characters long."
+            )
+        return v
 
 
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+    @field_validator("username", "password")
+    @classmethod
+    def not_empty(cls, v: str):
+        if not v or not isinstance(v, str) or not v.strip():
+            raise PydanticCustomError(
+                "value_error", "Field must be a non-empty string."
+            )
+        return v
 
 
 def create_access_token(user_id: int):
@@ -302,8 +374,69 @@ class WidgetCreateRequest(BaseModel):
     position: int | None = None
     enabled: bool | None = True
 
+    @field_validator("type")
+    @classmethod
+    def type_validator(cls, v: str):
+        if not v or not isinstance(v, str) or not v.strip():
+            raise PydanticCustomError("value_error", "type must be a non-empty string.")
+        return v
+
+    @field_validator("configuration")
+    @classmethod
+    def config_validator(cls, v):
+        if v is None:
+            return v
+        if not isinstance(v, dict):
+            raise PydanticCustomError("value_error", "configuration must be an object.")
+        return v
+
+    @field_validator("position")
+    @classmethod
+    def position_validator(cls, v):
+        if v is None:
+            return v
+        if not isinstance(v, int) or v < 0:
+            raise PydanticCustomError(
+                "value_error", "position must be an integer >= 0."
+            )
+        return v
+
+    @field_validator("enabled")
+    @classmethod
+    def enabled_validator(cls, v):
+        if v is None:
+            return v
+        if not isinstance(v, bool):
+            raise PydanticCustomError("value_error", "enabled must be a boolean.")
+        return v
+
+
 class WidgetsReorderRequest(BaseModel):
     widgets: list[dict]
+
+    @field_validator("widgets")
+    @classmethod
+    def widgets_array_validator(cls, v):
+        if not isinstance(v, list) or not v:
+            raise PydanticCustomError(
+                "value_error", "widgets must be a non-empty list."
+            )
+        for item in v:
+            if not isinstance(item, dict):
+                raise PydanticCustomError(
+                    "value_error", "Each widget must be an object."
+                )
+            if "id" not in item or "position" not in item:
+                raise PydanticCustomError(
+                    "value_error", "Each widget must have id and position."
+                )
+            if not isinstance(item["id"], int):
+                raise PydanticCustomError("value_error", "id must be an integer.")
+            if not isinstance(item["position"], int) or item["position"] < 0:
+                raise PydanticCustomError(
+                    "value_error", "position must be an integer >= 0."
+                )
+        return v
 
 
 def get_widgets_for_dashboard(db: Session, dashboard_id: int):
@@ -378,6 +511,17 @@ def get_dashboard(
 
 class DashboardUpdateRequest(BaseModel):
     slotsCount: int | None = None
+
+    @field_validator("slotsCount")
+    @classmethod
+    def slots_validator(cls, v: int | None):
+        if v is None:
+            return v
+        if not isinstance(v, int) or v < 1:
+            raise PydanticCustomError(
+                "value_error", "slotsCount must be a positive integer."
+            )
+        return v
 
 
 @app.patch("/api/dashboards/{dashboard_id}")
@@ -565,6 +709,7 @@ def delete_widget(
 
     return {"status": "ok"}
 
+
 @app.patch("/api/dashboards/{dashboard_id}/widgets/reorder")
 def reorder_widgets(
     dashboard_id: int,
@@ -598,6 +743,15 @@ def reorder_widgets(
 
 class WidgetUpdateRequest(BaseModel):
     configuration: dict | None = None
+
+    @field_validator("configuration")
+    @classmethod
+    def configuration_validator(cls, v):
+        if v is None:
+            return v
+        if not isinstance(v, dict):
+            raise PydanticCustomError("value_error", "configuration must be an object.")
+        return v
 
 
 @app.patch("/api/widgets/{widget_id}")
