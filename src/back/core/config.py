@@ -16,8 +16,6 @@ if not DATABASE_USER:
     raise RuntimeError("DATABASE_USER is not set")
 
 DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
-if not DATABASE_PASSWORD:
-    raise RuntimeError("DATABASE_PASSWORD is not set")
 
 DATABASE_HOST = os.getenv("DATABASE_HOST")
 if not DATABASE_HOST:
