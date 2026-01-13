@@ -5,7 +5,9 @@ from src.back.logger.logger import BackendLogger
 from src.back.routes.auth import router as auth_router
 from src.back.routes.dashboard import router as dashboard_router
 from src.back.routes.rates import router as rates_router
+from src.back.routes.news import router as news_router
 from src.db import init_db
+
 
 log = BackendLogger()
 
@@ -23,6 +25,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(rates_router)
+app.include_router(news_router)
 
 if __name__ == "__main__":
     import uvicorn
