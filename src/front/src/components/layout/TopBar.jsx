@@ -6,7 +6,7 @@ export default function TopBar() {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <strong>Dashboard</strong>
+        
       </div>
 
       <div className="topbar-right">
