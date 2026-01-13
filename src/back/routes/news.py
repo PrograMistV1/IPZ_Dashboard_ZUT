@@ -1,0 +1,169 @@
+import requests
+import datetime as dt
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, field_validator
+from pydantic_core import PydanticCustomError
+
+from src.back.logger.logger import BackendLogger
+from src.back.core.config import NEWSAPI_KEY, NEWS_CACHE_TTL_MINUTES
+
+from src.models.news_article import NewsArticle
+
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from src.db import get_db
+
+router = APIRouter()
+log = BackendLogger()
+
+VALID_CATEGORIES = {
+    "general",
+    "business",
+    "technology",
+    "sports",
+    "health",
+    "science",
+    "entertainment",
+}
+
+
+class NewsRequest(BaseModel):
+    category: str
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v: str):
+        if not v or not isinstance(v, str):
+            raise PydanticCustomError("value_error", "Category must be provided")
+
+        v = v.lower().strip()
+
+        if v not in VALID_CATEGORIES:
+            raise PydanticCustomError("value_error", "Unsupported news category")
+
+        return v
+
+
+@router.post("/news")
+def get_news(req: NewsRequest, db: Session = Depends(get_db)):
+    log.info("news_endpoint", f"Fetching news for category: {req.category}")
+    now = dt.datetime.utcnow()
+    ttl = dt.timedelta(minutes=int(NEWS_CACHE_TTL_MINUTES))
+
+    latest_newsapi = (
+        db.query(NewsArticle)
+        .filter(
+            NewsArticle.category == req.category,
+            NewsArticle.source_api == "NewsAPI",
+        )
+        .order_by(NewsArticle.cached_at.desc())
+        .first()
+    )
+
+    if latest_newsapi and (now - latest_newsapi.cached_at) < ttl:
+        cached_articles = (
+            db.query(NewsArticle)
+            .filter(NewsArticle.category == req.category)
+            .order_by(NewsArticle.published_at.desc())
+            .all()
+        )
+        log.info("news_endpoint", "Returning cached news from database (fresh)")
+        return {
+            "category": req.category,
+            "articles": [
+                {
+                    "title": a.title,
+                    "description": None,
+                    "source": a.source,
+                    "published_at": a.published_at,
+                    "url": a.url,
+                }
+                for a in cached_articles
+            ],
+        }
+
+    url = "https://newsapi.org/v2/top-headlines"
+    params = {
+        "apiKey": NEWSAPI_KEY,
+        "category": req.category,
+        "country": "us",
+        "pageSize": 10,
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+    except requests.exceptions.Timeout as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="Timeout connecting to NewsAPI",
+        ) from exc
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"NewsAPI error: {exc}",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Invalid JSON from NewsAPI",
+        ) from exc
+
+    articles = data.get("articles", [])
+    try:
+        db.query(NewsArticle).filter(
+            NewsArticle.category == req.category,
+            NewsArticle.source_api == "NewsAPI",
+        ).delete(synchronize_session=False)
+    except Exception:
+        log.info("news_endpoint", "Failed to delete old NewsAPI articles before insert")
+
+    for a in articles:
+        if not a.get("url"):
+            continue
+
+        published = None
+        raw_published = a.get("publishedAt")
+        if raw_published:
+            try:
+                rp = raw_published
+                if rp.endswith("Z"):
+                    rp = rp[:-1] + "+00:00"
+                published = dt.datetime.fromisoformat(rp)
+            except Exception:
+                try:
+                    published = dt.datetime.strptime(
+                        raw_published[:19], "%Y-%m-%dT%H:%M:%S"
+                    )
+                except Exception:
+                    published = dt.datetime.utcnow()
+
+        db.add(
+            NewsArticle(
+                title=a.get("title") or "",
+                url=a["url"],
+                source=a.get("source", {}).get("name", "unknown"),
+                category=req.category,
+                published_at=published or dt.datetime.utcnow(),
+                cached_at=now,
+                source_api="NewsAPI",
+            )
+        )
+
+    db.commit()
+
+    return {
+        "category": req.category,
+        "articles": [
+            {
+                "title": a.get("title"),
+                "description": a.get("description"),
+                "source": a.get("source", {}).get("name"),
+                "published_at": a.get("publishedAt"),
+                "url": a.get("url"),
+            }
+            for a in articles
+        ],
+    }
