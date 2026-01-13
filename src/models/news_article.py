@@ -1,5 +1,7 @@
 import datetime
 
+import hashlib
+
 from sqlalchemy import String, DateTime, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
@@ -11,17 +13,25 @@ class NewsArticle(Base):
 
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    url_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     source: Mapped[str] = mapped_column(String(100), nullable=False)
     category: Mapped[str] = mapped_column(String(50), nullable=False)
     published_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
+    cached_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.datetime.utcnow
+    )
     source_api: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    __table_args__ = (PrimaryKeyConstraint("url", "source_api"),)
+    __table_args__ = (PrimaryKeyConstraint("url_hash", "source_api"),)
 
     @validates("url")
     def validate_url(self, _, value):
         if not value or not value.startswith("http"):
             raise ValueError("Invalid article URL.")
+        try:
+            self.url_hash = hashlib.sha256(value.encode("utf-8")).hexdigest()
+        except Exception:
+            self.url_hash = "".ljust(64, "0")
         return value
 
     @validates("title")

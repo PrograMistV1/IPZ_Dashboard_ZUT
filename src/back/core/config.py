@@ -32,3 +32,7 @@ DATABASE_URL = f"mysql+pymysql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_H
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 if not NEWSAPI_KEY:
     raise RuntimeError("NEWSAPI_KEY is not set")
+
+# TTL (minutes) for news cache. When cached articles are older than this,
+# the service will re-fetch from the upstream NewsAPI.
+NEWS_CACHE_TTL_MINUTES = int(os.getenv("NEWS_CACHE_TTL_MINUTES", 10))
