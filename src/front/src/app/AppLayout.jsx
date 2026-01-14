@@ -12,15 +12,16 @@ export default function AppLayout() {
 
   return (
     <div className="app-layout">
-      <TopBar />
+  <SideBar dashboardInfo={dashboardInfo} />
 
-      <div className="app-body">
-        <SideBar dashboardInfo={dashboardInfo} />
+  <div className="app-body">
+    <TopBar />
 
-        <main className="app-content">
-          <Outlet context={{ setDashboardInfo }} />
-        </main>
-      </div>
-    </div>
+    <main className="app-content">
+      <Outlet context={{ setDashboardInfo }} />
+    </main>
+  </div>
+</div>
+
   );
 }

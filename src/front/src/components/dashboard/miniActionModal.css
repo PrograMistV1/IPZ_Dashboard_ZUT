@@ -1,0 +1,39 @@
+.mini-modal {
+    background: rgb(174, 174, 174);
+    border-radius: 8px;
+    padding: 16px;
+    width: 260px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  }
+  
+  .mini-modal h3 {
+    margin-bottom: 12px;
+  }
+  
+  .mini-modal-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  
+  .mini-modal-buttons button {
+    padding: 6px;
+    cursor: pointer;
+  }
+  
+  .mini-modal-buttons button.active {
+    background: #2563eb;
+    color: white;
+  }
+  
+  .mini-modal-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .mini-modal-actions button {
+    flex: 1;
+    padding: 6px;
+  }
+  

@@ -10,8 +10,8 @@
 
 /*WIDGET SLOT*/
 .widget-slot {
-  background: #ffffff;
-  border: 1px dashed #ccc;
+  background: #b1b1b1;
+  border: 2px solid #e4b700;
   border-radius: 8px;
   padding: 8px;
 
@@ -19,7 +19,7 @@
   align-items: stretch;
   justify-content: stretch;
 
-  color: #333;
+  color: #000000;
   font-size: 14px;
 
   overflow: hidden;
@@ -34,7 +34,7 @@
   align-items: center;
   justify-content: center;
 
-  border: 1px dashed #aaa;
+  border: 1px solid #aaa;
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
@@ -50,9 +50,9 @@
   flex-direction: column;
 
   padding: 8px;
-  border: 1px dashed #ddd;
+  border: 1px solid #ddd;
   border-radius: 6px;
-  background: #fafafa;
+  background: #b4b4b4;
 
   box-sizing: border-box;
 }
@@ -74,33 +74,32 @@
 }
 
 /*BUTTONS*/
-.widget-type,
-.widget-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.widget-type {
+  border: 1px solid #000;
+  
 
-  padding: 2%;
-  font-size: 14px;
-  border-radius: 6px;
-  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+  color: #040404;
+
+  transition: all 0.2s ease;
 }
 
-.widget-type {
-  border: 1px dashed #aaa;
-  background: transparent;
+.widget-type:hover {
+  border-color: #888;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .widget-type.active {
-  background: #007bff;
-  color: #fff;
-  border-color: #007bff;
+  background: #2563eb;      
+  color: #ffffff;
+  border-color: #2563eb;
 }
+
 
 /* Add / Cancel */
 .widget-action {
   border: 1px solid #ccc;
-  background: #f9f9f9;
+  background: #ededed;
 }
 
 .widget-action:disabled {
@@ -112,8 +111,8 @@
 .dashboard-info {
   margin-top: 24px;
   padding: 16px;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
+  background: #a8a8a8;
+  border: 2px solid #d7a020;
   border-radius: 8px;
   max-width: 420px;
 }
@@ -140,8 +139,8 @@
 .dashboard-info-actions button {
   padding: 6px 10px;
   border-radius: 6px;
-  border: 1px solid #ccc;
-  background: #f9f9f9;
+  border: 1px solid #8f8f8f;
+  background: #d0d0d0;
   cursor: pointer;
 }
 
@@ -163,6 +162,6 @@
   font-size: 12px;
   border-radius: 4px;
   border: 1px solid #ccc;
-  background: #fff;
+  background: hsl(0, 0%, 76%);
   cursor: pointer;
 }

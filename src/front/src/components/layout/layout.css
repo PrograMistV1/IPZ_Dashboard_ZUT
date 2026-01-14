@@ -1,53 +1,200 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+
+
 /* LAYOUT */
 .app-layout {
   display: flex;
-  flex-direction: column;
   height: 100vh;
+  overflow: hidden; 
 }
+
+
 
 .app-body {
   display: flex;
+  flex-direction: column;
   flex: 1;
-  background: #020617;
+  height: 100vh;        
+  background: #31302f;
+  overflow: hidden;     
 }
 
+
 .app-content {
+  margin-left: 64px;
+  transition: margin-left 0.25s ease;
+
   flex: 1;
+  overflow-y: auto;        
+  overflow-x: hidden;
   padding: 16px;
-  overflow: auto;
+
+  background: #31302f;     
 }
+
+
 
 /* TOPBAR */
 .topbar {
-  height: 56px;
-  background: #020617;
-  border-bottom: 1px solid #1e293b;
+  position: sticky; 
+  top: 0;
+  z-index: 900;
+
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
-  color: #e5e7eb;
+  padding: 8px 16px;
+  background: #5b5956;
 }
+
+
+.topbar-right {
+  margin-left: auto;
+}
+
+
 
 /* SIDEBAR */
 .sidebar {
-  width: 220px;
-  background: #020617;
-  border-right: 1px solid #1e293b;
-  padding: 12px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+
+  width: 64px;              
+  background: #262626;
+  z-index: 1000;
+
+  overflow: hidden;
+  transition: width 0.25s ease;
 }
 
+
+
 .sidebar-item {
-  padding: 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #1976d2;
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+  padding: 4px 12px;   
 }
+
+
 
 .sidebar-item:hover,
 .sidebar-item.active {
   background: #1e293b;
 }
+
+/*górne logo*/
+.sidebar-logo {
+  font-size: 22px;
+  flex-shrink: 0; 
+}
+
+.sidebar-title {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar:hover .sidebar-title {
+  opacity: 1;
+}
+
+
+.sidebar-icon {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+}
+
+.sidebar-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+
+.sidebar .label {
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar:hover .label {
+  opacity: 1;
+}
+
+.sidebar:hover {
+  width: 220px;             /* розгорнутий */
+}
+
+
+.sidebar:hover .label {
+  opacity: 1;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+
+  padding: 8px 12px;
+  gap: 10px;
+
+  font-size: 22px;
+  font-weight: 700;
+  color: #d7a020;
+
+  white-space: nowrap;
+
+  padding-left: 9px; 
+}
+
+
+
+
+
+
+.sidebar-section {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-menu li {
+  padding: 30px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+  color: #c2c2c2;
+}
+
+.sidebar-menu li:hover {
+  background: #535353;
+}
+
+.sidebar-menu li.active {
+  background: #1976d2;
+  color: white;
+}
+
 
 /* USER MENU */
 .user-menu {
@@ -105,39 +252,40 @@
   margin-bottom: 8px;
 }
 
-/* ===== SIDEBAR ===== */
+/* ===== APP ICON (Dashboard header) ===== */
+.sidebar-app-icon {
+  width: 45px;
+  height: 45px;
 
-.sidebar {
-  width: 220px;
-  background: #ffffff;
-  border-right: 1px solid #e0e0e0;
-  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
 }
 
-.sidebar-section {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 12px;
+.sidebar-app-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
-.sidebar-menu {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+/* ===== MENU ICON (Dashboard info) ===== */
+.sidebar-menu-icon {
+  width: 22px;
+  height: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
 }
 
-.sidebar-menu li {
-  padding: 8px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.sidebar-menu li:hover {
-  background: #f0f0f0;
-}
-
-.sidebar-menu li.active {
-  background: #1976d2;
-  color: white;
+.sidebar-menu-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
