@@ -111,8 +111,8 @@
 .dashboard-info {
   margin-top: 24px;
   padding: 16px;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
+  background: #a8a8a8;
+  border: 2px solid #d7a020;
   border-radius: 8px;
   max-width: 420px;
 }
@@ -139,8 +139,8 @@
 .dashboard-info-actions button {
   padding: 6px 10px;
   border-radius: 6px;
-  border: 1px solid #ccc;
-  background: #f9f9f9;
+  border: 1px solid #8f8f8f;
+  background: #d0d0d0;
   cursor: pointer;
 }
 
@@ -162,6 +162,6 @@
   font-size: 12px;
   border-radius: 4px;
   border: 1px solid #ccc;
-  background: #fff;
+  background: hsl(0, 0%, 76%);
   cursor: pointer;
 }
