@@ -26,12 +26,19 @@ export default function DashboardGrid({
     });
   };
 
-  const addWidget = (slot, type) => {
+  const addWidget = (slot, type, config) => {
+    console.log("DISPATCH add-widget", { slot, type, config });
+  
     window.dispatchEvent(
-      new CustomEvent("add-widget", { detail: { type, slot } })
+      new CustomEvent("add-widget", {
+        detail: { type, slot, config },
+      })
     );
+  
     closeAddPanel(slot);
   };
+  
+  
 
   const onDragStart = (slot) => {
     setDraggedSlot(slot);
