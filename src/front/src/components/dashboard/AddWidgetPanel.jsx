@@ -50,7 +50,7 @@ export default function AddWidgetPanel({
           <button
             className="widget-action"
             disabled={!canAdd}
-            onClick={() => onAdd(type)}
+            onClick={() => onAdd(type, { category: newsCategory })}
           >
             Add
           </button>
