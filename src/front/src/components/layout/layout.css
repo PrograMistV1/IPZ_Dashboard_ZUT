@@ -1,31 +1,57 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+
+
 /* LAYOUT */
 .app-layout {
   display: flex;
   height: 100vh;
+  overflow: hidden; 
 }
+
 
 
 .app-body {
   display: flex;
   flex-direction: column;
   flex: 1;
+  height: 100vh;        /* ❗ */
   background: #31302f;
+  overflow: hidden;     /* ❗ */
 }
 
+
 .app-content {
-  margin-left: 64px;   /* ширина згорнутого sidebar */
+  margin-left: 64px;
   transition: margin-left 0.25s ease;
+
+  flex: 1;
+  overflow-y: auto;        /* ✅ тут тепер scroll */
+  overflow-x: hidden;
+  padding: 16px;
+
+  background: #31302f;     /* ❗ фон НЕ зникає */
 }
+
 
 
 /* TOPBAR */
 .topbar {
+  position: sticky; /* ❗ */
+  top: 0;
+  z-index: 900;
+
   display: flex;
   align-items: center;
   padding: 8px 16px;
   background: #5b5956;
-  /*color: #e5e7eb;*/
 }
+
 
 .topbar-right {
   margin-left: auto;
