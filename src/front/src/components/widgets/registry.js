@@ -1,5 +1,5 @@
 import CurrencyWidget from "./CurrencyWidget";
-import ContentHeadlineList from "./ContentHeadlineList";
+import NewsWidget from "./NewsWidget";
 
 export const widgetRegistry = {
   currency: {
@@ -9,6 +9,7 @@ export const widgetRegistry = {
 
   news: {
     title: "News",
-    component: ContentHeadlineList,
+    component: NewsWidget,
   },
 };
+

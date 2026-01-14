@@ -401,3 +401,50 @@ def update_widget(
         "id": widget.id,
         "configuration": widget.configuration,
     }
+
+
+@router.patch("/dashboards/{dashboard_id}/widgets/reorder")
+def reorder_widgets(
+    dashboard_id: int,
+    req: WidgetsReorderRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    ids = [item["id"] for item in req.widgets]
+    widgets = (
+        db.query(Widget)
+        .filter(Widget.dashboard_id == dashboard_id, Widget.id.in_(ids))
+        .all()
+    )
+
+    if len(widgets) != len(ids):
+        raise HTTPException(
+            status_code=400, detail="One or more widgets not found on this dashboard"
+        )
+
+    id_to_widget = {w.id: w for w in widgets}
+    for item in req.widgets:
+        wid = item["id"]
+        pos = item["position"]
+        w = id_to_widget.get(wid)
+        if w:
+            w.position = pos
+
+            audit = AuditLog(
+                user_id=user_id,
+                dashboard_id=dashboard_id,
+                widget_id=wid,
+                action="reorder",
+            )
+            db.add(audit)
+
+    db.commit()
+
+    return {"status": "ok"}
