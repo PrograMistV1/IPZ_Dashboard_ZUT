@@ -1,5 +1,6 @@
 import requests
 import datetime as dt
+import hashlib
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, field_validator
@@ -12,9 +13,10 @@ from src.models.news_article import NewsArticle
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
+
 from src.db import get_db
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 log = BackendLogger()
 
 VALID_CATEGORIES = {
@@ -120,6 +122,7 @@ def get_news(req: NewsRequest, db: Session = Depends(get_db)):
     except Exception:
         log.info("news_endpoint", "Failed to delete old NewsAPI articles before insert")
 
+    rows_to_insert = []
     for a in articles:
         if not a.get("url"):
             continue
@@ -140,17 +143,57 @@ def get_news(req: NewsRequest, db: Session = Depends(get_db)):
                 except Exception:
                     published = dt.datetime.utcnow()
 
-        db.add(
-            NewsArticle(
-                title=a.get("title") or "",
-                url=a["url"],
-                source=a.get("source", {}).get("name", "unknown"),
-                category=req.category,
-                published_at=published or dt.datetime.utcnow(),
-                cached_at=now,
-                source_api="NewsAPI",
+        raw_title = a.get("title") or a.get("description") or "Untitled"
+        title_text = (raw_title or "").strip()
+        if len(title_text) < 5:
+            title_text = title_text + " "
+            while len(title_text) < 5:
+                title_text += "."
+
+        try:
+            url_hash = hashlib.sha256(a["url"].encode("utf-8")).hexdigest()
+        except Exception:
+            url_hash = None
+
+        row = {
+            "title": title_text,
+            "url": a["url"],
+            "url_hash": url_hash,
+            "source": a.get("source", {}).get("name", "unknown"),
+            "category": req.category,
+            "published_at": published or dt.datetime.utcnow(),
+            "cached_at": now,
+            "source_api": "NewsAPI",
+        }
+
+        rows_to_insert.append(row)
+
+    if rows_to_insert:
+        try:
+            from sqlalchemy import text
+
+            sql = """
+            INSERT INTO news_articles
+              (title, url, url_hash, source, category, published_at, cached_at, source_api)
+            VALUES
+              (:title, :url, :url_hash, :source, :category, :published_at, :cached_at, :source_api)
+            ON DUPLICATE KEY UPDATE
+              cached_at = VALUES(cached_at),
+              title = VALUES(title),
+              published_at = VALUES(published_at)
+            """
+
+            for row in rows_to_insert:
+                db.execute(text(sql), row)
+            db.commit()
+        except Exception as exc:
+            db.rollback()
+            log.error(
+                "news_endpoint", f"DB commit failed after inserting articles: {exc}"
             )
-        )
+            raise HTTPException(
+                status_code=500, detail="Database error while saving news"
+            ) from exc
 
     db.commit()
 

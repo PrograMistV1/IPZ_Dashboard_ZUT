@@ -130,19 +130,15 @@ export default function Dashboard() {
     const handler = async (e) => {
       if (!dashboardId) return;
 
-      const { type, slot } = e.detail || {};
+      const { type, slot, config: detailConfig } = e.detail || {};
       if (!type || !slot) return;
       if (slot > slotsCount || widgets[slot]) return;
 
-      let config = {};
+      const config = detailConfig || {};
 
       if (type === "news") {
-        const category = window.prompt(
-          "Enter news category (e.g. tech)",
-          "tech"
-        );
-        if (!category) return;
-        config.category = category;
+        const category = config.category;
+        if (!category) return; // require category selected via UI
       }
 
       try {
@@ -218,11 +214,10 @@ export default function Dashboard() {
           },
           body: JSON.stringify({
             widgets: orderedSlots
-              .filter((w) => w.widget?.id)
-              .map((w, i) => ({
-                id: w.widget.id,
-                position: i + 1,
-              })),
+              .map((w, i) =>
+                w.widget?.id ? { id: w.widget.id, position: i + 1 } : null
+              )
+              .filter(Boolean),
           }),
         }
       );

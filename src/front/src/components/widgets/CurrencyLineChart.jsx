@@ -34,7 +34,7 @@ export default function CurrencyLineChart({ rates }) {
       <polyline
         points={path}
         fill="none"
-        stroke="#4a90e2"
+        stroke="var(--accent-2, #2563eb)"
         strokeWidth="2"
       />
     </svg>

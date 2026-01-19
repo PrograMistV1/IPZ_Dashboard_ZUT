@@ -35,7 +35,7 @@ export default function CurrencyCandleChart({ rates }) {
     <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
       {candles.map((c, i) => {
         const x = scaleX(i);
-        const color = c.close >= c.open ? "#26a69a" : "#ef5350";
+        const color = c.close >= c.open ? "#346b66ff" : "#ea3f3cff";
 
         return (
           <g key={i}>
