@@ -7,7 +7,8 @@ import economyIcon from "../../assets/icons/economy.png";
 
 import "./layout.css";
 
-export default function SideBar() {
+export default function SideBar({ layoutMode, setLayoutMode }) {
+
   const [open, setOpen] = useState(false);
 
   const {
@@ -64,7 +65,12 @@ export default function SideBar() {
         {/* ===== DASHBOARD CUSTOM (ACCORDION) ===== */}
         <li
           className="sidebar-item sidebar-accordion"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+          setOpen((v) => !v);
+          }}
+
+
+
         >
           <span className="sidebar-menu-icon">
             <img src={dashboardInfoIcon} alt="Dashboard custom" />
@@ -85,12 +91,20 @@ export default function SideBar() {
               <li
                 key={d.id}
                 className={`sidebar-subitem ${
-                  String(d.id) === String(activeDashboardId) ? "active" : ""
-                }`}
+                  layoutMode === "custom" &&
+                    String(d.id) === String(activeDashboardId)
+                    ? "active"
+                    : ""
+                    }`}
+
               >
                 <span
                   className="sidebar-subitem-title"
-                  onClick={() => setActiveDashboardId(d.id)}
+                  onClick={() => {
+                      setLayoutMode("custom"); // wracamy do trybu custom
+                      setActiveDashboardId(d.id);
+                      }}
+
                 >
                   {d.name || `Dashboard ${d.id}`}
                 </span>
@@ -118,12 +132,21 @@ export default function SideBar() {
         )}
 
         {/* ===== ECONOMY ===== */}
-        <li className="sidebar-item">
-          <span className="sidebar-menu-icon economy-icon">
-            <img src={economyIcon} alt="Economy" />
-          </span>
-          <span className="label">Economy</span>
-        </li>
+        <li
+  className="sidebar-item"
+  onClick={() => {
+    setLayoutMode("economy");
+    setActiveDashboardId(null);
+  }}
+>
+
+  <span className="sidebar-menu-icon economy-icon">
+    <img src={economyIcon} alt="Economy" />
+  </span>
+  <span className="label">Economy</span>
+</li>
+
+
 
       </ul>
     </aside>

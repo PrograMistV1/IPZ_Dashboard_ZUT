@@ -1,28 +1,45 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import TopBar from "../components/layout/TopBar";
+import EconomyTopBar from "../components/layout/EconomyTopBar";
 import SideBar from "../components/layout/SideBar";
 import DashboardInfoPanel from "../components/dashboard/DashboardInfoPanel";
 import { useAuth } from "../auth/AuthContext";
+import EconomyDashboard from "../components/economy/EconomyDashboard";
+
 
 export default function AppLayout() {
   const { user } = useAuth();
 
   const [dashboardInfo, setDashboardInfo] = useState(null);
+  const [layoutMode, setLayoutMode] = useState("custom"); 
+
   const [infoOpen, setInfoOpen] = useState(false);
+  const [mode, setMode] = useState("custom");
 
   if (!user) return null;
 
   return (
     <div className="app-layout">
-      <SideBar />
+      <SideBar
+  layoutMode={layoutMode}
+  setLayoutMode={setLayoutMode}
+/>
+
 
       <div className="app-body">
         <TopBar />
 
         <main className="app-content">
-          <Outlet context={{ setDashboardInfo }} />
-        </main>
+  {layoutMode === "custom" && (
+    <Outlet context={{ setDashboardInfo }} />
+  )}
+
+  {layoutMode === "economy" && (
+    <EconomyDashboard />
+  )}
+</main>
+
 
         {/* OVERLAY — łapie klik poza modalką */}
         {infoOpen && (
