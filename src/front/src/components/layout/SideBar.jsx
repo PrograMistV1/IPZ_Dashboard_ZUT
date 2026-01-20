@@ -1,19 +1,13 @@
-import React, { useState } from "react";
-import DashboardInfoPanel from "../dashboard/DashboardInfoPanel";
+import React from "react";
 
 import dashboardIcon from "../../assets/icons/dashboard.png";
 import dashboardInfoIcon from "../../assets/icons/dashboard-info.png";
 
 import "./layout.css";
 
-export default function SideBar({ dashboardInfo }) {
-  const [open, setOpen] = useState(false);
-
+export default function SideBar() {
   return (
-    <aside
-      className="sidebar"
-      onMouseLeave={() => setOpen(false)}
-    >
+    <aside className="sidebar">
       {/* ===== HEADER ===== */}
       <div className="sidebar-header">
         <span className="sidebar-app-icon">
@@ -24,23 +18,13 @@ export default function SideBar({ dashboardInfo }) {
 
       {/* ===== MENU ===== */}
       <ul className="sidebar-menu">
-        <li
-          className="sidebar-item"
-          onClick={() => setOpen(v => !v)}
-        >
+        <li className="sidebar-item">
           <span className="sidebar-menu-icon">
             <img src={dashboardInfoIcon} alt="Dashboard info" />
           </span>
           <span className="label">Dashboard custom</span>
         </li>
       </ul>
-
-      {/* ===== INFO PANEL ===== */}
-      {open && dashboardInfo && (
-        <div className="sidebar-info-panel">
-          <DashboardInfoPanel {...dashboardInfo} />
-        </div>
-      )}
     </aside>
   );
 }

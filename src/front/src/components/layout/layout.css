@@ -318,3 +318,77 @@ body {
   object-fit: contain;
   display: block;
 }
+
+/* ===== PRAWA WYSUWANA MODALKA (Dashboard Info) ===== */
+
+.dashboard-info-drawer {
+  position: fixed;              /* щоб не ламалась верстка */
+  top: 0;
+  right: 0;
+
+  height: 100vh;
+  width: 260px;                 /* вужча за sidebar */
+  background: #a8a8a8;
+
+  border-left: 2px solid #d7a020;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.25);
+
+  transform: translateX(100%); /* схована за екраном */
+  transition: transform 0.3s ease;
+
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+}
+
+/* stan otwarty */
+.dashboard-info-drawer.open {
+  transform: translateX(0);
+}
+
+
+/* ===== MAŁA PIONOWA PRZYCZEPKA (handle) ===== */
+
+.dashboard-info-handle {
+  position: fixed;
+  top: 20%;
+  right: 0;
+
+  width: 12px;                 /* ширина смужки */
+  height: 80px;                /* висота смужки */
+  background: #1976d2;
+
+  border-radius: 6px 0 0 6px;
+  cursor: pointer;
+
+  transform: translateY(-50%);
+  z-index: 2100;
+
+  transition: all 0.25s ease;
+}
+
+/* hover */
+.dashboard-info-handle:hover {
+  background: #f1c232;
+}
+
+/* gdy panel otwarty — przesuwamy uchwyt w lewo */
+.dashboard-info-handle.open {
+  right: 260px;                /* = szerokość panelu */
+}
+
+/* ===== CIEMNE TŁO POD MODALKĄ ===== */
+
+.dashboard-info-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  background: rgba(0, 0, 0, 0.25); /* lekko przyciemnia */
+
+  z-index: 1500; /* pod modalką, nad resztą */
+}
+
