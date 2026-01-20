@@ -61,10 +61,6 @@ export default function TopBar() {
           ))}
         </select>
 
-        <button className="topbar-btn" onClick={handleCreate}>
-          + New
-        </button>
-
         <button
           className="topbar-btn danger"
           onClick={handleDelete}

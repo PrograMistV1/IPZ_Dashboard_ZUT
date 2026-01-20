@@ -354,7 +354,7 @@ body {
   top: 20%;
   right: 0;
 
-  width: 12px;                 /* ширина смужки */
+  width: 16px;                 /* ширина смужки */
   height: 80px;                /* висота смужки */
   background: #1976d2;
 
@@ -401,3 +401,91 @@ body {
   filter: brightness(2.1) contrast(1.5);
 }
 
+/* ===== ACCORDION ===== */
+
+.sidebar-accordion {
+  display: flex;
+  align-items: center;
+}
+
+.accordion-arrow {
+  margin-left: auto;
+  font-size: 15px;
+  transition: transform 0.2s ease;
+  color: #e4e4e4;
+}
+
+.accordion-arrow.open {
+  transform: rotate(180deg);
+}
+
+/* ===== SUBMENU ===== */
+
+.sidebar-submenu {
+  list-style: none;
+  padding: 4px 0 8px 52px;
+  margin: 0;
+}
+
+.sidebar-subitem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 6px 10px;
+  margin-bottom: 4px;
+
+  font-size: 14px;
+  color: #dcdcdc;
+
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sidebar-subitem:hover {
+  background: #1e293b;
+}
+
+.sidebar-subitem.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.sidebar-subitem-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== DELETE ICON ===== */
+
+.sidebar-subitem-delete {
+  background: transparent;
+  border: none;
+  color: #f87171;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+}
+
+.sidebar-subitem-delete:hover {
+  color: #ffaaaa;
+}
+
+.sidebar-subitem-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== ADD DASHBOARD ===== */
+
+.sidebar-subitem.add-dashboard {
+  margin-top: 6px;
+  color: #01ff27;
+  font-weight: 600;
+}
+
+.sidebar-subitem.add-dashboard:hover {
+  background: rgba(250, 204, 21, 0.15);
+}
