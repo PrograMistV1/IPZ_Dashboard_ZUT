@@ -35,7 +35,7 @@ body {
   overflow-x: hidden;
   padding: 16px;
 
-  background: #31302f;     
+  background: #ffffff;     
 }
 
 
@@ -48,8 +48,8 @@ body {
 
   display: flex;
   align-items: center;
-  padding: 8px 16px;
-  background: #5b5956;
+  padding: 10px 16px;
+  background: #e4e4e4;
 }
 
 
@@ -96,7 +96,7 @@ body {
   height: 100vh;
 
   width: 64px;              
-  background: #262626;
+  background: #3c6eb6;
   z-index: 1000;
 
   overflow: hidden;
@@ -208,15 +208,15 @@ body {
 }
 
 .sidebar-menu li {
-  padding: 30px 20px;
+  padding: 10px 19px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 15px;
   color: #c2c2c2;
 }
 
 .sidebar-menu li:hover {
-  background: #535353;
+  background: #0c3998;
 }
 
 .sidebar-menu li.active {

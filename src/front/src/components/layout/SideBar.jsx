@@ -31,7 +31,7 @@ export default function SideBar({ dashboardInfo }) {
           <span className="sidebar-menu-icon">
             <img src={dashboardInfoIcon} alt="Dashboard info" />
           </span>
-          <span className="label">Dashboard info</span>
+          <span className="label">Dashboard custom</span>
         </li>
       </ul>
 
