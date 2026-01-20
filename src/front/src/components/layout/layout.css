@@ -392,3 +392,12 @@ body {
   z-index: 1500; /* pod modalką, nad resztą */
 }
 
+/* ===== IKONA ECONOMY – osobny styl ===== */
+
+.sidebar-menu-icon.economy-icon img {
+  width: 26px;   
+  height: 26px;
+
+  filter: brightness(2.1) contrast(1.5);
+}
+
