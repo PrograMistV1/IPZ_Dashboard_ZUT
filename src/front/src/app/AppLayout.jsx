@@ -25,8 +25,6 @@ export default function AppLayout() {
   layoutMode={layoutMode}
   setLayoutMode={setLayoutMode}
 />
-
-
       <div className="app-body">
         <TopBar />
 

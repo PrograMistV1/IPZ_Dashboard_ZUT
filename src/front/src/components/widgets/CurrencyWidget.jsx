@@ -197,13 +197,13 @@ export default function CurrencyWidget({
         </div>
       )}
 
-      {showChart && chartType === "line" && rates.length > 1 && (
-        <CurrencyLineChart rates={rates} />
-      )}
+      {showChart && rates.length > 1 && (
+  <div className="currency-chart-box">
+    {chartType === "line" && <CurrencyLineChart rates={rates} />}
+    {chartType === "candle" && <CurrencyCandleChart rates={rates} />}
+  </div>
+)}
 
-      {showChart && chartType === "candle" && rates.length > 1 && (
-        <CurrencyCandleChart rates={rates} />
-      )}
 
       {showTable && rates.length > 0 && (
         <table className="currency-table">

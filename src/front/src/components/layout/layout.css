@@ -135,7 +135,7 @@ body {
 }
 
 .sidebar:hover {
-  width: 220px;             /* розгорнутий */
+  width: 220px;             
 }
 
 
@@ -294,18 +294,18 @@ body {
 /* ===== PRAWA WYSUWANA MODALKA (Dashboard Info) ===== */
 
 .dashboard-info-drawer {
-  position: fixed;              /* щоб не ламалась верстка */
+  position: fixed;              
   top: 0;
   right: 0;
 
   height: 100vh;
-  width: 260px;                 /* вужча за sidebar */
+  width: 260px;                 
   background: #a8a8a8;
 
   border-left: 2px solid #d7a020;
   box-shadow: -4px 0 12px rgba(0, 0, 0, 0.25);
 
-  transform: translateX(100%); /* схована за екраном */
+  transform: translateX(100%); 
   transition: transform 0.3s ease;
 
   z-index: 2000;
@@ -326,8 +326,8 @@ body {
   top: 20%;
   right: 0;
 
-  width: 16px;                 /* ширина смужки */
-  height: 80px;                /* висота смужки */
+  width: 16px;                 
+  height: 80px;                
   background: #1976d2;
 
   border-radius: 6px 0 0 6px;
