@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useDashboards } from "./DashboardContext";
 import { useOutletContext } from "react-router-dom";
 import DashboardGrid from "./DashboardGrid";
 import * as dashboardService from "../../services/dashboard";
@@ -7,19 +8,21 @@ import { tokenManager } from "../../services/tokenManager";
 export default function Dashboard() {
   const { setDashboardInfo } = useOutletContext() || {};
 
+  const { activeDashboardId } = useDashboards();
+
   const [slotsCount, setSlotsCount] = useState(4);
   const [widgets, setWidgets] = useState({});
-  const [dashboardId, setDashboardId] = useState(null);
+
   const [loading, setLoading] = useState(false);
 
   const addSlot = async () => {
-    if (!dashboardId || slotsCount >= 8) return;
+    if (!activeDashboardId || slotsCount >= 8) return;
 
     const newCount = slotsCount + 1;
     setSlotsCount(newCount);
 
     try {
-      await dashboardService.updateDashboard(dashboardId, {
+      await dashboardService.updateDashboard(activeDashboardId, {
         slotsCount: newCount,
       });
     } catch (err) {
@@ -28,7 +31,7 @@ export default function Dashboard() {
   };
 
   const removeSlot = async () => {
-    if (!dashboardId || slotsCount <= 1) return;
+    if (!activeDashboardId || slotsCount <= 1) return;
 
     const lastSlot = slotsCount;
     const widget = widgets[lastSlot];
@@ -37,7 +40,7 @@ export default function Dashboard() {
 
     if (widget) {
       await fetch(
-        `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widget.id}`,
+        `http://127.0.0.1:8000/api/dashboards/${activeDashboardId}/widgets/${widget.id}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -55,7 +58,7 @@ export default function Dashboard() {
     setSlotsCount(newCount);
 
     try {
-      await dashboardService.updateDashboard(dashboardId, {
+      await dashboardService.updateDashboard(activeDashboardId, {
         slotsCount: newCount,
       });
     } catch (err) {
@@ -65,13 +68,13 @@ export default function Dashboard() {
 
   const clearWidget = async (slot) => {
     const widget = widgets[slot];
-    if (!widget || !dashboardId) return;
+    if (!widget || !activeDashboardId) return;
 
     const token = tokenManager.get();
     if (!token) return;
 
     await fetch(
-      `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widget.id}`,
+      `http://127.0.0.1:8000/api/dashboards/${activeDashboardId}/widgets/${widget.id}`,
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -91,44 +94,43 @@ export default function Dashboard() {
     return type;
   };
 
-  const loadDashboards = async () => {
+  useEffect(() => {
+  if (!activeDashboardId) return;
+
+  const loadDashboard = async () => {
     setLoading(true);
     try {
-      const list = await dashboardService.getDashboards();
-      if (Array.isArray(list) && list.length > 0) {
-        const d = list[0];
+      const d = await dashboardService.getDashboard(activeDashboardId);
 
-        setDashboardId(d.id);
-        setSlotsCount(d.slotsCount ?? 4);
+      setSlotsCount(d.slotsCount ?? 4);
 
-        const newWidgets = {};
-        (d.widgets || []).forEach((w) => {
-          if (w.position) {
-            newWidgets[w.position] = {
-              id: w.id,
-              type: mapServerTypeToRegistry(w.type),
-              configuration: w.configuration,
-              enabled: w.enabled,
-              position: w.position,
-            };
-          }
-        });
+      const newWidgets = {};
+      (d.widgets || []).forEach((w) => {
+        if (w.position) {
+          newWidgets[w.position] = {
+            id: w.id,
+            type: mapServerTypeToRegistry(w.type),
+            configuration: w.configuration,
+            enabled: w.enabled,
+            position: w.position,
+          };
+        }
+      });
 
-        setWidgets(newWidgets);
-      }
+      setWidgets(newWidgets);
     } catch (err) {
-      console.error("Failed to load dashboards", err);
+      console.error("Failed to load dashboard", err);
     }
     setLoading(false);
   };
 
-  useEffect(() => {
-    loadDashboards();
-  }, []);
+  loadDashboard();
+}, [activeDashboardId]);
+
 
   useEffect(() => {
     const handler = async (e) => {
-      if (!dashboardId) return;
+      if (!activeDashboardId) return;
 
       const { type, slot, config: detailConfig } = e.detail || {};
       if (!type || !slot) return;
@@ -144,7 +146,7 @@ export default function Dashboard() {
       try {
         const serverType = type === "currency" ? "rates" : type;
 
-        const created = await dashboardService.createWidget(dashboardId, {
+        const created = await dashboardService.createWidget(activeDashboardId, {
           type: serverType,
           configuration: config,
           position: slot,
@@ -167,7 +169,7 @@ export default function Dashboard() {
 
     window.addEventListener("add-widget", handler);
     return () => window.removeEventListener("add-widget", handler);
-  }, [dashboardId, slotsCount, widgets]);
+  }, [activeDashboardId, slotsCount, widgets]);
 
   const updateWidgetLocal = (widgetId, newConfig) => {
     setWidgets((prev) => {
@@ -185,7 +187,7 @@ export default function Dashboard() {
   };
 
   const handleReorder = async (orderedSlots) => {
-    if (!dashboardId) return;
+    if (!activeDashboardId) return;
 
     const newWidgets = {};
     orderedSlots.forEach((w, i) => {
@@ -205,7 +207,7 @@ export default function Dashboard() {
 
     try {
       await fetch(
-        `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/reorder`,
+        `http://127.0.0.1:8000/api/dashboards/${activeDashboardId}/widgets/reorder`,
         {
           method: "PATCH",
           headers: {

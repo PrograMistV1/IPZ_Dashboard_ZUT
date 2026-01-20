@@ -1,0 +1,62 @@
+.economy-dashboard {
+  padding-top: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== TOP ROW ===== */
+.economy-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+/* ===== MAIN AREA ===== */
+.economy-main {
+  display: grid;
+  grid-template-columns: 2.1fr 1fr; /* szerokości jak było: Wide + Side */
+  gap: 20px;
+  min-height: 480px; /* cała wysokość bloku środkowego */
+}
+
+/* ===== LEFT COLUMN (Wide + New) ===== */
+.economy-left-column {
+  display: grid;
+  grid-template-rows: 3.9fr 1fr; /* 2/3 Wide, 1/3 New */
+  gap: 20px;
+}
+
+/* ===== WIDGET BASE ===== */
+.economy-widget {
+  background: #e6e6e6;
+  border: 2px dashed #9ca3af;
+  border-radius: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* ===== SIZES ===== */
+.economy-widget.small {
+  height: 110px;
+}
+
+.economy-widget.wide {
+  /* wysokość kontrolowana przez grid */
+}
+
+.economy-widget.side {
+  
+  min-height: 120px;   /* було 360px */
+}
+
+
+.economy-widget.bottom {
+  height: 90px; /* zachowujemy Twoją estetykę */
+}

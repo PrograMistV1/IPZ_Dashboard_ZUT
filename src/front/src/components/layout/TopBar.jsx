@@ -5,10 +5,10 @@ import "./layout.css";
 export default function TopBar() {
   return (
     <header className="topbar">
-      <div className="topbar-left">
-        
-      </div>
+      {/* ліва частина — поки що порожня */}
+      <div className="topbar-left"></div>
 
+      {/* права частина — меню юзера */}
       <div className="topbar-right">
         <UserMenu />
       </div>
