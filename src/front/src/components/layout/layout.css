@@ -52,39 +52,8 @@ body {
   background: #e4e4e4;
 }
 
-
 .topbar-right {
   margin-left: auto;
-}
-
-.topbar-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  margin-left: 120px; 
-}
-
-.topbar-select {
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid #777;
-  background: #3f3e3c;
-  color: #fff;
-}
-
-.topbar-btn {
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid #777;
-  background: #3f3e3c;
-  color: #fff;
-  cursor: pointer;
-}
-
-.topbar-btn.danger {
-  border-color: #7f1d1d;
-  color: #fca5a5;
 }
 
 
@@ -181,7 +150,7 @@ body {
   padding: 8px 12px;
   gap: 10px;
 
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: #d7a020;
 
@@ -207,13 +176,16 @@ body {
   margin: 0;
 }
 
-.sidebar-menu li {
-  padding: 10px 19px;
+/* (Dashboard custom, Economy itd.) */
+.sidebar-menu > li {
+  padding: 10px 19px;      
   border-radius: 6px;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 16px;        
   color: #c2c2c2;
 }
+
+
 
 .sidebar-menu li:hover {
   background: #0c3998;
@@ -435,8 +407,8 @@ body {
   padding: 6px 10px;
   margin-bottom: 4px;
 
-  font-size: 14px;
-  color: #dcdcdc;
+  font-size: 13px;
+  color: #f0f0f0;
 
   border-radius: 6px;
   cursor: pointer;
