@@ -57,6 +57,35 @@ body {
   margin-left: auto;
 }
 
+.topbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-left: 120px; 
+}
+
+.topbar-select {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #777;
+  background: #3f3e3c;
+  color: #fff;
+}
+
+.topbar-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #777;
+  background: #3f3e3c;
+  color: #fff;
+  cursor: pointer;
+}
+
+.topbar-btn.danger {
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
 
 
 /* SIDEBAR */

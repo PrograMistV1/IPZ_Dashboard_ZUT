@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "../auth/AuthContext";
 
 import AppLayout from "./AppLayout";
+import { DashboardProvider } from "../components/dashboard/DashboardContext";
+
 import Dashboard from "../components/dashboard/Dashboard";
 import LoginModal from "../auth/LoginModal";
 import RegisterModal from "../auth/RegisterModal";
@@ -18,6 +20,7 @@ function AuthGate() {
   }
 
   return (
+  <DashboardProvider>
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
@@ -27,7 +30,8 @@ function AuthGate() {
         />
       </Route>
     </Routes>
-  );
+  </DashboardProvider>
+);
 }
 
 export default function App() {

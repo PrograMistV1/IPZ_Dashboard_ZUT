@@ -10,6 +10,8 @@ from src.models.audit_log import AuditLog
 from src.models.dashboard import Dashboard
 from src.models.widget import Widget
 
+from sqlalchemy import func
+
 router = APIRouter(prefix="/api")
 log = BackendLogger()
 
@@ -41,9 +43,9 @@ class WidgetCreateRequest(BaseModel):
     def position_validator(cls, v):
         if v is None:
             return v
-        if not isinstance(v, int) or v < 0:
+        if not isinstance(v, int) or v < 1:
             raise PydanticCustomError(
-                "value_error", "position must be an integer >= 0."
+                "value_error", "position must be an integer >= 1."
             )
         return v
 
@@ -78,9 +80,9 @@ class WidgetsReorderRequest(BaseModel):
                 )
             if not isinstance(item["id"], int):
                 raise PydanticCustomError("value_error", "id must be an integer.")
-            if not isinstance(item["position"], int) or item["position"] < 0:
+            if not isinstance(item["position"], int) or item["position"] < 1:
                 raise PydanticCustomError(
-                    "value_error", "position must be an integer >= 0."
+                    "value_error", "position must be an integer >= 1."
                 )
         return v
 
@@ -120,6 +122,77 @@ class DashboardUpdateRequest(BaseModel):
                 "value_error", "slotsCount must be a positive integer."
             )
         return v
+
+
+class DashboardCreateRequest(BaseModel):
+    name: str
+    slotsCount: int | None = 4
+
+    @field_validator("name")
+    @classmethod
+    def name_validator(cls, v: str):
+        if not v or not isinstance(v, str) or not v.strip():
+            raise PydanticCustomError(
+                "value_error", "Dashboard name must be a non-empty string."
+            )
+        return v.strip()
+
+    @field_validator("slotsCount")
+    @classmethod
+    def slots_validator(cls, v: int | None):
+        if v is None:
+            return v
+        if not isinstance(v, int) or v < 1:
+            raise PydanticCustomError(
+                "value_error", "slotsCount must be a positive integer."
+            )
+        return v
+
+
+@router.post("/dashboards", status_code=201)
+def create_dashboard(
+    req: DashboardCreateRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = Dashboard(
+        user_id=user_id,
+        name=req.name,
+        slots_count=req.slotsCount or 4,
+    )
+
+    try:
+        db.add(dashboard)
+        db.commit()
+        db.refresh(dashboard)
+
+        audit = AuditLog(
+            user_id=user_id,
+            dashboard_id=dashboard.id,
+            widget_id=None,
+            action="create_dashboard",
+        )
+        db.add(audit)
+        db.commit()
+
+        log.info(
+            "create_dashboard",
+            f"User {user_id} created dashboard {dashboard.id}",
+        )
+
+        return {
+            "id": dashboard.id,
+            "name": dashboard.name,
+            "slotsCount": dashboard.slots_count,
+            "created_at": dashboard.created_at.isoformat(),
+            "updated_at": dashboard.updated_at.isoformat(),
+            "widgets": [],
+        }
+
+    except Exception as exc:
+        db.rollback()
+        log.error("create_dashboard", f"Error: {exc}")
+        raise HTTPException(500, "Database error")
 
 
 # noinspection PyTypeChecker
@@ -254,8 +327,8 @@ def create_widget(
         )
         next_pos = (max_pos[0] + 1) if max_pos else 1
     else:
-        if req.position < 0:
-            raise HTTPException(status_code=400, detail="Position must be >= 0")
+        if req.position < 1:
+            raise HTTPException(status_code=400, detail="Position must be >= 1")
         next_pos = req.position
 
     enabled = bool(req.enabled) if req.enabled is not None else True
@@ -445,6 +518,50 @@ def reorder_widgets(
             )
             db.add(audit)
 
+    db.commit()
+
+    return {"status": "ok"}
+
+
+@router.delete("/dashboards/{dashboard_id}")
+def delete_dashboard(
+    dashboard_id: int,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    dashboard = db.query(Dashboard).filter(Dashboard.id == dashboard_id).first()
+    if not dashboard:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    if dashboard.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    dashboards_count = (
+        db.query(func.count(Dashboard.id))
+        .filter(Dashboard.user_id == user_id)
+        .scalar()
+    )
+
+    if dashboards_count <= 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Nie można usunąć ostatniego dashboardu",
+        )
+
+    # Usuń najpierw wszystkie widgety powiązane z dashboardem
+    widgets = db.query(Widget).filter(Widget.dashboard_id == dashboard_id).all()
+    for widget in widgets:
+        db.delete(widget)
+
+    audit = AuditLog(
+        user_id=user_id,
+        dashboard_id=dashboard_id,
+        widget_id=None,
+        action="delete_dashboard",
+    )
+    db.add(audit)
+
+    db.delete(dashboard)
     db.commit()
 
     return {"status": "ok"}
