@@ -285,7 +285,6 @@ def create_widget(
         "news": "news",
         "history": "history",
         "history_operations": "history",
-        "history-operations": "history",
     }
 
     widget_type = type_map.get(req.type.lower()) if isinstance(req.type, str) else None
@@ -537,9 +536,7 @@ def delete_dashboard(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     dashboards_count = (
-        db.query(func.count(Dashboard.id))
-        .filter(Dashboard.user_id == user_id)
-        .scalar()
+        db.query(func.count(Dashboard.id)).filter(Dashboard.user_id == user_id).scalar()
     )
 
     if dashboards_count <= 1:
