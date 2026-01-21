@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 
 app = FastAPI()
 
-CURRENCIES = ["USD", "EUR", "GBP", "CHF", "JPY"]
+CURRENCIES = ["USD", "EUR", "GBP", "CHF", "JPY", "UAH"]
 
 
 @app.get("/", response_class=HTMLResponse)

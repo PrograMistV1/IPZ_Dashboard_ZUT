@@ -8,7 +8,7 @@ export const API_ENDPOINTS = {
     RATES: "/rates",
 };
 
-export const CURRENCY_OPTIONS = ["USD", "EUR", "GBP", "CHF", "JPY"];
+export const CURRENCY_OPTIONS = ["USD", "EUR", "GBP", "CHF", "JPY", "UAH"];
 
 export const ERROR_MESSAGES = {
     INVALID_CREDENTIALS: "Invalid username or password",
