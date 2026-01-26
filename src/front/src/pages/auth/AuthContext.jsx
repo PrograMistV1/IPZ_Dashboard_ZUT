@@ -6,12 +6,14 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({children}) {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const token = tokenManager.get();
         if (token) {
             setUser({logged: true});
         }
+        setLoading(false);
     }, []);
 
     const login = async (username, password) => {
@@ -19,8 +21,7 @@ export function AuthProvider({children}) {
 
         try {
             data = await apiFetch("/auth/login", {
-                method: "POST",
-                body: JSON.stringify({username, password}),
+                method: "POST", body: JSON.stringify({username, password}),
             });
         } catch (err) {
             throw new Error("LOGIN_FAILED");
@@ -32,8 +33,7 @@ export function AuthProvider({children}) {
 
         tokenManager.set(data.access_token);
         setUser({
-            id: data.user_id,
-            username: data.username,
+            id: data.user_id, username: data.username,
         });
     };
 
@@ -47,7 +47,7 @@ export function AuthProvider({children}) {
     };
 
     return (
-        <AuthContext.Provider value={{user, login, logout}}>
+        <AuthContext.Provider value={{user, login, logout, loading}}>
             {children}
         </AuthContext.Provider>
     );

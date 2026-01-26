@@ -11,8 +11,10 @@ import RegisterPage from "../pages/auth/Register";
 import LoginHistoryPage from "../pages/LoginHistoryPage";
 import EconomyDashboard from "../components/economy/EconomyDashboard";
 
+import "../styles/global.css";
+
 function AuthGate() {
-    const {user} = useAuth();
+    const {user, loading} = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -20,6 +22,10 @@ function AuthGate() {
             navigate("/", {replace: true});
         }
     }, [user, navigate]);
+
+    if (loading) {
+        return (<div className="loading-container">Loading...</div>);
+    }
 
     if (!user) {
         return (
