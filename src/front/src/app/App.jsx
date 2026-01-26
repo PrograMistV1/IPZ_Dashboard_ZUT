@@ -35,7 +35,8 @@ function AuthGate() {
         <DashboardProvider>
             <Routes>
                 <Route element={<AppLayout/>}>
-                    <Route path="/" element={<Dashboard/>}/>
+                    <Route path="/" element={<EconomyDashboard/>}/>
+                    <Route path="/dashboard/:id" element={<Dashboard/>}/>
                     <Route path="/economy" element={<EconomyDashboard/>}/>
                     <Route path="/login-history" element={<LoginHistoryPage/>}/>
                 </Route>
