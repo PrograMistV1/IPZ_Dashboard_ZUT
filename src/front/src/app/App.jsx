@@ -9,6 +9,7 @@ import Dashboard from "../components/dashboard/Dashboard";
 import LoginPage from "../pages/auth/Login";
 import RegisterPage from "../pages/auth/Register";
 import LoginHistoryPage from "../pages/LoginHistoryPage";
+import WelcomePage from "../pages/WelcomePage";
 import EconomyDashboard from "../components/economy/EconomyDashboard";
 
 import "../styles/global.css";
@@ -41,7 +42,7 @@ function AuthGate() {
         <DashboardProvider>
             <Routes>
                 <Route element={<AppLayout/>}>
-                    <Route path="/" element={<EconomyDashboard/>}/>
+                    <Route path="*" element={<WelcomePage/>}/>
                     <Route path="/dashboard/:id" element={<Dashboard/>}/>
                     <Route path="/economy" element={<EconomyDashboard/>}/>
                     <Route path="/login-history" element={<LoginHistoryPage/>}/>

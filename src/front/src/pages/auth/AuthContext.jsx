@@ -5,6 +5,7 @@ import {tokenManager} from "../../services/tokenManager";
 const AuthContext = createContext(null);
 
 /** @typedef {{access_token: string, user_id: number, username: string}} LoginResponse */
+/** @typedef {{login: string}} UserMeResponse */
 
 export function AuthProvider({children}) {
     const [user, setUser] = useState(null);
@@ -15,10 +16,18 @@ export function AuthProvider({children}) {
             try {
                 const token = tokenManager.get();
                 if (token) {
-                    setUser({logged: true});
+                    try {
+                        /** @type {UserMeResponse} */
+                        const userData = await apiFetch("/auth/me");
+                        setUser({username: userData.login, logged: true});
+                    } catch (err) {
+                        console.error("Failed to load user data:", err);
+                        tokenManager.clear();
+                        setUser(null);
+                    }
                 }
             } catch (err) {
-                console.error("Auth initialization error(NO_TOKEN):", err);
+                console.error("Auth initialization error:", err);
                 tokenManager.clear();
             } finally {
                 setLoading(false);

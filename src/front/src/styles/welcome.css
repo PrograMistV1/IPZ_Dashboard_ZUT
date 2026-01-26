@@ -1,0 +1,28 @@
+.welcome-container {
+    padding: 40px 20px;
+}
+
+.welcome-content {
+    text-align: left;
+}
+
+.welcome-content h1 {
+    margin: 0 0 10px 0;
+    font-size: 36px;
+    color: #333;
+    font-weight: 600;
+}
+
+.welcome-greeting {
+    margin: 0;
+    font-size: 16px;
+    color: #666;
+    line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+
+    .welcome-content h1 {
+        font-size: 28px;
+    }
+}
