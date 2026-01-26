@@ -1,58 +1,81 @@
-import React, {createContext, useContext, useEffect, useState} from "react";
+import React, {createContext, useCallback, useContext, useEffect, useState} from "react";
 import {apiFetch} from "../../services/api";
 import {tokenManager} from "../../services/tokenManager";
 
 const AuthContext = createContext(null);
+
+/** @typedef {{access_token: string, user_id: number, username: string}} LoginResponse */
 
 export function AuthProvider({children}) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = tokenManager.get();
-        if (token) {
-            setUser({logged: true});
-        }
-        setLoading(false);
+        const initializeAuth = async () => {
+            try {
+                const token = tokenManager.get();
+                if (token) {
+                    setUser({logged: true});
+                }
+            } catch (err) {
+                console.error("Auth initialization error(NO_TOKEN):", err);
+                tokenManager.clear();
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeAuth().then(() => {
+        });
     }, []);
 
-    const login = async (username, password) => {
-        let data;
-
+    const login = useCallback(async (username, password) => {
         try {
-            data = await apiFetch("/auth/login", {
+            /** @type {LoginResponse} */
+            const data = await apiFetch("/auth/login", {
                 method: "POST", body: JSON.stringify({username, password}),
             });
+
+            if (!data?.access_token) {
+                console.error("Login error(NO_TOKEN): No access token in response");
+                return false;
+            }
+
+            tokenManager.set(data.access_token);
+            setUser({
+                id: data.user_id, username: data.username, logged: true,
+            });
+            return true;
         } catch (err) {
-            throw new Error("LOGIN_FAILED");
+            console.error("Login error:", err);
+            return false;
         }
+    }, []);
 
-        if (!data?.access_token) {
-            throw new Error("LOGIN_FAILED");
-        }
-
-        tokenManager.set(data.access_token);
-        setUser({
-            id: data.user_id, username: data.username,
-        });
-    };
-
-    const logout = async () => {
+    const logout = useCallback(async () => {
         try {
             await apiFetch("/auth/logout", {method: "POST"});
-        } catch {
+        } catch (err) {
+            console.error("Logout error:", err);
+        } finally {
+            tokenManager.clear();
+            setUser(null);
         }
-        tokenManager.clear();
-        setUser(null);
+    }, []);
+
+    const value = {
+        user, loading, login, logout,
     };
 
-    return (
-        <AuthContext.Provider value={{user, login, logout, loading}}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return (<AuthContext.Provider value={value}>
+        {children}
+    </AuthContext.Provider>);
 }
 
 export function useAuth() {
-    return useContext(AuthContext);
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error("useAuth must be used within AuthProvider");
+    }
+    return context;
 }
