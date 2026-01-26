@@ -10,3 +10,4 @@ pre-commit
 email-validator
 python-jose
 bcrypt
+starlette
