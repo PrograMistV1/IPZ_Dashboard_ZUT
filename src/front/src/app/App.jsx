@@ -9,12 +9,11 @@ import Dashboard from "../components/dashboard/Dashboard";
 import LoginPage from "../pages/auth/Login";
 import RegisterPage from "../pages/auth/Register";
 import LoginHistoryPage from "../pages/LoginHistoryPage";
+import EconomyDashboard from "../components/economy/EconomyDashboard";
 
 function AuthGate() {
     const {user} = useAuth();
     const navigate = useNavigate();
-
-    console.log("User:", user);
 
     useEffect(() => {
         if (user && window.location.pathname.startsWith("/auth")) {
@@ -37,6 +36,7 @@ function AuthGate() {
             <Routes>
                 <Route element={<AppLayout/>}>
                     <Route path="/" element={<Dashboard/>}/>
+                    <Route path="/economy" element={<EconomyDashboard/>}/>
                     <Route path="/login-history" element={<LoginHistoryPage/>}/>
                 </Route>
             </Routes>

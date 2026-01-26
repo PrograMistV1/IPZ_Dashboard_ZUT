@@ -1,42 +1,29 @@
 import React, {useState} from "react";
-import {Outlet} from "react-router-dom";
+import {Outlet, useLocation} from "react-router-dom";
 import TopBar from "../components/layout/TopBar";
+import EconomyTopBar from "../components/layout/EconomyTopBar";
 import SideBar from "../components/layout/SideBar";
 import DashboardInfoPanel from "../components/dashboard/DashboardInfoPanel";
 import {useAuth} from "../pages/auth/AuthContext";
-import EconomyDashboard from "../components/economy/EconomyDashboard";
-
 
 export default function AppLayout() {
     const {user} = useAuth();
+    const location = useLocation();
 
     const [dashboardInfo, setDashboardInfo] = useState(null);
-    const [layoutMode, setLayoutMode] = useState("custom");
-
     const [infoOpen, setInfoOpen] = useState(false);
-    const [mode, setMode] = useState("custom");
 
     if (!user) return null;
 
     return (
         <div className="app-layout">
-            <SideBar
-                layoutMode={layoutMode}
-                setLayoutMode={setLayoutMode}
-            />
+            <SideBar/>
             <div className="app-body">
-                <TopBar/>
+                {location.pathname === "/economy" ? <EconomyTopBar/> : <TopBar/>}
 
                 <main className="app-content">
-                    {layoutMode === "custom" && (
-                        <Outlet context={{setDashboardInfo}}/>
-                    )}
-
-                    {layoutMode === "economy" && (
-                        <EconomyDashboard/>
-                    )}
+                    <Outlet context={{setDashboardInfo}}/>
                 </main>
-
 
                 {/* OVERLAY — łapie klik poza modalką */}
                 {infoOpen && (
@@ -59,7 +46,7 @@ export default function AppLayout() {
                 {dashboardInfo && (
                     <div
                         className={`dashboard-info-drawer ${infoOpen ? "open" : ""}`}
-                        onClick={(e) => e.stopPropagation()} // blokuje zamknięcie przy kliknięciu w środek
+                        onClick={(e) => e.stopPropagation()}
                     >
                         <DashboardInfoPanel
                             {...dashboardInfo}
