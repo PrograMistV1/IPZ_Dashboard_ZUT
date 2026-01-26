@@ -1,6 +1,6 @@
 import React, {useState} from "react";
-import {apiFetch} from "../services/api";
-import "./auth.css";
+import {apiFetch} from "../../services/api";
+import "../../styles/auth.css";
 import {useNavigate} from "react-router-dom";
 
 export default function Register() {

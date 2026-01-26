@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../pages/auth/AuthContext";
 import "./layout.css";
 
 export default function UserMenu() {

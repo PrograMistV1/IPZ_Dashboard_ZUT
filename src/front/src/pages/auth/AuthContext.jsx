@@ -1,6 +1,6 @@
 import React, {createContext, useContext, useEffect, useState} from "react";
-import {apiFetch} from "../services/api";
-import {tokenManager} from "../services/tokenManager";
+import {apiFetch} from "../../services/api";
+import {tokenManager} from "../../services/tokenManager";
 
 const AuthContext = createContext(null);
 

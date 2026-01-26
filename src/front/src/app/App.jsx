@@ -1,13 +1,13 @@
 import React, {useEffect} from "react";
 import {BrowserRouter, Navigate, Route, Routes, useNavigate} from "react-router-dom";
-import {AuthProvider, useAuth} from "../auth/AuthContext";
+import {AuthProvider, useAuth} from "../pages/auth/AuthContext";
 
 import AppLayout from "./AppLayout";
 import {DashboardProvider} from "../components/dashboard/DashboardContext";
 
 import Dashboard from "../components/dashboard/Dashboard";
-import LoginPage from "../auth/Login";
-import RegisterPage from "../auth/Register";
+import LoginPage from "../pages/auth/Login";
+import RegisterPage from "../pages/auth/Register";
 import LoginHistoryPage from "../pages/LoginHistoryPage";
 
 function AuthGate() {
