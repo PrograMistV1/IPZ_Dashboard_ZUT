@@ -1,45 +1,55 @@
-import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider, useAuth } from "../auth/AuthContext";
+import React, {useEffect} from "react";
+import {BrowserRouter, Navigate, Route, Routes, useNavigate} from "react-router-dom";
+import {AuthProvider, useAuth} from "../auth/AuthContext";
 
 import AppLayout from "./AppLayout";
-import { DashboardProvider } from "../components/dashboard/DashboardContext";
+import {DashboardProvider} from "../components/dashboard/DashboardContext";
 
 import Dashboard from "../components/dashboard/Dashboard";
-import LoginModal from "../auth/LoginModal";
-import RegisterModal from "../auth/RegisterModal";
+import LoginPage from "../auth/Login";
+import RegisterPage from "../auth/Register";
 import LoginHistoryPage from "../pages/LoginHistoryPage";
 
 function AuthGate() {
-  const { user, mode } = useAuth();
+    const {user} = useAuth();
+    const navigate = useNavigate();
 
-  if (!user) {
-    return mode === "login"
-      ? <LoginModal />
-      : <RegisterModal />;
-  }
+    console.log("User:", user);
 
-  return (
-  <DashboardProvider>
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route
-          path="/login-history"
-          element={<LoginHistoryPage />}
-        />
-      </Route>
-    </Routes>
-  </DashboardProvider>
-);
+    useEffect(() => {
+        if (user && window.location.pathname.startsWith("/auth")) {
+            navigate("/", {replace: true});
+        }
+    }, [user, navigate]);
+
+    if (!user) {
+        return (
+            <Routes>
+                <Route path="/auth/login" element={<LoginPage/>}/>
+                <Route path="/auth/register" element={<RegisterPage/>}/>
+                <Route path="*" element={<Navigate to="/auth/login" replace/>}/>
+            </Routes>
+        );
+    }
+
+    return (
+        <DashboardProvider>
+            <Routes>
+                <Route element={<AppLayout/>}>
+                    <Route path="/" element={<Dashboard/>}/>
+                    <Route path="/login-history" element={<LoginHistoryPage/>}/>
+                </Route>
+            </Routes>
+        </DashboardProvider>
+    );
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AuthGate />
-      </BrowserRouter>
-    </AuthProvider>
-  );
+    return (
+        <AuthProvider>
+            <BrowserRouter>
+                <AuthGate/>
+            </BrowserRouter>
+        </AuthProvider>
+    );
 }
