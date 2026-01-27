@@ -5,7 +5,7 @@ import {tokenManager} from "../../services/tokenManager";
 const AuthContext = createContext(null);
 
 /** @typedef {{access_token: string, user_id: number, username: string}} LoginResponse */
-/** @typedef {{login: string}} UserMeResponse */
+/** @typedef {{user_id: number, username: string}} UserMeResponse */
 
 export function AuthProvider({children}) {
     const [user, setUser] = useState(null);
@@ -19,7 +19,7 @@ export function AuthProvider({children}) {
                     try {
                         /** @type {UserMeResponse} */
                         const userData = await apiFetch("/auth/me");
-                        setUser({username: userData.login, logged: true});
+                        setUser({username: userData.username, logged: true});
                     } catch (err) {
                         console.error("Failed to load user data:", err);
                         tokenManager.clear();
