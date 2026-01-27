@@ -16,7 +16,7 @@ export async function apiFetch(path, options = {}) {
     },
   });
 
-  let data = null;
+  let data;
   try {
     data = await res.json();
   } catch {
@@ -29,11 +29,14 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!res.ok) {
-    const message =
+    const error = new Error(
       data?.detail?.[0]?.msg ||
       data?.detail ||
-      "Request failed";
-    throw new Error(message);
+      "Request failed"
+    );
+    error.status = res.status;
+    error.details = data?.detail;
+    throw error;
   }
 
   return data;

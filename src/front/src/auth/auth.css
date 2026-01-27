@@ -23,7 +23,12 @@
 .auth-box form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+}
+
+.auth-box form > div {
+  display: flex;
+  flex-direction: column;
 }
 
 .auth-box input {
@@ -33,6 +38,25 @@
   background: #020617;
   color: white;
   outline: 1px solid #1e293b;
+}
+
+.auth-box input.input-error {
+  outline: 2px solid #ef4444;
+}
+
+.auth-box input:focus {
+  outline: 2px solid #2563eb;
+}
+
+.auth-box input.input-error:focus {
+  outline: 2px solid #ef4444;
+}
+
+.field-error {
+  color: #f87171;
+  font-size: 13px;
+  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
 .auth-box button {

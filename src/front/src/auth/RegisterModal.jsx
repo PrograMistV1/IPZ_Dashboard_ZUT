@@ -10,10 +10,12 @@ export default function RegisterModal() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const submit = async (e) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
 
     try {
       await apiFetch("/auth/register", {
@@ -30,7 +32,24 @@ export default function RegisterModal() {
 
       setMode("login");
     } catch (err) {
-      setError("Registration failed");
+      if (err.status === 422 && Array.isArray(err.details)) {
+        const errors = {};
+
+        err.details.forEach((error) => {
+          const field = error.loc?.[1];
+          const message = error.ctx?.reason || error.msg || "Invalid value";
+          if (field) {
+            errors[field] = message;
+          }
+        });
+
+        if (Object.keys(errors).length > 0) {
+          setFieldErrors(errors);
+          return;
+        }
+      }
+
+      setError(err.message || "Registration failed");
     }
   };
 
@@ -40,28 +59,55 @@ export default function RegisterModal() {
         <h2>Register</h2>
 
         <form onSubmit={submit}>
-          <input
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
+          <div>
+            <input
+              placeholder="Username"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, username: "" }));
+              }}
+              className={fieldErrors.username ? "input-error" : ""}
+              required
+            />
+            {fieldErrors.username && (
+              <div className="field-error">{fieldErrors.username}</div>
+            )}
+          </div>
 
-          <input
-            placeholder="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+          <div>
+            <input
+              placeholder="Email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, email: "" }));
+              }}
+              className={fieldErrors.email ? "input-error" : ""}
+              required
+            />
+            {fieldErrors.email && (
+              <div className="field-error">{fieldErrors.email}</div>
+            )}
+          </div>
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, password: "" }));
+              }}
+              className={fieldErrors.password ? "input-error" : ""}
+              required
+            />
+            {fieldErrors.password && (
+              <div className="field-error">{fieldErrors.password}</div>
+            )}
+          </div>
 
           {error && <div className="auth-error">{error}</div>}
 
