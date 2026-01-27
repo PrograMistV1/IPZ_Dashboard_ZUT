@@ -163,4 +163,4 @@ def get_my_account(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    return {"login": user.username}
+    return {"user_id": user_id, "login": user.username}
