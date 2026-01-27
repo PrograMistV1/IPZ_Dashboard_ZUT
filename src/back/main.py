@@ -7,6 +7,7 @@ from starlette.staticfiles import StaticFiles
 from src.back.logger.logger import BackendLogger
 from src.back.routes.auth import router as auth_router
 from src.back.routes.dashboard import router as dashboard_router
+from src.back.routes.economy import router as economy_router
 from src.back.routes.news import router as news_router
 from src.back.routes.rates import router as rates_router
 from src.db import init_db
@@ -28,6 +29,7 @@ app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(rates_router)
 app.include_router(news_router)
+app.include_router(economy_router)
 
 static_dir = "src/front/build"
 if os.path.isdir(static_dir):
