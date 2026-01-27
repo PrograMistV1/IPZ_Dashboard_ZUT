@@ -72,6 +72,7 @@ def get_news(req: NewsRequest, db: Session = Depends(get_db)):
         )
         log.info("news_endpoint", "Returning cached news from database (fresh)")
         return {
+            "source": "database",
             "category": req.category,
             "articles": [
                 {

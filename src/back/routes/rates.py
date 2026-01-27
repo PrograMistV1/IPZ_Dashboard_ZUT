@@ -10,7 +10,7 @@ from src.back.logger.logger import BackendLogger
 from src.db import get_db
 from src.models.currency_rate import CurrencyRate
 
-VALID_CURRENCIES = {"USD", "EUR", "GBP", "CHF", "JPY"}
+VALID_CURRENCIES = {"USD", "EUR", "GBP", "CHF", "JPY", "UAH"}
 
 router = APIRouter()
 log = BackendLogger()
