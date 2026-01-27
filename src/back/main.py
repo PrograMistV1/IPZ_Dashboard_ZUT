@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
@@ -27,7 +29,9 @@ app.include_router(dashboard_router)
 app.include_router(rates_router)
 app.include_router(news_router)
 
-app.mount("/", StaticFiles(directory="src/front/build", html=True), name="frontend")
+static_dir = "src/front/build"
+if os.path.isdir(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
