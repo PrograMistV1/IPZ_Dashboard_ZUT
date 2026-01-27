@@ -49,7 +49,7 @@ export default function NewsWidget({
 
     updateWidget(widgetId, { configuration: newConfig });
     onUpdate?.(widgetId, newConfig);
-  }, [category, widgetId]);
+  }, [category, widgetId, onUpdate]);
 
   return (
     <div className="widget news-widget">
