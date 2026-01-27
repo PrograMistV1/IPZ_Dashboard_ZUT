@@ -1,15 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { getNews } from "../../services/news";
+import { updateWidget } from "../../services/dashboard";
+import "./currencyWidget.css";
 
-export default function NewsWidget({ widgetId, configuration }) {
+export default function NewsWidget({
+  widgetId,
+  configuration,
+  onDelete,
+  onUpdate,
+}) {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const category = configuration?.category || "general";
+  const [editing, setEditing] = useState(false);
+  const [category, setCategory] = useState(
+    configuration?.category || "general"
+  );
 
   useEffect(() => {
     let mounted = true;
+
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -26,16 +37,81 @@ export default function NewsWidget({ widgetId, configuration }) {
     };
 
     load();
-
     return () => {
       mounted = false;
     };
   }, [category]);
 
+  useEffect(() => {
+    if (!widgetId) return;
+
+    const newConfig = { category };
+
+    updateWidget(widgetId, { configuration: newConfig });
+    onUpdate?.(widgetId, newConfig);
+  }, [category, widgetId]);
+
   return (
     <div className="widget news-widget">
-      <h4>News — {category}</h4>
+      {/* ===== HEADER ===== */}
+      <div className="news-header">
+        <h4>News — {category}</h4>
 
+        <div className="news-actions">
+          <button
+            className="icon-btn"
+            title="Settings"
+            onClick={() => setEditing(true)}
+          >
+            ⚙
+          </button>
+
+          <button
+            className="icon-btn danger"
+            title="Delete"
+            onClick={() => {
+              if (window.confirm("Delete this widget?")) {
+                onDelete?.();
+              }
+            }}
+          >
+            🗑
+          </button>
+        </div>
+      </div>
+
+      {/* ===== SETTINGS PANEL ===== */}
+      {editing && (
+        <div className="news-settings-panel">
+          <div className="settings-header">
+            <strong>Widget settings</strong>
+            <button
+              className="icon-btn"
+              onClick={() => setEditing(false)}
+            >
+              ✕
+            </button>
+          </div>
+
+          <label>
+            Category
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="general">General</option>
+              <option value="business">Business</option>
+              <option value="technology">Technology</option>
+              <option value="sports">Sports</option>
+              <option value="health">Health</option>
+              <option value="science">Science</option>
+              <option value="entertainment">Entertainment</option>
+            </select>
+          </label>
+        </div>
+      )}
+
+      {/* ===== CONTENT ===== */}
       <div className="news-content">
         {loading && <div className="widget-loading">Loading...</div>}
         {error && <div className="widget-error">{error}</div>}
@@ -48,7 +124,12 @@ export default function NewsWidget({ widgetId, configuration }) {
                 <a href={a.url} target="_blank" rel="noreferrer">
                   {a.title}
                 </a>
-                <div className="news-meta">{a.source} — {a.published_at ? new Date(a.published_at).toLocaleString() : ''}</div>
+                <div className="news-meta">
+                  {a.source} —{" "}
+                  {a.published_at
+                    ? new Date(a.published_at).toLocaleString()
+                    : ""}
+                </div>
               </li>
             ))}
           </ul>

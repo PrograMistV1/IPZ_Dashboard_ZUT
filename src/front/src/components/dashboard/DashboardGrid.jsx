@@ -8,6 +8,7 @@ export default function DashboardGrid({
   widgets,
   onReorder,
   onWidgetUpdate,
+  onClearWidget,
 }) {
   const [openSlots, setOpenSlots] = useState({});
   const [draggedSlot, setDraggedSlot] = useState(null);
@@ -37,9 +38,6 @@ export default function DashboardGrid({
   
     closeAddPanel(slot);
   };
-  
-  
-  
 
   const onDragStart = (slot) => {
     setDraggedSlot(slot);
@@ -105,6 +103,7 @@ export default function DashboardGrid({
                     widgetId={widgetData.id}
                     configuration={widgetData.configuration}
                     onUpdate={onWidgetUpdate}
+                    onDelete={() => onClearWidget(slot)}
                   />
                 );
               })()

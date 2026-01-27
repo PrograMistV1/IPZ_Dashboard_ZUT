@@ -74,6 +74,7 @@ def get_news(req: NewsRequest, db: Session = Depends(get_db)):
         return {
             "source": "database",
             "category": req.category,
+            "cached_at": latest_newsapi.cached_at,
             "articles": [
                 {
                     "title": a.title,

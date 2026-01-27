@@ -247,6 +247,7 @@ export default function Dashboard() {
                 widgets={widgets}
                 onReorder={handleReorder}
                 onWidgetUpdate={updateWidgetLocal}
+                onClearWidget={clearWidget}
             />
         </>
     );

@@ -8,8 +8,12 @@ export default function CurrencyWidget({
   widgetId,
   configuration,
   onUpdate,
+  enabled = true,
+  onDelete,
 }) {
   const isMountedRef = useRef(false);
+
+  const [editing, setEditing] = useState(false);
 
   const [currency, setCurrency] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -23,6 +27,7 @@ export default function CurrencyWidget({
   const [showTable, setShowTable] = useState(false);
   const [chartType, setChartType] = useState("line");
 
+  // ===== init from configuration =====
   useEffect(() => {
     if (!widgetId) return;
 
@@ -40,6 +45,7 @@ export default function CurrencyWidget({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widgetId]);
 
+  // ===== fetch rates =====
   const fetchRates = useCallback(async () => {
     setError("");
     setLoading(true);
@@ -70,11 +76,12 @@ export default function CurrencyWidget({
   }, [currency, dateFrom, dateTo]);
 
   useEffect(() => {
-    if (currency && dateFrom && dateTo) {
+    if (currency && dateFrom && dateTo && enabled) {
       fetchRates();
     }
-  }, [currency, dateFrom, dateTo, fetchRates]);
+  }, [currency, dateFrom, dateTo, fetchRates, enabled]);
 
+  // ===== persist configuration =====
   useEffect(() => {
     if (!widgetId || !isMountedRef.current) return;
 
@@ -88,11 +95,12 @@ export default function CurrencyWidget({
       chartType,
     };
 
-    updateWidget(widgetId, { configuration: newConfig });
+    updateWidget(widgetId, {
+      configuration: newConfig,
+      enabled,
+    });
 
-    if (onUpdate) {
-      onUpdate(widgetId, newConfig);
-    }
+    onUpdate?.(widgetId, newConfig);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currency,
@@ -103,91 +111,155 @@ export default function CurrencyWidget({
     showTable,
     chartType,
     widgetId,
+    enabled,
   ]);
 
   const latestRate =
     rates.length > 0 ? rates[rates.length - 1].rate : null;
 
+  // ===== disabled placeholder =====
+  if (!enabled) {
+    return (
+      <div className="currency-widget disabled">
+        <div className="currency-header">
+          <h3>Currency rates (NBP)</h3>
+          <button className="icon-btn" onClick={() => setEditing(true)}>
+            ⚙
+          </button>
+        </div>
+        <p>Widget is disabled</p>
+      </div>
+    );
+  }
+
   return (
     <div className="currency-widget">
-      <h3>Currency rates (NBP)</h3>
+      {/* ===== HEADER ===== */}
+      <div className="currency-header">
+        <h3>Currency rates (NBP)</h3>
 
-      <div className="currency-form">
-        <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-          <option value="" disabled>
-            Select currency
-          </option>
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="GBP">GBP</option>
-          <option value="CHF">CHF</option>
-          <option value="JPY">JPY</option>
-        </select>
+        <div className="currency-actions">
+          <button
+            className="icon-btn"
+            title="Settings"
+            onClick={() => setEditing(true)}
+          >
+            ⚙
+          </button>
 
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-        />
-
-        <input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-        />
+          <button
+            className="icon-btn danger"
+            title="Delete"
+            onClick={() => {
+              if (
+                window.confirm(
+                  "Are you sure you want to delete this widget?"
+                )
+              ) {
+                onDelete?.();
+              }
+            }}
+          >
+            🗑
+          </button>
+        </div>
       </div>
 
-      <div className="currency-toggles">
-        <label>
-          <input
-            type="checkbox"
-            checked={showChart}
-            onChange={() => setShowChart((v) => !v)}
-          />
-          Chart
-        </label>
+      {/* ===== SETTINGS PANEL ===== */}
+      {editing && (
+        <div className="currency-settings-panel">
+          <div className="settings-header">
+            <h4>Widget settings</h4>
+            <button
+              className="icon-btn"
+              onClick={() => setEditing(false)}
+            >
+              ✕
+            </button>
+          </div>
 
-        {showChart && (
-          <>
+          <div className="currency-form">
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+            >
+              <option value="" disabled>
+                Select currency
+              </option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="CHF">CHF</option>
+              <option value="JPY">JPY</option>
+            </select>
+
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </div>
+
+          <div className="currency-toggles">
             <label>
               <input
-                type="radio"
-                checked={chartType === "line"}
-                onChange={() => setChartType("line")}
+                type="checkbox"
+                checked={showChart}
+                onChange={() => setShowChart((v) => !v)}
               />
-              Line
+              Chart
+            </label>
+
+            {showChart && (
+              <>
+                <label>
+                  <input
+                    type="radio"
+                    checked={chartType === "line"}
+                    onChange={() => setChartType("line")}
+                  />
+                  Line
+                </label>
+
+                <label>
+                  <input
+                    type="radio"
+                    checked={chartType === "candle"}
+                    onChange={() => setChartType("candle")}
+                  />
+                  Candle
+                </label>
+              </>
+            )}
+
+            <label>
+              <input
+                type="checkbox"
+                checked={showValue}
+                onChange={() => setShowValue((v) => !v)}
+              />
+              Value
             </label>
 
             <label>
               <input
-                type="radio"
-                checked={chartType === "candle"}
-                onChange={() => setChartType("candle")}
+                type="checkbox"
+                checked={showTable}
+                onChange={() => setShowTable((v) => !v)}
               />
-              Candle
+              Table
             </label>
-          </>
-        )}
+          </div>
+        </div>
+      )}
 
-        <label>
-          <input
-            type="checkbox"
-            checked={showValue}
-            onChange={() => setShowValue((v) => !v)}
-          />
-          Value
-        </label>
-
-        <label>
-          <input
-            type="checkbox"
-            checked={showTable}
-            onChange={() => setShowTable((v) => !v)}
-          />
-          Table
-        </label>
-      </div>
-
+      {/* ===== CONTENT ===== */}
       {loading && <p>Loading...</p>}
       {error && <p className="error">{error}</p>}
 
@@ -198,12 +270,15 @@ export default function CurrencyWidget({
       )}
 
       {showChart && rates.length > 1 && (
-  <div className="currency-chart-box">
-    {chartType === "line" && <CurrencyLineChart rates={rates} />}
-    {chartType === "candle" && <CurrencyCandleChart rates={rates} />}
-  </div>
-)}
-
+        <div className="currency-chart-box">
+          {chartType === "line" && (
+            <CurrencyLineChart rates={rates} />
+          )}
+          {chartType === "candle" && (
+            <CurrencyCandleChart rates={rates} />
+          )}
+        </div>
+      )}
 
       {showTable && rates.length > 0 && (
         <table className="currency-table">
