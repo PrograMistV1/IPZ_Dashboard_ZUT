@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { getNews } from "../../services/news";
-import { updateWidget } from "../../services/dashboard";
+import React, {useEffect, useState} from "react";
+import {getNews} from "../../services/news";
+import {updateWidget} from "../../services/dashboard";
 import "./currencyWidget.css";
 
 export default function NewsWidget({
@@ -119,15 +119,15 @@ export default function NewsWidget({
         {!loading && !error && (
           <ul className="news-list">
             {articles.length === 0 && <li>No articles</li>}
-            {articles.map((a, idx) => (
-              <li key={idx} className="news-item">
-                <a href={a.url} target="_blank" rel="noreferrer">
-                  {a.title}
+            {articles.map((article) => (
+                <li key={article.url || article.id} className="news-item">
+                  <a href={article.url} target="_blank" rel="noreferrer">
+                    {article.title}
                 </a>
                 <div className="news-meta">
-                  {a.source} —{" "}
-                  {a.published_at
-                    ? new Date(a.published_at).toLocaleString()
+                  {article.source} —{" "}
+                  {article.published_at
+                      ? new Date(article.published_at).toLocaleString()
                     : ""}
                 </div>
               </li>
