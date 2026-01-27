@@ -1,59 +1,187 @@
-import React, { useEffect, useState } from "react";
-import { getNews } from "../../services/news";
+import React, {useEffect, useRef, useState} from "react";
+import {getNews} from "../../services/news";
+import {updateWidget} from "../../services/dashboard";
+import "../../styles/newsWidget.css";
 
-export default function NewsWidget({ widgetId, configuration }) {
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+/** @typedef {{
+ * title: string,
+ * description: (string|null),
+ * source: string,
+ * published_at: string,
+ * url: string
+ * }} Article */
 
-  const category = configuration?.category || "general";
+/** @typedef {{
+ * articles: Article[]
+ * }} NewsApiResponse */
 
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await getNews(category);
-        if (!mounted) return;
-        setArticles(res.articles || []);
-      } catch (err) {
-        if (!mounted) return;
-        setError(err.message || String(err));
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
+/** @typedef {{
+ * widgetId?: string,
+ * configuration?: {
+ *   category?: string
+ * },
+ * onDelete?: () => void,
+ * onUpdate?: (widgetId: string, newConfig: { category: string }) => void
+ * }} NewsWidgetProps */
 
-    load();
+/**
+ * @param {NewsWidgetProps} props
+ */
+export default function NewsWidget({
+                                       widgetId,
+                                       configuration,
+                                       onDelete,
+                                       onUpdate,
+                                   }) {
+    /** @type {[Article[], Function]} */
+    const [articles, setArticles] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    return () => {
-      mounted = false;
-    };
-  }, [category]);
+    const [editing, setEditing] = useState(false);
+    const [category, setCategory] = useState(
+        configuration?.category || "general"
+    );
 
-  return (
-    <div className="widget news-widget">
-      <h4>News — {category}</h4>
+    const initialLoadRef = useRef(true);
+    const previousCategoryRef = useRef(category);
 
-      <div className="news-content">
-        {loading && <div className="widget-loading">Loading...</div>}
-        {error && <div className="widget-error">{error}</div>}
+    useEffect(() => {
+        let mounted = true;
 
-        {!loading && !error && (
-          <ul className="news-list">
-            {articles.length === 0 && <li>No articles</li>}
-            {articles.map((a, idx) => (
-              <li key={idx} className="news-item">
-                <a href={a.url} target="_blank" rel="noreferrer">
-                  {a.title}
-                </a>
-                <div className="news-meta">{a.source} — {a.published_at ? new Date(a.published_at).toLocaleString() : ''}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  );
+        const load = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await getNews(category);
+                if (!mounted) return;
+                setArticles(res.articles || []);
+            } catch (err) {
+                if (!mounted) return;
+                setError(err.message || String(err));
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        };
+
+        load().catch((err) => {
+            console.error("Error in load function:", err);
+        });
+
+        return () => {
+            mounted = false;
+        };
+    }, [category]);
+
+    useEffect(() => {
+        if (!widgetId) return;
+
+        if (initialLoadRef.current) {
+            initialLoadRef.current = false;
+            previousCategoryRef.current = category;
+            return;
+        }
+
+        if (previousCategoryRef.current === category) {
+            return;
+        }
+
+        previousCategoryRef.current = category;
+        const newConfig = {category};
+
+        updateWidget(widgetId, {configuration: newConfig})
+            .then(() => {
+                onUpdate?.(widgetId, newConfig);
+            })
+            .catch((err) => {
+                console.error("Error in updateWidget function:", err);
+            });
+    }, [category, widgetId, onUpdate]);
+
+    return (
+        <div className="widget news-widget">
+            {/* ===== HEADER ===== */}
+            <div className="news-header">
+                <h4>News — {category}</h4>
+
+                <div className="news-actions">
+                    <button
+                        className="icon-btn"
+                        title="Settings"
+                        onClick={() => setEditing(true)}
+                    >
+                        ⚙
+                    </button>
+
+                    <button
+                        className="icon-btn danger"
+                        title="Delete"
+                        onClick={() => {
+                            if (window.confirm("Delete this widget?")) {
+                                onDelete?.();
+                            }
+                        }}
+                    >
+                        🗑
+                    </button>
+                </div>
+            </div>
+
+            {/* ===== SETTINGS PANEL ===== */}
+            {editing && (
+                <div className="news-settings-panel">
+                    <div className="settings-header">
+                        <strong>Widget settings</strong>
+                        <button
+                            className="icon-btn"
+                            onClick={() => setEditing(false)}
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    <label>
+                        Category
+                        <select
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                        >
+                            <option value="general">General</option>
+                            <option value="business">Business</option>
+                            <option value="technology">Technology</option>
+                            <option value="sports">Sports</option>
+                            <option value="health">Health</option>
+                            <option value="science">Science</option>
+                            <option value="entertainment">Entertainment</option>
+                        </select>
+                    </label>
+                </div>
+            )}
+
+            {/* ===== CONTENT ===== */}
+            <div className="news-content">
+                {loading && <div className="widget-loading">Loading...</div>}
+                {error && <div className="widget-error">{error}</div>}
+
+                {!loading && !error && (
+                    <ul className="news-list">
+                        {articles.length === 0 && <li>No articles</li>}
+                        {articles.map((/** @type {Article} */ article) => (
+                            <li key={article.url} className="news-item">
+                                <a href={article.url} target="_blank" rel="noreferrer">
+                                    {article.title}
+                                </a>
+                                <div className="news-meta">
+                                    {article.source} —{" "}
+                                    {article.published_at
+                                        ? new Date(article.published_at).toLocaleString()
+                                        : ""}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
 }

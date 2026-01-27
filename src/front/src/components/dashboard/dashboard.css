@@ -11,7 +11,7 @@
 /*WIDGET SLOT*/
 .widget-slot {
   background: #b1b1b1;
-  border: 2px solid #e4b700;
+  border: 1px solid #000000;
   border-radius: 8px;
   padding: 8px;
 
@@ -25,6 +25,7 @@
   height: 360px;
   max-height: 360px;
   overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
 
 /* Ensure widget root fills the slot */
@@ -45,7 +46,7 @@
   align-items: center;
   justify-content: center;
 
-  border: 1px solid #aaa;
+  border: 0px solid #aaa;
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
