@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from pydantic_core import PydanticCustomError
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from src.back.core.security import get_current_user
 from src.back.logger.logger import BackendLogger
@@ -83,10 +84,18 @@ def create_config(
             "create_economy_config", f"User {user_id} created economy config {cfg.id}"
         )
         return {"id": cfg.id, "name": cfg.name, "configuration": cfg.configuration}
-    except Exception as exc:
+    except IntegrityError as exc:
         db.rollback()
-        log.error("create_economy_config", f"Error: {exc}")
-        raise HTTPException(status_code=500, detail="Database error")
+        log.error("create_economy_config", f"IntegrityError: {exc}")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid data: configuration already exists or violates constraints",
+        )
+
+    except SQLAlchemyError as exc:
+        db.rollback()
+        log.error("create_economy_config", f"Database error: {exc}")
+        raise HTTPException(status_code=500, detail="Database operation failed")
 
 
 @router.get("/economy/configs/{config_id}")
@@ -115,8 +124,20 @@ def update_config(
         raise HTTPException(status_code=404, detail="Config not found")
     if cfg.user_id != user_id:
         raise HTTPException(status_code=403, detail="Forbidden")
-    if req.configuration is not None:
-        cfg.configuration = req.configuration
-    db.commit()
-    db.refresh(cfg)
-    return {"id": cfg.id, "name": cfg.name, "configuration": cfg.configuration}
+    try:
+        if req.configuration is not None:
+            cfg.configuration = req.configuration
+
+        db.commit()
+        db.refresh(cfg)
+
+        return {
+            "id": cfg.id,
+            "name": cfg.name,
+            "configuration": cfg.configuration,
+        }
+
+    except SQLAlchemyError as exc:
+        db.rollback()
+        log.error("update_economy_config", f"Database error: {exc}")
+        raise HTTPException(status_code=500, detail="Database operation failed")
