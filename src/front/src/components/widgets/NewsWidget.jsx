@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {getNews} from "../../services/news";
 import {updateWidget} from "../../services/dashboard";
 import "./currencyWidget.css";
@@ -17,6 +17,9 @@ export default function NewsWidget({
   const [category, setCategory] = useState(
     configuration?.category || "general"
   );
+
+  const initialLoadRef = useRef(true);
+  const previousCategoryRef = useRef(category);
 
   useEffect(() => {
     let mounted = true;
@@ -45,6 +48,17 @@ export default function NewsWidget({
   useEffect(() => {
     if (!widgetId) return;
 
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      previousCategoryRef.current = category;
+      return;
+    }
+
+    if (previousCategoryRef.current === category) {
+      return;
+    }
+
+    previousCategoryRef.current = category;
     const newConfig = { category };
 
     updateWidget(widgetId, { configuration: newConfig });
