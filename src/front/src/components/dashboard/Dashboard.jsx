@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from "react";
-import {useDashboards} from "./DashboardContext";
 import {useOutletContext, useParams} from "react-router-dom";
 import DashboardGrid from "./DashboardGrid";
 import * as dashboardService from "../../services/dashboard";
@@ -7,11 +6,9 @@ import {tokenManager} from "../../services/tokenManager";
 
 export default function Dashboard() {
     const {setDashboardInfo} = useOutletContext() || {};
-    const {id: urlDashboardId} = useParams();
+    const {id} = useParams();
 
-    const {activeDashboardId} = useDashboards();
-
-    const currentDashboardId = urlDashboardId ? parseInt(urlDashboardId, 10) : activeDashboardId;
+    const dashboardId = parseInt(id, 10);
 
     const [slotsCount, setSlotsCount] = useState(4);
     const [widgets, setWidgets] = useState({});
@@ -19,13 +16,13 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(false);
 
     const addSlot = async () => {
-        if (!currentDashboardId || slotsCount >= 8) return;
+        if (!dashboardId || slotsCount >= 8) return;
 
         const newCount = slotsCount + 1;
         setSlotsCount(newCount);
 
         try {
-            await dashboardService.updateDashboard(currentDashboardId, {
+            await dashboardService.updateDashboard(dashboardId, {
                 slotsCount: newCount,
             });
         } catch (err) {
@@ -34,7 +31,7 @@ export default function Dashboard() {
     };
 
     const removeSlot = async () => {
-        if (!currentDashboardId || slotsCount <= 1) return;
+        if (!dashboardId || slotsCount <= 1) return;
 
         const lastSlot = slotsCount;
         const widget = widgets[lastSlot];
@@ -43,7 +40,7 @@ export default function Dashboard() {
 
         if (widget) {
             await fetch(
-                `http://127.0.0.1:8000/api/dashboards/${currentDashboardId}/widgets/${widget.id}`,
+                `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widget.id}`,
                 {
                     method: "DELETE",
                     headers: {Authorization: `Bearer ${token}`},
@@ -61,7 +58,7 @@ export default function Dashboard() {
         setSlotsCount(newCount);
 
         try {
-            await dashboardService.updateDashboard(currentDashboardId, {
+            await dashboardService.updateDashboard(dashboardId, {
                 slotsCount: newCount,
             });
         } catch (err) {
@@ -71,13 +68,13 @@ export default function Dashboard() {
 
     const clearWidget = async (slot) => {
         const widget = widgets[slot];
-        if (!widget || !currentDashboardId) return;
+        if (!widget || !dashboardId) return;
 
         const token = tokenManager.get();
         if (!token) return;
 
         await fetch(
-            `http://127.0.0.1:8000/api/dashboards/${currentDashboardId}/widgets/${widget.id}`,
+            `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widget.id}`,
             {
                 method: "DELETE",
                 headers: {Authorization: `Bearer ${token}`},
@@ -98,12 +95,12 @@ export default function Dashboard() {
     };
 
     useEffect(() => {
-        if (!currentDashboardId) return;
+        if (!dashboardId) return;
 
         const loadDashboard = async () => {
             setLoading(true);
             try {
-                const d = await dashboardService.getDashboard(currentDashboardId);
+                const d = await dashboardService.getDashboard(dashboardId);
 
                 setSlotsCount(d.slotsCount ?? 4);
 
@@ -128,12 +125,12 @@ export default function Dashboard() {
         };
 
         loadDashboard();
-    }, [currentDashboardId]);
+    }, [dashboardId]);
 
 
     useEffect(() => {
         const handler = async (e) => {
-            if (!currentDashboardId) return;
+            if (!dashboardId) return;
 
             const {type, slot, config: detailConfig} = e.detail || {};
             if (!type || !slot) return;
@@ -149,7 +146,7 @@ export default function Dashboard() {
             try {
                 const serverType = type === "currency" ? "rates" : type;
 
-                const created = await dashboardService.createWidget(currentDashboardId, {
+                const created = await dashboardService.createWidget(dashboardId, {
                     type: serverType,
                     configuration: config,
                     position: slot,
@@ -172,7 +169,7 @@ export default function Dashboard() {
 
         window.addEventListener("add-widget", handler);
         return () => window.removeEventListener("add-widget", handler);
-    }, [currentDashboardId, slotsCount, widgets]);
+    }, [dashboardId, slotsCount, widgets]);
 
     const updateWidgetLocal = (widgetId, newConfig) => {
         setWidgets((prev) => {
@@ -190,7 +187,7 @@ export default function Dashboard() {
     };
 
     const handleReorder = async (orderedSlots) => {
-        if (!currentDashboardId) return;
+        if (!dashboardId) return;
 
         const newWidgets = {};
         orderedSlots.forEach((w, i) => {
@@ -210,7 +207,7 @@ export default function Dashboard() {
 
         try {
             await fetch(
-                `http://127.0.0.1:8000/api/dashboards/${currentDashboardId}/widgets/reorder`,
+                `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/reorder`,
                 {
                     method: "PATCH",
                     headers: {
@@ -251,16 +248,6 @@ export default function Dashboard() {
                 onReorder={handleReorder}
                 onWidgetUpdate={updateWidgetLocal}
             />
-
-            {/*
-      <DashboardInfoPanel
-        slotsCount={slotsCount}
-        widgets={widgets}
-        onAddSlot={addSlot}
-        onRemoveSlot={removeSlot}
-        onClearWidget={clearWidget}
-      />
-      */}
         </>
     );
 }

@@ -9,15 +9,12 @@ import economyIcon from "../../assets/icons/economy.png";
 import "./layout.css";
 
 export default function SideBar() {
-
     const navigate = useNavigate();
     const location = useLocation();
     const [open, setOpen] = useState(false);
 
     const {
         dashboards,
-        activeDashboardId,
-        setActiveDashboardId,
         createDashboard,
         deleteDashboard,
     } = useDashboards();
@@ -35,7 +32,6 @@ export default function SideBar() {
 
     const handleDelete = async (id) => {
         const current = dashboards.find((d) => String(d.id) === String(id));
-
         const ok = window.confirm(
             `Delete dashboard "${current?.name || "Dashboard"}"?`
         );
@@ -52,49 +48,45 @@ export default function SideBar() {
         <aside className="sidebar" onMouseLeave={() => setOpen(false)}>
             {/* ===== HEADER ===== */}
             <div className="sidebar-header">
-                <span className="sidebar-app-icon"><img src={dashboardIcon} alt="Dashboard"/></span>
+                <span className="sidebar-app-icon">
+                    <img src={dashboardIcon} alt="Dashboard"/>
+                </span>
                 <span className="sidebar-title">Dashboard</span>
             </div>
 
             {/* ===== MENU ===== */}
             <ul className="sidebar-menu">
-
                 {/* ===== DASHBOARD CUSTOM (ACCORDION) ===== */}
-                <li className="sidebar-item sidebar-accordion" onClick={() => {
-                    setOpen((v) => !v);
-                }}>
-                    <span className="sidebar-menu-icon"><img src={dashboardInfoIcon} alt="Dashboard custom"/></span>
+                <li
+                    className="sidebar-item sidebar-accordion"
+                    onClick={() => setOpen((v) => !v)}
+                >
+                    <span className="sidebar-menu-icon">
+                        <img src={dashboardInfoIcon} alt="Dashboard custom"/>
+                    </span>
                     <span className="label">Dashboard custom</span>
                     <span className={`accordion-arrow ${open ? "open" : ""}`}>
-            ▾
-          </span>
+                        ▾
+                    </span>
                 </li>
 
+                {/* ===== SUBMENU WITH DASHBOARDS ===== */}
                 {open && (
                     <ul className="sidebar-submenu">
-
                         {/* ===== LIST OF DASHBOARDS ===== */}
                         {dashboards.map((d) => (
                             <li
                                 key={d.id}
                                 className={`sidebar-subitem ${
-                                    location.pathname === "/" &&
-                                    String(d.id) === String(activeDashboardId)
-                                        ? "active"
-                                        : ""
+                                    location.pathname === `/dashboard/${d.id}` ? "active" : ""
                                 }`}
-
                             >
-                <span
-                    className="sidebar-subitem-title"
-                    onClick={() => {
-                        navigate("/");
-                        setActiveDashboardId(d.id);
-                    }}
-
-                >
-                  {d.name || `Dashboard ${d.id}`}
-                </span>
+                                <span
+                                    className="sidebar-subitem-title"
+                                    onClick={() => navigate(`/dashboard/${d.id}`)}
+                                >
+                                    {d.name || `Dashboard ${d.id}`}
+                                </span>
 
                                 <button
                                     className="sidebar-subitem-delete"
@@ -114,22 +106,17 @@ export default function SideBar() {
                         >
                             + Add dashboard
                         </li>
-
                     </ul>
                 )}
 
                 {/* ===== ECONOMY ===== */}
                 <li
                     className="sidebar-item"
-                    onClick={() => {
-                        navigate("/economy");
-                        setActiveDashboardId(null);
-                    }}
+                    onClick={() => navigate("/economy")}
                 >
-
-  <span className="sidebar-menu-icon economy-icon">
-    <img src={economyIcon} alt="Economy"/>
-  </span>
+                    <span className="sidebar-menu-icon economy-icon">
+                        <img src={economyIcon} alt="Economy"/>
+                    </span>
                     <span className="label">Economy</span>
                 </li>
             </ul>
