@@ -3,152 +3,185 @@ import {getNews} from "../../services/news";
 import {updateWidget} from "../../services/dashboard";
 import "../../styles/newsWidget.css";
 
+/** @typedef {{
+ * title: string,
+ * description: (string|null),
+ * source: string,
+ * published_at: string,
+ * url: string
+ * }} Article */
+
+/** @typedef {{
+ * articles: Article[]
+ * }} NewsApiResponse */
+
+/** @typedef {{
+ * widgetId?: string,
+ * configuration?: {
+ *   category?: string
+ * },
+ * onDelete?: () => void,
+ * onUpdate?: (widgetId: string, newConfig: { category: string }) => void
+ * }} NewsWidgetProps */
+
+/**
+ * @param {NewsWidgetProps} props
+ */
 export default function NewsWidget({
-  widgetId,
-  configuration,
-  onDelete,
-  onUpdate,
-}) {
-  const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+                                       widgetId,
+                                       configuration,
+                                       onDelete,
+                                       onUpdate,
+                                   }) {
+    /** @type {[Article[], Function]} */
+    const [articles, setArticles] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-  const [editing, setEditing] = useState(false);
-  const [category, setCategory] = useState(
-    configuration?.category || "general"
-  );
+    const [editing, setEditing] = useState(false);
+    const [category, setCategory] = useState(
+        configuration?.category || "general"
+    );
 
-  const initialLoadRef = useRef(true);
-  const previousCategoryRef = useRef(category);
+    const initialLoadRef = useRef(true);
+    const previousCategoryRef = useRef(category);
 
-  useEffect(() => {
-    let mounted = true;
+    useEffect(() => {
+        let mounted = true;
 
-    const load = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await getNews(category);
-        if (!mounted) return;
-        setArticles(res.articles || []);
-      } catch (err) {
-        if (!mounted) return;
-        setError(err.message || String(err));
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
+        const load = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await getNews(category);
+                if (!mounted) return;
+                setArticles(res.articles || []);
+            } catch (err) {
+                if (!mounted) return;
+                setError(err.message || String(err));
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        };
 
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, [category]);
+        load().catch((err) => {
+            console.error("Error in load function:", err);
+        });
 
-  useEffect(() => {
-    if (!widgetId) return;
+        return () => {
+            mounted = false;
+        };
+    }, [category]);
 
-    if (initialLoadRef.current) {
-      initialLoadRef.current = false;
-      previousCategoryRef.current = category;
-      return;
-    }
+    useEffect(() => {
+        if (!widgetId) return;
 
-    if (previousCategoryRef.current === category) {
-      return;
-    }
+        if (initialLoadRef.current) {
+            initialLoadRef.current = false;
+            previousCategoryRef.current = category;
+            return;
+        }
 
-    previousCategoryRef.current = category;
-    const newConfig = { category };
+        if (previousCategoryRef.current === category) {
+            return;
+        }
 
-    updateWidget(widgetId, { configuration: newConfig });
-    onUpdate?.(widgetId, newConfig);
-  }, [category, widgetId, onUpdate]);
+        previousCategoryRef.current = category;
+        const newConfig = {category};
 
-  return (
-    <div className="widget news-widget">
-      {/* ===== HEADER ===== */}
-      <div className="news-header">
-        <h4>News — {category}</h4>
+        updateWidget(widgetId, {configuration: newConfig})
+            .then(() => {
+                onUpdate?.(widgetId, newConfig);
+            })
+            .catch((err) => {
+                console.error("Error in updateWidget function:", err);
+            });
+    }, [category, widgetId, onUpdate]);
 
-        <div className="news-actions">
-          <button
-            className="icon-btn"
-            title="Settings"
-            onClick={() => setEditing(true)}
-          >
-            ⚙
-          </button>
+    return (
+        <div className="widget news-widget">
+            {/* ===== HEADER ===== */}
+            <div className="news-header">
+                <h4>News — {category}</h4>
 
-          <button
-            className="icon-btn danger"
-            title="Delete"
-            onClick={() => {
-              if (window.confirm("Delete this widget?")) {
-                onDelete?.();
-              }
-            }}
-          >
-            🗑
-          </button>
-        </div>
-      </div>
+                <div className="news-actions">
+                    <button
+                        className="icon-btn"
+                        title="Settings"
+                        onClick={() => setEditing(true)}
+                    >
+                        ⚙
+                    </button>
 
-      {/* ===== SETTINGS PANEL ===== */}
-      {editing && (
-        <div className="news-settings-panel">
-          <div className="settings-header">
-            <strong>Widget settings</strong>
-            <button
-              className="icon-btn"
-              onClick={() => setEditing(false)}
-            >
-              ✕
-            </button>
-          </div>
-
-          <label>
-            Category
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="general">General</option>
-              <option value="business">Business</option>
-              <option value="technology">Technology</option>
-              <option value="sports">Sports</option>
-              <option value="health">Health</option>
-              <option value="science">Science</option>
-              <option value="entertainment">Entertainment</option>
-            </select>
-          </label>
-        </div>
-      )}
-
-      {/* ===== CONTENT ===== */}
-      <div className="news-content">
-        {loading && <div className="widget-loading">Loading...</div>}
-        {error && <div className="widget-error">{error}</div>}
-
-        {!loading && !error && (
-          <ul className="news-list">
-            {articles.length === 0 && <li>No articles</li>}
-            {articles.map((article) => (
-                <li key={article.url || article.id} className="news-item">
-                  <a href={article.url} target="_blank" rel="noreferrer">
-                    {article.title}
-                </a>
-                <div className="news-meta">
-                  {article.source} —{" "}
-                  {article.published_at
-                      ? new Date(article.published_at).toLocaleString()
-                    : ""}
+                    <button
+                        className="icon-btn danger"
+                        title="Delete"
+                        onClick={() => {
+                            if (window.confirm("Delete this widget?")) {
+                                onDelete?.();
+                            }
+                        }}
+                    >
+                        🗑
+                    </button>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  );
+            </div>
+
+            {/* ===== SETTINGS PANEL ===== */}
+            {editing && (
+                <div className="news-settings-panel">
+                    <div className="settings-header">
+                        <strong>Widget settings</strong>
+                        <button
+                            className="icon-btn"
+                            onClick={() => setEditing(false)}
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    <label>
+                        Category
+                        <select
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                        >
+                            <option value="general">General</option>
+                            <option value="business">Business</option>
+                            <option value="technology">Technology</option>
+                            <option value="sports">Sports</option>
+                            <option value="health">Health</option>
+                            <option value="science">Science</option>
+                            <option value="entertainment">Entertainment</option>
+                        </select>
+                    </label>
+                </div>
+            )}
+
+            {/* ===== CONTENT ===== */}
+            <div className="news-content">
+                {loading && <div className="widget-loading">Loading...</div>}
+                {error && <div className="widget-error">{error}</div>}
+
+                {!loading && !error && (
+                    <ul className="news-list">
+                        {articles.length === 0 && <li>No articles</li>}
+                        {articles.map((/** @type {Article} */ article) => (
+                            <li key={article.url} className="news-item">
+                                <a href={article.url} target="_blank" rel="noreferrer">
+                                    {article.title}
+                                </a>
+                                <div className="news-meta">
+                                    {article.source} —{" "}
+                                    {article.published_at
+                                        ? new Date(article.published_at).toLocaleString()
+                                        : ""}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
 }
