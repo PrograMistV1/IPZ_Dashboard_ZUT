@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import {getNews} from "../../services/news";
 import {updateWidget} from "../../services/dashboard";
-import "./currencyWidget.css";
+import "../../styles/newsWidget.css";
 
 export default function NewsWidget({
   widgetId,

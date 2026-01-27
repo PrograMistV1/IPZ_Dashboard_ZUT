@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import CurrencyLineChart from "./CurrencyLineChart";
 import CurrencyCandleChart from "./CurrencyCandleChart";
-import "./currencyWidget.css";
-import { updateWidget } from "../../services/dashboard";
+import "../../styles/currencyWidget.css";
+import {updateWidget} from "../../services/dashboard";
 
 export default function CurrencyWidget({
   widgetId,
