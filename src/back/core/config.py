@@ -43,3 +43,6 @@ OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 OPENWEATHER_BASE_URL = os.getenv(
     "OPENWEATHER_BASE_URL", "https://api.openweathermap.org/data/2.5"
 )
+
+# Cache TTL (minutes) for OpenWeather DB cache. Can be overridden via env var.
+OPENWEATHER_CACHE_TTL_MINUTES = int(os.getenv("OPENWEATHER_CACHE_TTL_MINUTES", 30))

@@ -1,7 +1,6 @@
 import datetime
 
 from fastapi import APIRouter, HTTPException, Query, Depends
-from pydantic import BaseModel
 
 from sqlalchemy.orm import Session
 
@@ -13,11 +12,7 @@ router = APIRouter(prefix="/api")
 log = BackendLogger()
 
 
-class WeatherFetchResponse(BaseModel):
-    inserted: int
-
-
-@router.get("/weather/fetch", response_model=WeatherFetchResponse)
+@router.get("/weather/fetch")
 def fetch_weather(
     lat: float = Query(...),
     lon: float = Query(...),
@@ -46,14 +41,6 @@ def fetch_weather(
         raise HTTPException(
             status_code=400, detail="Invalid date format. Use YYYY-MM-DD"
         ) from exc
-
-    # Only future forecasts are supported on free plan. Reject requests for historical dates.
-    today = datetime.datetime.utcnow().date()
-    if start_date < today:
-        raise HTTPException(
-            status_code=400,
-            detail="Historical data is not available on the current plan. Use future dates only.",
-        )
 
     try:
         # Use forecast endpoint (free) for future dates

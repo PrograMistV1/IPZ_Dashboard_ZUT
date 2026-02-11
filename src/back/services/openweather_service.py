@@ -1,10 +1,15 @@
 import datetime
 
 import requests
-from sqlalchemy import text
+from sqlalchemy import text, func
 
-from src.back.core.config import OPENWEATHER_API_KEY, OPENWEATHER_BASE_URL
+from src.back.core.config import (
+    OPENWEATHER_API_KEY,
+    OPENWEATHER_BASE_URL,
+    OPENWEATHER_CACHE_TTL_MINUTES,
+)
 from src.back.logger.logger import BackendLogger
+from src.models.weather import Weather
 
 log = BackendLogger()
 
@@ -19,6 +24,50 @@ def fetch_and_store_forecast(
     """
     if not OPENWEATHER_API_KEY:
         raise RuntimeError("OPENWEATHER_API_KEY is not configured in environment")
+
+    # DB-based cache: if we have a recent row for the same lat/lon AND
+    # there are records for all requested dates, return cached.
+    try:
+        now = datetime.datetime.utcnow()
+        ttl = datetime.timedelta(minutes=int(OPENWEATHER_CACHE_TTL_MINUTES))
+        latest = (
+            db.query(Weather)
+            .filter(
+                func.abs(Weather.lat - lat) < 0.00001,
+                func.abs(Weather.lon - lon) < 0.00001,
+            )
+            .order_by(Weather.created_at.desc())
+            .first()
+        )
+        if latest and (now - latest.created_at) < ttl:
+            # check that we have data for every date in [start_date, end_date]
+            expected_days = (end_date - start_date).days + 1
+            count_dates = (
+                db.query(func.count(func.distinct(func.date(Weather.timestamp))))
+                .filter(
+                    func.abs(Weather.lat - lat) < 0.00001,
+                    func.abs(Weather.lon - lon) < 0.00001,
+                    func.date(Weather.timestamp) >= start_date,
+                    func.date(Weather.timestamp) <= end_date,
+                )
+                .scalar()
+            )
+            try:
+                count_dates = int(count_dates or 0)
+            except Exception:
+                count_dates = 0
+
+            if count_dates >= expected_days:
+                return {
+                    "cached": True,
+                    "source": "database",
+                    "cached_at": getattr(
+                        latest.created_at, "isoformat", lambda: str(latest.created_at)
+                    )(),
+                    "available_days": count_dates,
+                }
+    except Exception as exc:
+        log.error("openweather", f"Cache check failed: {exc}")
 
     base = OPENWEATHER_BASE_URL.rstrip("/")
     url = f"{base}/forecast"
@@ -83,7 +132,7 @@ def fetch_and_store_forecast(
         rows.append(row)
 
     if not rows:
-        return {"inserted": 0}
+        return {"inserted": 0, "source": "openweather_api"}
 
     try:
         sql = (
@@ -107,4 +156,4 @@ def fetch_and_store_forecast(
         log.error("openweather", f"DB error saving forecast rows: {exc}")
         raise
 
-    return {"inserted": inserted}
+    return {"inserted": inserted, "source": "openweather_api"}
