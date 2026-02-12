@@ -1,15 +1,10 @@
 import datetime
 
 import requests
-from sqlalchemy import text, func
+from sqlalchemy import text
 
-from src.back.core.config import (
-    OPENWEATHER_API_KEY,
-    OPENWEATHER_BASE_URL,
-    OPENWEATHER_CACHE_TTL_MINUTES,
-)
+from src.back.core.config import OPENWEATHER_API_KEY, OPENWEATHER_BASE_URL
 from src.back.logger.logger import BackendLogger
-from src.models.weather import Weather
 
 log = BackendLogger()
 
@@ -24,50 +19,6 @@ def fetch_and_store_forecast(
     """
     if not OPENWEATHER_API_KEY:
         raise RuntimeError("OPENWEATHER_API_KEY is not configured in environment")
-
-    # DB-based cache: if we have a recent row for the same lat/lon AND
-    # there are records for all requested dates, return cached.
-    try:
-        now = datetime.datetime.utcnow()
-        ttl = datetime.timedelta(minutes=int(OPENWEATHER_CACHE_TTL_MINUTES))
-        latest = (
-            db.query(Weather)
-            .filter(
-                func.abs(Weather.lat - lat) < 0.00001,
-                func.abs(Weather.lon - lon) < 0.00001,
-            )
-            .order_by(Weather.created_at.desc())
-            .first()
-        )
-        if latest and (now - latest.created_at) < ttl:
-            # check that we have data for every date in [start_date, end_date]
-            expected_days = (end_date - start_date).days + 1
-            count_dates = (
-                db.query(func.count(func.distinct(func.date(Weather.timestamp))))
-                .filter(
-                    func.abs(Weather.lat - lat) < 0.00001,
-                    func.abs(Weather.lon - lon) < 0.00001,
-                    func.date(Weather.timestamp) >= start_date,
-                    func.date(Weather.timestamp) <= end_date,
-                )
-                .scalar()
-            )
-            try:
-                count_dates = int(count_dates or 0)
-            except Exception:
-                count_dates = 0
-
-            if count_dates >= expected_days:
-                return {
-                    "cached": True,
-                    "source": "database",
-                    "cached_at": getattr(
-                        latest.created_at, "isoformat", lambda: str(latest.created_at)
-                    )(),
-                    "available_days": count_dates,
-                }
-    except Exception as exc:
-        log.error("openweather", f"Cache check failed: {exc}")
 
     base = OPENWEATHER_BASE_URL.rstrip("/")
     url = f"{base}/forecast"
@@ -132,20 +83,48 @@ def fetch_and_store_forecast(
         rows.append(row)
 
     if not rows:
-        return {"inserted": 0, "source": "openweather_api"}
+        return {"inserted": 0}
 
     try:
-        sql = (
-            "INSERT INTO weather"
-            " (lat, lon, timestamp, temp, feels_like, pressure, humidity, "
-            "wind_speed, weather_main, weather_description, source, created_at)"
-            " VALUES (:lat, :lon, :timestamp, :temp, :feels_like, :pressure, :humidity, "
-            " :wind_speed, :weather_main, :weather_description, :source, :created_at)"
-            " ON DUPLICATE KEY UPDATE temp = VALUES(temp), feels_like = VALUES(feels_like),"
-            " pressure = VALUES(pressure), humidity = VALUES(humidity),"
-            " wind_speed = VALUES(wind_speed), weather_main = VALUES(weather_main),"
-            " weather_description = VALUES(weather_description), created_at = VALUES(created_at)"
+        sql = """
+        INSERT INTO weather (
+            lat,
+            lon,
+            timestamp,
+            temp,
+            feels_like,
+            pressure,
+            humidity,
+            wind_speed,
+            weather_main,
+            weather_description,
+            source,
+            created_at
         )
+        VALUES (
+            :lat,
+            :lon,
+            :timestamp,
+            :temp,
+            :feels_like,
+            :pressure,
+            :humidity,
+            :wind_speed,
+            :weather_main,
+            :weather_description,
+            :source,
+            :created_at
+        )
+        ON DUPLICATE KEY UPDATE
+            temp = VALUES(temp),
+            feels_like = VALUES(feels_like),
+            pressure = VALUES(pressure),
+            humidity = VALUES(humidity),
+            wind_speed = VALUES(wind_speed),
+            weather_main = VALUES(weather_main),
+            weather_description = VALUES(weather_description),
+            created_at = VALUES(created_at)
+        """
 
         for row in rows:
             db.execute(text(sql), row)
@@ -156,4 +135,169 @@ def fetch_and_store_forecast(
         log.error("openweather", f"DB error saving forecast rows: {exc}")
         raise
 
-    return {"inserted": inserted, "source": "openweather_api"}
+    return {"inserted": inserted}
+
+
+def geocode_city(city: str) -> tuple[float, float] | None:
+    """Resolve city name to (lat, lon) using OpenWeather geocoding API."""
+    if not OPENWEATHER_API_KEY:
+        raise RuntimeError("OPENWEATHER_API_KEY is not configured in environment")
+
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(OPENWEATHER_BASE_URL)
+        host_base = f"{parsed.scheme}://{parsed.netloc}"
+    except Exception:
+        host_base = OPENWEATHER_BASE_URL.rstrip("/")
+
+    url = f"{host_base}/geo/1.0/direct"
+    params = {"q": city, "limit": 1, "appid": OPENWEATHER_API_KEY}
+
+    try:
+        resp = requests.get(url, params=params, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as exc:
+        log.error("openweather", f"Geocoding request failed for '{city}': {exc}")
+        return None
+
+    if not data or not isinstance(data, list):
+        return None
+
+    first = data[0]
+    lat = first.get("lat")
+    lon = first.get("lon")
+    if lat is None or lon is None:
+        return None
+    try:
+        return float(lat), float(lon)
+    except Exception:
+        return None
+
+
+def fetch_and_store_forecast_by_city(
+    db, city: str, start_date: datetime.date, end_date: datetime.date
+) -> dict:
+    """Fetch forecast using `q=city` parameter and store rows; return inserted count and coords."""
+    if not OPENWEATHER_API_KEY:
+        raise RuntimeError("OPENWEATHER_API_KEY is not configured in environment")
+
+    base = OPENWEATHER_BASE_URL.rstrip("/")
+    url = f"{base}/forecast"
+    params = {"q": city, "appid": OPENWEATHER_API_KEY, "units": "metric"}
+
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.exceptions.RequestException as exc:
+        log.error(
+            "openweather", f"RequestException fetching forecast by city '{city}': {exc}"
+        )
+        raise
+
+    coord = (None, None)
+    city_block = data.get("city") or {}
+    if city_block:
+        ccoord = city_block.get("coord") or {}
+        try:
+            coord = (float(ccoord.get("lat")), float(ccoord.get("lon")))
+        except Exception:
+            coord = (None, None)
+
+    entries = data.get("list", [])
+    rows = []
+    inserted = 0
+
+    for e in entries:
+        dt_ts = e.get("dt")
+        if not dt_ts:
+            continue
+        ts = datetime.datetime.fromtimestamp(dt_ts, tz=datetime.timezone.utc)
+        d = ts.date()
+        if d < start_date or d > end_date:
+            continue
+
+        main = e.get("main", {})
+        weather = e.get("weather") or []
+        w_main = None
+        w_desc = None
+        if weather and isinstance(weather, list) and len(weather) > 0:
+            w_main = weather[0].get("main")
+            w_desc = weather[0].get("description")
+
+        lat = coord[0]
+        lon = coord[1]
+
+        row = {
+            "lat": lat,
+            "lon": lon,
+            "timestamp": ts,
+            "temp": main.get("temp"),
+            "feels_like": main.get("feels_like"),
+            "pressure": main.get("pressure"),
+            "humidity": main.get("humidity"),
+            "wind_speed": (e.get("wind") or {}).get("speed"),
+            "weather_main": w_main,
+            "weather_description": w_desc,
+            "source": "openweather",
+            "created_at": datetime.datetime.utcnow(),
+        }
+
+        rows.append(row)
+
+    if not rows:
+        return {"inserted": 0, "lat": coord[0], "lon": coord[1]}
+
+    try:
+        sql = """
+        INSERT INTO weather (
+            lat,
+            lon,
+            timestamp,
+            temp,
+            feels_like,
+            pressure,
+            humidity,
+            wind_speed,
+            weather_main,
+            weather_description,
+            source,
+            created_at
+        )
+        VALUES (
+            :lat,
+            :lon,
+            :timestamp,
+            :temp,
+            :feels_like,
+            :pressure,
+            :humidity,
+            :wind_speed,
+            :weather_main,
+            :weather_description,
+            :source,
+            :created_at
+        )
+        ON DUPLICATE KEY UPDATE
+            temp = VALUES(temp),
+            feels_like = VALUES(feels_like),
+            pressure = VALUES(pressure),
+            humidity = VALUES(humidity),
+            wind_speed = VALUES(wind_speed),
+            weather_main = VALUES(weather_main),
+            weather_description = VALUES(weather_description),
+            created_at = VALUES(created_at)
+        """
+
+        for row in rows:
+            db.execute(text(sql), row)
+            inserted += 1
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        log.error("openweather", f"DB error saving forecast rows (by city): {exc}")
+        raise
+
+    return {"inserted": inserted, "lat": coord[0], "lon": coord[1]}

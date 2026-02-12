@@ -140,17 +140,34 @@ export default function Dashboard() {
 
             if (type === "news") {
                 const category = config.category;
-                if (!category) return; // require category selected via UI
+                if (!category) return; 
             }
 
             try {
-                const serverType = type === "currency" ? "rates" : type;
+                const typeMap = { currency: "rates", currency: "rates", news: "news", weather: "weather", rates: "rates" };
+                const serverType = (type && typeof type === "string") ? (typeMap[type.toLowerCase()] || type.toLowerCase()) : type;
 
-                const created = await dashboardService.createWidget(dashboardId, {
+                const payload = {
                     type: serverType,
                     configuration: config,
                     position: slot,
-                });
+                };
+
+                console.debug("Creating widget payload:", payload);
+
+                if (!payload.type || typeof payload.type !== "string") {
+                    console.error("Invalid widget type in payload:", payload.type);
+                    return;
+                }
+
+                let created;
+                try {
+                    created = await dashboardService.createWidget(dashboardId, payload);
+                    console.debug("Widget created response:", created);
+                } catch (apiErr) {
+                    console.error("API error creating widget:", apiErr, apiErr?.details || null);
+                    throw apiErr;
+                }
 
                 setWidgets((prev) => ({
                     ...prev,

@@ -285,6 +285,7 @@ def create_widget(
         "news": "news",
         "history": "history",
         "history_operations": "history",
+        "weather": "weather",
     }
 
     widget_type = type_map.get(req.type.lower()) if isinstance(req.type, str) else None
