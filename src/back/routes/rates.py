@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 import requests
 from fastapi import APIRouter, Depends, HTTPException
@@ -104,7 +104,7 @@ def save_rates_to_db(db: Session, currency: str, rates: list[dict]):
     results = []
     try:
         for r in rates:
-            rate_date = r["effectiveDate"]
+            rate_date = datetime.strptime(r["effectiveDate"], "%Y-%m-%d").date()
             rate = r["mid"]
 
             existing = (
@@ -131,6 +131,79 @@ def save_rates_to_db(db: Session, currency: str, rates: list[dict]):
     return results
 
 
+def backfill_missing_dates(db: Session, currency: str, start: date, end: date):
+    # Ensure every calendar date in [start, end] has a CurrencyRate entry.
+    # For missing dates, copy the most recent previous available rate.
+    try:
+        existing = (
+            db.query(CurrencyRate)
+            .filter(CurrencyRate.currency == currency, CurrencyRate.date <= end)
+            .order_by(CurrencyRate.date)
+            .all()
+        )
+
+        existing_map = {r.date: r for r in existing}
+
+        # find last known rate before start
+        prev_obj = (
+            db.query(CurrencyRate)
+            .filter(CurrencyRate.currency == currency, CurrencyRate.date < start)
+            .order_by(CurrencyRate.date.desc())
+            .first()
+        )
+        prev_rate = prev_obj.rate if prev_obj else None
+
+        # find first known rate on or after start (used to fill earlier missing days)
+        first_known_date = None
+        first_known_rate = None
+        for k in sorted(existing_map.keys()):
+            if k >= start:
+                first_known_date = k
+                first_known_rate = existing_map[k].rate
+                break
+
+        to_insert = []
+        d = start
+        while d <= end:
+            if d in existing_map:
+                prev_rate = existing_map[d].rate
+            else:
+                if prev_rate is not None:
+                    to_insert.append((d, prev_rate))
+                else:
+                    # no previous rate available; if we have a first known rate
+                    # within the requested range, use it to fill earlier missing days
+                    if first_known_date and d < first_known_date:
+                        to_insert.append((d, first_known_rate))
+            d = d + timedelta(days=1)
+
+        for dt, rate in to_insert:
+            obj = CurrencyRate(currency=currency, date=dt, source="NBP", rate=rate)
+            db.add(obj)
+
+        if to_insert:
+            db.commit()
+
+        return [
+            {"date": r.date, "rate": r.rate}
+            for r in (
+                db.query(CurrencyRate)
+                .filter(
+                    CurrencyRate.currency == currency,
+                    CurrencyRate.date >= start,
+                    CurrencyRate.date <= end,
+                )
+                .order_by(CurrencyRate.date)
+                .all()
+            )
+        ]
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Database error during backfill: {exc}"
+        ) from exc
+
+
 @router.post("/rates")
 def get_rates(req: RateRequest, db: Session = Depends(get_db)):
     log.info("rates_endpoint", "Received request for rates")
@@ -154,7 +227,10 @@ def get_rates(req: RateRequest, db: Session = Depends(get_db)):
 
     try:
         rates = fetch_rates_from_nbp(req.currency, start, end)
-        final_results = save_rates_to_db(db, req.currency, rates)
+        # save returned (working day) rates
+        _ = save_rates_to_db(db, req.currency, rates)
+        # backfill missing calendar days (weekends/holidays) using previous working day's values
+        final_results = backfill_missing_dates(db, req.currency, start, end)
         return {"source": "nbp_api", "currency": req.currency, "rates": final_results}
     except Exception as exc:
         log.error("rates_endpoint", f"Unexpected error: {exc}")
