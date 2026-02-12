@@ -109,6 +109,7 @@ def get_weather(
                 "wind_speed": r.wind_speed,
                 "weather_main": r.weather_main,
                 "weather_description": r.weather_description,
+                "source": "database",
             }
             for r in rows
         ]
@@ -144,6 +145,7 @@ def get_weather(
             "wind_speed": r.wind_speed,
             "weather_main": r.weather_main,
             "weather_description": r.weather_description,
+            "source": "api",
         }
         for r in rows
     ]
