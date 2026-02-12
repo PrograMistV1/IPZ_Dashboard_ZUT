@@ -11,10 +11,7 @@
 /*WIDGET SLOT*/
 .widget-slot {
   background: #b1b1b1;
-  border: 1px solid #000000;
   border-radius: 8px;
-  padding: 8px;
-
   display: flex;
   align-items: stretch;
   justify-content: stretch;
@@ -22,8 +19,8 @@
   color: #000000;
   font-size: 14px;
   /* fixed slot height so inner widget can use flex:1 and scroll internally */
-  height: 360px;
-  max-height: 360px;
+  height: 520px;
+  max-height: 520px;
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }

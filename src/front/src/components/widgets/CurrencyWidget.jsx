@@ -157,7 +157,7 @@ export default function CurrencyWidget({
         <div className="currency-widget">
             {/* ===== HEADER ===== */}
             <div className="currency-header">
-                <h3>Currency rates (NBP)</h3>
+                <h3>{currency || "choose a currency"}</h3>
 
                 <div className="currency-actions">
                     <button

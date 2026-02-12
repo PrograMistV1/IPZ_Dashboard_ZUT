@@ -1,63 +1,101 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState, useMemo} from "react";
 import {apiFetch} from "../../services/api";
 import {updateWidget} from "../../services/dashboard";
+import WeatherChart from "./WeatherChart";
 import "../../styles/currencyWidget.css";
 
 export default function WeatherWidget({widgetId, configuration, onDelete, onUpdate}) {
     const [editing, setEditing] = useState(false);
     const [city, setCity] = useState(configuration?.city || "");
-    const [date, setDate] = useState(configuration?.date || new Date().toISOString().slice(0,10));
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    const [showChart, setShowChart] = useState(configuration?.showChart ?? true);
+    const [series, setSeries] = useState(configuration?.series || {temp:true,feels_like:false,pressure:false,humidity:false,wind_speed:false});
+    const [showCurrent, setShowCurrent] = useState(configuration?.showCurrent ?? true);
 
     const initialRef = useRef(true);
 
     useEffect(() => {
         if (!widgetId) return;
         setCity(configuration?.city || "");
-        setDate(configuration?.date || new Date().toISOString().slice(0,10));
         setRows([]);
         setError(null);
+        setShowChart(configuration?.showChart ?? true);
+        setSeries(configuration?.series || {temp:true,feels_like:false,pressure:false,humidity:false,wind_speed:false});
+        setShowCurrent(configuration?.showCurrent ?? true);
         initialRef.current = true;
     }, [widgetId]);
 
     useEffect(() => {
-        if (!city || !date) return;
+        if (!city) return;
         let mounted = true;
         setLoading(true);
         setError(null);
-        apiFetch(`/api/weather?city=${encodeURIComponent(city)}&date=${encodeURIComponent(date)}`)
-            .then((data) => { if (!mounted) return; setRows(data || []); })
+
+        // build 5 dates starting from today (today .. today+4)
+        const dates = Array.from({length:5}).map((_,i)=>{
+            const d = new Date();
+            d.setDate(d.getDate() + i);
+            return d.toISOString().slice(0,10);
+        });
+
+        Promise.all(dates.map(dt => apiFetch(`/api/weather?city=${encodeURIComponent(city)}&date=${encodeURIComponent(dt)}`)
+            .catch(err => { return []; })))
+            .then((arrs) => {
+                if (!mounted) return;
+                // flatten and sort by timestamp
+                const flat = (arrs || []).flat().map(r=>r || [] ).flat();
+                flat.sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
+                setRows(flat);
+            })
             .catch((err) => { if (!mounted) return; setError(err.message || String(err)); })
             .finally(() => { if (mounted) setLoading(false); });
+
         return () => { mounted = false; };
-    }, [city, date]);
+    }, [city]);
 
     // persist config only when differs from server config
     useEffect(() => {
         if (!widgetId) return;
         if (initialRef.current) { initialRef.current = false; return; }
-        const newConfig = {city, date};
+        const newConfig = {city, showChart, series, showCurrent};
         const serverCfg = configuration || {};
         try {
-            const same = JSON.stringify({city: serverCfg.city ?? "", date: serverCfg.date ?? ""}) === JSON.stringify(newConfig);
+            const same = JSON.stringify({
+                city: serverCfg.city ?? "",
+                showChart: serverCfg.showChart ?? true,
+                series: serverCfg.series ?? {},
+                showCurrent: serverCfg.showCurrent ?? true,
+            }) === JSON.stringify(newConfig);
             if (same) return;
         } catch (e) {}
         updateWidget(widgetId, {configuration: newConfig}).then(()=>onUpdate?.(widgetId, newConfig)).catch((err)=>console.error(err));
-    }, [city, date, widgetId, onUpdate, configuration]);
+    }, [city, showChart, series, showCurrent, widgetId, onUpdate, configuration]);
 
-    const daysOptions = Array.from({length:5}).map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()+i); return d.toISOString().slice(0,10); });
+    const currentPoint = useMemo(() => {
+        if (!rows || rows.length === 0) return null;
+        const now = Date.now();
+        let best = rows[0];
+        let bestDiff = Math.abs(new Date(best.timestamp).getTime() - now);
+        for (const r of rows) {
+            const d = Math.abs(new Date(r.timestamp).getTime() - now);
+            if (d < bestDiff) { best = r; bestDiff = d; }
+        }
+        return best;
+    }, [rows]);
 
     return (
         <div className="widget weather-widget">
             <div className="news-header">
-                <h4>Weather — {date}</h4>
+                <h4>{city || "(no city)"}</h4>
                 <div className="news-actions">
                     <button className="icon-btn" title="Settings" onClick={()=>setEditing(true)}>⚙</button>
                     <button className="icon-btn danger" title="Delete" onClick={()=>{ if (window.confirm("Delete this widget?")) onDelete?.(); }}>🗑</button>
                 </div>
             </div>
+
             {editing && (
                 <div className="news-settings-panel">
                     <div className="settings-header">
@@ -65,19 +103,61 @@ export default function WeatherWidget({widgetId, configuration, onDelete, onUpda
                         <button className="icon-btn" onClick={()=>setEditing(false)}>✕</button>
                     </div>
                     <label>City<input type="text" value={city} onChange={(e)=>setCity(e.target.value)} /></label>
-                    <label>Date<select value={date} onChange={(e)=>setDate(e.target.value)}>{daysOptions.map(d=> <option key={d} value={d}>{d}</option>)}</select></label>
+
+                    <div style={{marginTop:8}}>
+                        <label><input type="checkbox" checked={showCurrent} onChange={()=>setShowCurrent(v=>!v)} /> Show current weather</label>
+                    </div>
+
+                    <div style={{marginTop:8}}>
+                        <label><input type="checkbox" checked={showChart} onChange={()=>setShowChart(v=>!v)} /> Forecast</label>
+                        {showChart && (
+                            <div style={{display:'flex', gap:8, flexWrap:'wrap', marginTop:6}}>
+                                {Object.keys(series).map(k=> (
+                                    <label key={k} style={{display:'flex',alignItems:'center',gap:6}}>
+                                        <input type="checkbox" checked={!!series[k]} onChange={()=>setSeries(s=>({...s,[k]:!s[k]}))} /> {k.replace('_',' ')}
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
+
             <div className="news-content">
                 {loading && <div className="widget-loading">Loading...</div>}
                 {error && <div className="widget-error">{error}</div>}
+
                 {!loading && !error && (
-                    <ul className="news-list">
-                        {rows.length===0 && <li>No data for selected day</li>}
-                        {rows.map((r,i)=> (
-                            <li key={i} className="news-item"><div>{new Date(r.timestamp).toLocaleTimeString()} — {Math.round(r.temp)}°C — {r.weather_main} {r.weather_description}</div></li>
-                        ))}
-                    </ul>
+                    <div>
+                        {showCurrent && currentPoint && (
+                            <div style={{marginBottom:8}}>
+                                <div>
+                                    <div style={{fontSize:18, fontWeight:700, display:'inline'}}>
+                                        {Math.round(currentPoint.temp)}°C
+                                        <span style={{fontSize:13, opacity:0.9, marginLeft:6}}>
+                                            {currentPoint.weather_description ? currentPoint.weather_description.replace(/^\w/, c => c.toUpperCase()) : (currentPoint.weather_main || '')}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style={{marginTop:8, display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:6}}>
+                                    <div>Feels: <strong>{Math.round(currentPoint.feels_like)}°C</strong></div>
+                                    <div>Pressure: <strong>{currentPoint.pressure} hPa</strong></div>
+                                    <div>Humidity: <strong>{currentPoint.humidity}%</strong></div>
+                                    <div>Wind: <strong>{currentPoint.wind_speed} m/s</strong></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showChart && rows.length > 1 && (
+                            <div className="currency-chart-box">
+                                <WeatherChart rows={rows} series={series} />
+                            </div>
+                        )}
+
+                        {rows.length === 0 && (
+                            <div>No data for selected city</div>
+                        )}
+                    </div>
                 )}
             </div>
         </div>
