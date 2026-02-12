@@ -12,6 +12,7 @@ export default function CurrencyWidget({
                                            onDelete,
                                        }) {
     const isMountedRef = useRef(false);
+    const initialConfigRef = useRef(null);
 
     const [editing, setEditing] = useState(false);
 
@@ -27,7 +28,6 @@ export default function CurrencyWidget({
     const [showTable, setShowTable] = useState(false);
     const [chartType, setChartType] = useState("line");
 
-    // ===== init from configuration =====
     useEffect(() => {
         if (!widgetId) return;
 
@@ -40,12 +40,14 @@ export default function CurrencyWidget({
         setChartType(configuration?.chartType || "line");
         setRates([]);
         setError("");
+ 
+        if (initialConfigRef.current === null) {
+            initialConfigRef.current = configuration || null;
+        }
 
         isMountedRef.current = true;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [widgetId]);
 
-    // ===== fetch rates =====
     const fetchRates = useCallback(async () => {
         setError("");
         setLoading(true);
@@ -87,7 +89,6 @@ export default function CurrencyWidget({
         }
     }, [currency, dateFrom, dateTo, fetchRates, enabled]);
 
-    // ===== persist configuration =====
     useEffect(() => {
         if (!widgetId || !isMountedRef.current) return;
 
@@ -101,14 +102,28 @@ export default function CurrencyWidget({
             chartType,
         };
 
+        try {
+            const prev = initialConfigRef.current || {};
+            const prevJson = JSON.stringify(prev || {});
+            const newJson = JSON.stringify(newConfig || {});
+            if (prevJson === newJson) {
+                return;
+            }
+        } catch (err) {
+        }
+
+        if (!newConfig.currency && !newConfig.dateFrom && !newConfig.dateTo) {
+            return;
+        }
+
         updateWidget(widgetId, {
             configuration: newConfig,
             enabled,
         }).then(() => {
+            initialConfigRef.current = newConfig;
         });
 
         onUpdate?.(widgetId, newConfig);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         currency,
         dateFrom,
@@ -124,7 +139,6 @@ export default function CurrencyWidget({
     const latestRate =
         rates.length > 0 ? rates[rates.length - 1].rate : null;
 
-    // ===== disabled placeholder =====
     if (!enabled) {
         return (
             <div className="currency-widget disabled">
