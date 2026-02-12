@@ -5,6 +5,7 @@ import {useDashboards} from "../dashboard/DashboardContext";
 import dashboardIcon from "../../assets/icons/dashboard.png";
 import dashboardInfoIcon from "../../assets/icons/dashboard-info.png";
 import economyIcon from "../../assets/icons/economy.png";
+import weatherIcon from "../../assets/icons/weather.png";
 
 import "./layout.css";
 
@@ -118,6 +119,17 @@ export default function SideBar() {
                         <img src={economyIcon} alt="Economy"/>
                     </span>
                     <span className="label">Economy</span>
+                </li>
+
+                {/* ===== WEATHER ===== */}
+                <li
+                    className="sidebar-item"
+                    onClick={() => navigate("/weather")}
+                >
+                    <span className="sidebar-menu-icon weather-icon">
+                        <img src={weatherIcon} alt="Weather"/>
+                    </span>
+                    <span className="label">Weather</span>
                 </li>
             </ul>
         </aside>
