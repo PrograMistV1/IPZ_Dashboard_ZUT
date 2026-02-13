@@ -8,15 +8,6 @@ const COLORS = {
   wind_speed: "#a78bfa",
 };
 
-function formatXLabel(date) {
-  try {
-    const d = new Date(date);
-    const day = d.toLocaleDateString();
-    const time = d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-    return {day, time};
-  } catch { return {day: String(date), time: ''}; }
-}
-
 export default function WeatherChart({rows, series}) {
   // convert rows to points and pick one value per day close to 12:00
   const points = useMemo(() => {
@@ -39,25 +30,23 @@ export default function WeatherChart({rows, series}) {
     });
 
     // For each day pick the point closest to 12:00 UTC
-    const daily = Object.keys(groups)
-      .sort()
-      .map((dateKey) => {
-        const target = new Date(dateKey + "T12:00:00Z").getTime();
-        const list = groups[dateKey];
-        let best = list[0];
-        let bestDiff = Math.abs(list[0].t.getTime() - target);
-        for (const it of list) {
-          const d = Math.abs(it.t.getTime() - target);
-          if (d < bestDiff) {
-            best = it;
-            bestDiff = d;
+    return Object.keys(groups)
+        .sort()
+        .map((dateKey) => {
+          const target = new Date(dateKey + "T12:00:00Z").getTime();
+          const list = groups[dateKey];
+          let best = list[0];
+          let bestDiff = Math.abs(list[0].t.getTime() - target);
+          for (const it of list) {
+            const d = Math.abs(it.t.getTime() - target);
+            if (d < bestDiff) {
+              best = it;
+              bestDiff = d;
+            }
           }
-        }
-        // keep the original UTC date key so labels can be produced consistently
-        return { ...best, dateKey };
-      });
-
-    return daily;
+          // keep the original UTC date key so labels can be produced consistently
+          return {...best, dateKey};
+        });
   }, [rows]);
 
   const enabledKeys = Object.keys(series || {}).filter((k) => series[k]);
@@ -75,7 +64,8 @@ export default function WeatherChart({rows, series}) {
     <div style={{display:'flex', flexDirection:'column', gap:12}}>
       {enabledKeys.map((key) => {
         const color = COLORS[key] || '#888';
-        const vals = points.map(p => p[key]).filter(v => typeof v === 'number');
+        const toNumber = (v) => (typeof v === 'number' ? v : Number(v));
+        const vals = points.map(p => toNumber(p[key])).filter(v => Number.isFinite(v));
         const min = vals.length ? Math.min(...vals) : 0;
         const max = vals.length ? Math.max(...vals) : 1;
         const scaleYLocal = (v) => height - padding - ((v - min) / (max - min || 1)) * (height - padding * 2);
@@ -94,7 +84,7 @@ export default function WeatherChart({rows, series}) {
                     return (
                       <g key={idx}>
                         <line x1={padding - 6} x2={padding} y1={y} y2={y} stroke="#ccc" />
-                        <text x={padding - 10} y={y + 4} fontSize={10} textAnchor="end">{Math.round(tv)}</text>
+                        <text x={padding - 10} y={y + 4} fontSize={10} textAnchor="end">{Math.round(Number(tv))}</text>
                       </g>
                     );
                   })}
@@ -103,16 +93,24 @@ export default function WeatherChart({rows, series}) {
               {/* polyline */}
 
               <polyline
-                points={points.map((p,i)=> `${xScale(i)},${scaleYLocal(p[key])}`).join(' ')}
+                points={points.map((p,i)=> {
+                  const value = toNumber(p[key]);
+                  const safeValue = Number.isFinite(value) ? value : min;
+                  return `${xScale(i)},${scaleYLocal(safeValue)}`;
+                }).join(' ')}
                 fill="none"
                 stroke={color}
                 strokeWidth={2}
               />
 
               {/* points */}
-              {points.map((p,i)=>(
-                <circle key={i} cx={xScale(i)} cy={scaleYLocal(p[key])} r={3} fill={color} />
-              ))}
+              {points.map((p,i)=>{
+                const value = toNumber(p[key]);
+                const safeValue = Number.isFinite(value) ? value : min;
+                return (
+                  <circle key={i} cx={xScale(i)} cy={scaleYLocal(safeValue)} r={3} fill={color} />
+                );
+              })}
 
               {/* x axis labels */}
               {points.map((p,i)=>{
