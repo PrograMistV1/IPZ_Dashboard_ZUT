@@ -140,11 +140,11 @@ export default function Dashboard() {
 
             if (type === "news") {
                 const category = config.category;
-                if (!category) return; 
+                if (!category) return;
             }
 
             try {
-                const typeMap = { currency: "rates", currency: "rates", news: "news", weather: "weather", rates: "rates" };
+                const typeMap = {currency: "rates", news: "news", weather: "weather", rates: "rates"};
                 const serverType = (type && typeof type === "string") ? (typeMap[type.toLowerCase()] || type.toLowerCase()) : type;
 
                 const payload = {
