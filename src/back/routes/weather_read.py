@@ -1,13 +1,13 @@
 import datetime
 
 from fastapi import APIRouter, HTTPException, Query, Depends
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from src.back.logger.logger import BackendLogger
+from src.back.services.openweather_service import fetch_and_store_forecast, geocode_city
 from src.db import get_db
 from src.models.weather import Weather
-from src.back.services.openweather_service import fetch_and_store_forecast, geocode_city
 
 router = APIRouter(prefix="/api")
 log = BackendLogger()
@@ -22,7 +22,7 @@ def reverse_geocode_endpoint(lat: float, lon: float):
         if not name:
             return {"name": None}
         return {"name": name}
-    except Exception:
+    except (RuntimeError, ImportError):
         return {"name": None}
 
 
