@@ -1,25 +1,9 @@
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {useMemo, useState} from "react";
+import {ChartGrid, findNearestIndex, generateXLabels, generateYTicks, useContainerDimensions,} from "./chartUtils";
 
-export default function CurrencyCandleChart({ rates }) {
-  const containerRef = useRef(null);
-  const [dimensions, setDimensions] = useState({width: 400, height: 180});
+export default function CurrencyCandleChart({rates}) {
+  const {containerRef, dimensions} = useContainerDimensions();
   const [hoveredCandle, setHoveredCandle] = useState(null);
-
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const {width, height} = containerRef.current.getBoundingClientRect();
-        setDimensions({
-          width: Math.max(200, width),
-          height: Math.max(120, height),
-        });
-      }
-    };
-
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
 
   const candles = useMemo(() => {
     return rates.map((r, i, arr) => {
@@ -39,13 +23,9 @@ export default function CurrencyCandleChart({ rates }) {
   }
 
   const {width, height} = dimensions;
-  const paddingLeft = 55;
-  const paddingRight = 15;
-  const paddingTop = 15;
-  const paddingBottom = 30;
-
-  const chartWidth = width - paddingLeft - paddingRight;
-  const chartHeight = height - paddingTop - paddingBottom;
+  const padding = {left: 55, right: 15, top: 15, bottom: 30};
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
 
   const all = candles.flatMap((c) => [c.high, c.low]);
   const min = Math.min(...all);
@@ -59,47 +39,16 @@ export default function CurrencyCandleChart({ rates }) {
   const candleWidth = Math.min(12, Math.max(2, (chartWidth / candles.length) * 0.6));
   const candleSpacing = chartWidth / candles.length;
 
-  const scaleX = (i) => paddingLeft + candleSpacing * (i + 0.5);
-  const scaleY = (v) => paddingTop + chartHeight - ((v - yMin) / yRange) * chartHeight;
+  const scaleX = (i) => padding.left + candleSpacing * (i + 0.5);
+  const scaleY = (v) => padding.top + chartHeight - ((v - yMin) / yRange) * chartHeight;
 
-  // Y-axis ticks
-  const yTicks = [];
-  const tickCount = 4;
-  for (let i = 0; i <= tickCount; i++) {
-    const value = yMin + (yRange * i) / tickCount;
-    yTicks.push({
-      y: scaleY(value),
-      label: value.toFixed(4),
-    });
-  }
+  const yTicks = generateYTicks(yMin, yRange, scaleY);
+  const xLabels = generateXLabels(candles, chartWidth, scaleX);
 
-  // X-axis labels
-  const xLabels = [];
-  const maxLabels = Math.floor(chartWidth / 60);
-  const labelStep = Math.max(1, Math.ceil(candles.length / maxLabels));
-  for (let i = 0; i < candles.length; i += labelStep) {
-    xLabels.push({
-      x: scaleX(i),
-      label: candles[i].date.slice(5),
-    });
-  }
-
-  // Handle mouse move to find nearest candle
   const handleMouseMove = (e) => {
-    const svg = e.currentTarget;
-    const rect = svg.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
-
-    // Find nearest candle
-    let nearestIndex = 0;
-    let minDist = Infinity;
-    for (let i = 0; i < candles.length; i++) {
-      const dist = Math.abs(scaleX(i) - mouseX);
-      if (dist < minDist) {
-        minDist = dist;
-        nearestIndex = i;
-      }
-    }
+    const {nearestIndex, minDist} = findNearestIndex(mouseX, candles.length, scaleX);
 
     if (minDist < candleSpacing) {
       const candle = candles[nearestIndex];
@@ -107,19 +56,11 @@ export default function CurrencyCandleChart({ rates }) {
         index: nearestIndex,
         x: scaleX(nearestIndex),
         y: scaleY(candle.close),
-        date: candle.date,
-        open: candle.open,
-        close: candle.close,
-        high: candle.high,
-        low: candle.low,
+        ...candle,
       });
     } else {
       setHoveredCandle(null);
     }
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredCandle(null);
   };
 
   return (
@@ -129,73 +70,16 @@ export default function CurrencyCandleChart({ rates }) {
             height={height}
             style={{display: "block"}}
             onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
+            onMouseLeave={() => setHoveredCandle(null)}
         >
-          {/* Background */}
-          <rect
-              x={paddingLeft}
-              y={paddingTop}
-              width={chartWidth}
-              height={chartHeight}
-              fill="#f8f9fa"
-          />
-
-          {/* Grid lines and Y-axis labels */}
-          {yTicks.map((tick, i) => (
-              <g key={`y-${i}`}>
-                <line
-                    x1={paddingLeft}
-                    y1={tick.y}
-                    x2={paddingLeft + chartWidth}
-                    y2={tick.y}
-                    stroke="#e0e0e0"
-                    strokeWidth="1"
-                />
-                <text
-                    x={paddingLeft - 5}
-                    y={tick.y}
-                    textAnchor="end"
-                    dominantBaseline="middle"
-                    fontSize="10"
-                    fill="#666"
-                >
-                  {tick.label}
-                </text>
-              </g>
-          ))}
-
-          {/* X-axis labels */}
-          {xLabels.map((label, i) => (
-              <g key={`x-${i}`}>
-                <line
-                    x1={label.x}
-                    y1={paddingTop}
-                    x2={label.x}
-                    y2={paddingTop + chartHeight}
-                    stroke="#eee"
-                    strokeWidth="1"
-                />
-                <text
-                    x={label.x}
-                    y={height - paddingBottom + 15}
-                    textAnchor="middle"
-                    fontSize="9"
-                    fill="#666"
-                >
-                  {label.label}
-                </text>
-              </g>
-          ))}
-
-          {/* Border */}
-          <rect
-              x={paddingLeft}
-              y={paddingTop}
-              width={chartWidth}
-              height={chartHeight}
-              fill="none"
-              stroke="#ddd"
-              strokeWidth="1"
+          <ChartGrid
+              width={width}
+              height={height}
+              padding={padding}
+              yTicks={yTicks}
+              xLabels={xLabels}
+              chartWidth={chartWidth}
+              chartHeight={chartHeight}
           />
 
           {/* Candles */}
@@ -231,39 +115,35 @@ export default function CurrencyCandleChart({ rates }) {
           {/* Hover tooltip */}
           {hoveredCandle && (
               <g>
-                {/* Vertical line */}
                 <line
                     x1={hoveredCandle.x}
-                    y1={paddingTop}
+                    y1={padding.top}
                     x2={hoveredCandle.x}
-                    y2={paddingTop + chartHeight}
+                    y2={padding.top + chartHeight}
                     stroke="#666"
                     strokeWidth="1"
                     strokeDasharray="4,4"
                 />
-                {/* Tooltip background */}
                 <rect
                     x={hoveredCandle.x - 55}
-                    y={Math.max(paddingTop, hoveredCandle.y - 55)}
+                    y={Math.max(padding.top, hoveredCandle.y - 55)}
                     width="110"
                     height="48"
                     fill="rgba(0,0,0,0.85)"
                     rx="4"
                 />
-                {/* Date */}
                 <text
                     x={hoveredCandle.x}
-                    y={Math.max(paddingTop, hoveredCandle.y - 55) + 14}
+                    y={Math.max(padding.top, hoveredCandle.y - 55) + 14}
                     textAnchor="middle"
                     fontSize="10"
                     fill="#aaa"
                 >
                   {hoveredCandle.date}
                 </text>
-                {/* Open/Close */}
                 <text
                     x={hoveredCandle.x}
-                    y={Math.max(paddingTop, hoveredCandle.y - 55) + 28}
+                    y={Math.max(padding.top, hoveredCandle.y - 55) + 28}
                     textAnchor="middle"
                     fontSize="10"
                     fill="#fff"
@@ -272,7 +152,7 @@ export default function CurrencyCandleChart({ rates }) {
                 </text>
                 <text
                     x={hoveredCandle.x}
-                    y={Math.max(paddingTop, hoveredCandle.y - 55) + 42}
+                    y={Math.max(padding.top, hoveredCandle.y - 55) + 42}
                     textAnchor="middle"
                     fontSize="10"
                     fontWeight="bold"
