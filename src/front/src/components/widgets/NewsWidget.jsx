@@ -102,7 +102,7 @@ export default function NewsWidget({
         <div className="widget news-widget">
             {/* ===== HEADER ===== */}
             <div className="news-header">
-                <h4>News — {category}</h4>
+                <h4>{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
 
                 <div className="news-actions">
                     <button

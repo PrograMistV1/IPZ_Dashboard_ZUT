@@ -37,7 +37,7 @@ class Widget(Base):
 
     @validates("type")
     def validate_type(self, _, value):
-        allowed = {"rates", "news", "history"}
+        allowed = {"rates", "news", "history", "weather"}
         if value not in allowed:
             raise ValueError("Unsupported widget type")
         return value

@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from pydantic_core import PydanticCustomError
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from src.back.core.security import get_current_user
 from src.back.logger.logger import BackendLogger
+from src.back.routes.utils import config_to_dict
 from src.db import get_db
 from src.models.economy_config import EconomyConfig
 
@@ -57,16 +58,7 @@ def list_configs(
         .order_by(EconomyConfig.updated_at.desc())
         .all()
     )
-    return [
-        {
-            "id": c.id,
-            "name": c.name,
-            "configuration": c.configuration,
-            "created_at": c.created_at.isoformat(),
-            "updated_at": c.updated_at.isoformat(),
-        }
-        for c in configs
-    ]
+    return [config_to_dict(c) for c in configs]
 
 
 @router.post("/economy/configs", status_code=201)

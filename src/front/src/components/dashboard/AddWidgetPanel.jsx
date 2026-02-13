@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { widgetRegistry } from "../widgets/registry";
 import MiniActionModal from "./MiniActionModal";
+import WeatherModal from "./WeatherModal";
 import "./dashboard.css";
 
 export default function AddWidgetPanel({
@@ -10,15 +11,20 @@ export default function AddWidgetPanel({
 }) {
   const [type, setType] = useState(null);
   const [newsCategory, setNewsCategory] = useState(null);
+  const [weatherConfig, setWeatherConfig] = useState(null);
   const [showNewsModal, setShowNewsModal] = useState(false);
+  const [showWeatherModal, setShowWeatherModal] = useState(false);
 
   const canAdd =
-    type && (type !== "news" || newsCategory);
+    type && (type !== "news" || newsCategory) && (type !== "weather" || weatherConfig);
 
   const handleTypeClick = (key) => {
     if (key === "news") {
       setType("news");
       setShowNewsModal(true);
+    } else if (key === "weather") {
+      setType("weather");
+      setShowWeatherModal(true);
     } else {
       setType(key);
       setNewsCategory(null);
@@ -50,7 +56,12 @@ export default function AddWidgetPanel({
           <button
             className="widget-action"
             disabled={!canAdd}
-            onClick={() => onAdd(type, { category: newsCategory })}
+            onClick={() => {
+              let cfg = {};
+              if (type === "news") cfg = { category: newsCategory };
+              else if (type === "weather") cfg = weatherConfig || {};
+              onAdd(type, cfg);
+            }}
           >
             Add
           </button>
@@ -69,6 +80,20 @@ export default function AddWidgetPanel({
           onSelect={(category) => {
             setNewsCategory(category);
             setShowNewsModal(false);
+          }}
+        />
+      )}
+
+      {showWeatherModal && (
+        <WeatherModal
+          onSelect={(cfg) => {
+            setWeatherConfig(cfg);
+            setShowWeatherModal(false);
+          }}
+          onCancel={() => {
+            setType(null);
+            setWeatherConfig(null);
+            setShowWeatherModal(false);
           }}
         />
       )}

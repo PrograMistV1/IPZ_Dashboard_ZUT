@@ -12,6 +12,7 @@ export default function AppLayout() {
 
     const [dashboardInfo, setDashboardInfo] = useState(null);
     const [infoOpen, setInfoOpen] = useState(false);
+    const isDashboardPage = location.pathname.startsWith("/dashboard/");
 
     if (!user) return null;
 
@@ -25,16 +26,15 @@ export default function AppLayout() {
                     <Outlet context={{setDashboardInfo}}/>
                 </main>
 
-                {/* OVERLAY — łapie klik poza modalką */}
-                {infoOpen && (
+                {/* OVERLAY / HANDLE / DRAWER — shown only on main dashboard pages */}
+                {isDashboardPage && infoOpen && (
                     <div
                         className="dashboard-info-overlay"
                         onClick={() => setInfoOpen(false)}
                     />
                 )}
 
-                {/* UCHWYT (pionowa smuga) */}
-                {dashboardInfo && (
+                {isDashboardPage && dashboardInfo && (
                     <div
                         className={`dashboard-info-handle ${infoOpen ? "open" : ""}`}
                         onClick={() => setInfoOpen((v) => !v)}
@@ -42,8 +42,7 @@ export default function AppLayout() {
                     />
                 )}
 
-                {/* PRAWA MODALKA */}
-                {dashboardInfo && (
+                {isDashboardPage && dashboardInfo && (
                     <div
                         className={`dashboard-info-drawer ${infoOpen ? "open" : ""}`}
                         onClick={(e) => e.stopPropagation()}
