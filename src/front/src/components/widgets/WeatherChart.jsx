@@ -53,7 +53,8 @@ export default function WeatherChart({rows, series}) {
             bestDiff = d;
           }
         }
-        return best;
+        // keep the original UTC date key so labels can be produced consistently
+        return { ...best, dateKey };
       });
 
     return daily;
@@ -115,12 +116,9 @@ export default function WeatherChart({rows, series}) {
 
               {/* x axis labels */}
               {points.map((p,i)=>{
-                const label = (()=>{
-                  const d = p.t;
-                  const day = String(d.getDate()).padStart(2,'0');
-                  const month = String(d.getMonth()+1).padStart(2,'0');
-                  return `${day}.${month}`;
-                })();
+                // use the grouped UTC dateKey for stable per-day labels (avoid mixing UTC grouping with local Date formatting)
+                const parts = (p.dateKey || p.t.toISOString().slice(0,10)).split('-');
+                const label = `${parts[2]}.${parts[1]}`; // DD.MM from YYYY-MM-DD
                 return (
                   <text key={i} x={xScale(i)} y={height - padding + 14} fontSize={11} textAnchor="middle">{label}</text>
                 );
