@@ -1,31 +1,37 @@
-/*GRID*/
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(280px, 1fr)
-  );
-  gap: 16px;
+/* Dashboard Container */
+.dashboard-container {
+  padding: 16px;
 }
 
-/*WIDGET SLOT*/
-.widget-slot {
-  background: #b1b1b1;
-  border: 1px solid #000000;
-  border-radius: 8px;
-  padding: 8px;
-
+.dashboard-header {
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
 
-  color: #000000;
+.add-widget-btn {
+  padding: 10px 20px;
+  background: #2563eb;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
   font-size: 14px;
-  /* fixed slot height so inner widget can use flex:1 and scroll internally */
-  height: 360px;
-  max-height: 360px;
-  overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-widget-btn:hover {
+  background: #1d4ed8;
+}
+
+.dashboard-placeholder {
+  font-size: 16px;
+  color: #333;
+  text-align: center;
+  padding: 40px;
+  background: #e0e0e0;
+  border-radius: 8px;
 }
 
 /* Ensure widget root fills the slot */
@@ -35,88 +41,6 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-}
-
-/*+ Add widget*/
-.widget-slot > button {
-  width: 100%;
-  height: 100%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 0px solid #aaa;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-
-  font-size: 14px;
-}
-
-/* ADD WIDGET PANEL */
-.add-widget-panel {
-  width: 100%;
-
-  display: flex;
-  flex-direction: column;
-
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: #b4b4b4;
-
-  box-sizing: border-box;
-}
-
-.add-widget-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.add-widget-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 8px;
-
-  margin-top: 8px;
-  margin-bottom: 4px;
-}
-
-/*BUTTONS*/
-.widget-type {
-  border: 1px solid #000;
-  
-
-  background: rgba(255, 255, 255, 0.03);
-  color: #040404;
-
-  transition: all 0.2s ease;
-}
-
-.widget-type:hover {
-  border-color: #888;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.widget-type.active {
-  background: #2563eb;      
-  color: #ffffff;
-  border-color: #2563eb;
-}
-
-
-/* Add / Cancel */
-.widget-action {
-  border: 1px solid #ccc;
-  background: #ededed;
-}
-
-.widget-action:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /*DASHBOARD INFO*/
@@ -194,7 +118,6 @@
   flex-direction: column;
   gap: 6px;
   overflow: hidden;
-  /* will be controlled by parent .news-content */
 }
 
 .news-item a {
@@ -217,7 +140,7 @@
 .news-content {
   flex: 1 1 auto;
   overflow: auto;
-  padding-right: 6px; /* give space for scrollbar */
+  padding-right: 6px;
 }
 
 .news-item {

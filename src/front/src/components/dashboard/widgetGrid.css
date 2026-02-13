@@ -1,0 +1,60 @@
+.widget-grid-container {
+    width: 100%;
+    min-height: 400px;
+}
+
+.widget-grid {
+    position: relative;
+}
+
+.widget-grid-item {
+    overflow: hidden;
+    display: flex;
+}
+
+.widget-grid-item > * {
+    width: 100%;
+    height: 100%;
+}
+
+/* Resize handle styling */
+.react-resizable-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    bottom: 0;
+    right: 0;
+    cursor: se-resize;
+    z-index: 10;
+}
+
+.react-resizable-handle::after {
+    content: "";
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    width: 10px;
+    height: 10px;
+    border-right: 3px solid rgba(255, 255, 255, 0.4);
+    border-bottom: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Grid placeholder while dragging */
+.react-grid-placeholder {
+    background: rgba(59, 130, 246, 0.3) !important;
+    border: 2px dashed #3b82f6 !important;
+    border-radius: 10px;
+}
+
+/* Make headers grabbable */
+.currency-header,
+.news-header,
+.feed-header {
+    cursor: grab;
+}
+
+.currency-header:active,
+.news-header:active,
+.feed-header:active {
+    cursor: grabbing;
+}

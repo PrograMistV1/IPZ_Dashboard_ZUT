@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from pydantic_core import PydanticCustomError
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.back.core.security import get_current_user
@@ -9,8 +10,6 @@ from src.db import get_db
 from src.models.audit_log import AuditLog
 from src.models.dashboard import Dashboard
 from src.models.widget import Widget
-
-from sqlalchemy import func
 
 router = APIRouter(prefix="/api")
 log = BackendLogger()
@@ -102,6 +101,7 @@ def serialize_widgets(widgets: list[Widget]):
             "id": w.id,
             "type": w.type,
             "configuration": w.configuration,
+            "layout": w.layout,
             "enabled": w.enabled,
             "position": w.position,
         }
@@ -282,12 +282,18 @@ def create_widget(
     type_map = {
         "rates": "rates",
         "currency": "rates",
+        "currencyfeed": "currencyFeed",
         "news": "news",
+        "newsfeed": "newsFeed",
         "history": "history",
         "history_operations": "history",
     }
 
-    widget_type = type_map.get(req.type.lower()) if isinstance(req.type, str) else None
+    widget_type = (
+        type_map.get(req.type) or type_map.get(req.type.lower())
+        if isinstance(req.type, str)
+        else None
+    )
 
     if not widget_type:
         raise HTTPException(status_code=400, detail="Unsupported widget type")
@@ -303,7 +309,7 @@ def create_widget(
         if currency and currency not in VALID_CURRENCIES:
             raise HTTPException(status_code=400, detail="Unsupported currency")
 
-    if widget_type == "news":
+    if widget_type in ("news", "newsFeed"):
         category = config.get("category")
         if not category:
             raise HTTPException(
@@ -434,6 +440,7 @@ def delete_widget(
 
 class WidgetUpdateRequest(BaseModel):
     configuration: dict | None = None
+    layout: dict | None = None
 
     @field_validator("configuration")
     @classmethod
@@ -442,6 +449,15 @@ class WidgetUpdateRequest(BaseModel):
             return v
         if not isinstance(v, dict):
             raise PydanticCustomError("value_error", "configuration must be an object.")
+        return v
+
+    @field_validator("layout")
+    @classmethod
+    def layout_validator(cls, v):
+        if v is None:
+            return v
+        if not isinstance(v, dict):
+            raise PydanticCustomError("value_error", "layout must be an object.")
         return v
 
 
@@ -466,12 +482,16 @@ def update_widget(
     if req.configuration is not None:
         widget.configuration = req.configuration
 
+    if req.layout is not None:
+        widget.layout = req.layout
+
     db.commit()
     db.refresh(widget)
 
     return {
         "id": widget.id,
         "configuration": widget.configuration,
+        "layout": widget.layout,
     }
 
 

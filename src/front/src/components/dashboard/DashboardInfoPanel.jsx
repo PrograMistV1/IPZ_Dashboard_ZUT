@@ -2,13 +2,10 @@ import React from "react";
 import "./dashboard.css";
 
 export default function DashboardInfoPanel({
-  slotsCount,
   widgets,
-  onAddSlot,
-  onRemoveSlot,
   onClearWidget,
 }) {
-  const usedSlots = Object.values(widgets).filter(Boolean).length;
+    const widgetCount = widgets?.length || 0;
 
   return (
     <div className="dashboard-info">
@@ -17,47 +14,23 @@ export default function DashboardInfoPanel({
       </div>
 
       <div className="dashboard-info-row">
-        <span>Slots:</span>
-        <span>
-          {usedSlots} / {slotsCount}
-        </span>
+          <span>Widgets:</span>
+          <span>{widgetCount}</span>
       </div>
 
-      <div className="dashboard-info-actions">
-        <button onClick={onAddSlot} disabled={slotsCount >= 8}>
-          + Add slot
-        </button>
-
-        <button onClick={onRemoveSlot} disabled={slotsCount <= 1}>
-          − Remove slot
-        </button>
-      </div>
-
-      {usedSlots > 0 && (
+        {widgetCount > 0 && (
         <div className="dashboard-info-section">
-          <strong>Widgets</strong>
+            <strong>Widget list</strong>
 
-          {Object.entries(widgets).map(
-            ([slot, widget]) =>
-              widget && (
-                <div
-                  key={slot}
-                  className="dashboard-widget-row"
-                >
-                  <span>
-                    Slot {slot}: {widget.type}
-                  </span>
+            {widgets.map((widget) => (
+                <div key={widget.id} className="dashboard-widget-row">
+                    <span>{widget.type}</span>
 
-                  <button
-                    onClick={() =>
-                      onClearWidget(slot)
-                    }
-                  >
-                    Clear
-                  </button>
+                    <button onClick={() => onClearWidget(widget.id)}>
+                        Clear
+                    </button>
                 </div>
-              )
-          )}
+            ))}
         </div>
       )}
     </div>
