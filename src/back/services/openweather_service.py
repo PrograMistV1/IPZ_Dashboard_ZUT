@@ -176,6 +176,49 @@ def geocode_city(city: str) -> tuple[float, float] | None:
         return None
 
 
+def reverse_geocode(lat: float, lon: float) -> str | None:
+    """Resolve coordinates to a human-friendly place name using OpenWeather reverse geocoding."""
+    if not OPENWEATHER_API_KEY:
+        raise RuntimeError("OPENWEATHER_API_KEY is not configured in environment")
+
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(OPENWEATHER_BASE_URL)
+        host_base = f"{parsed.scheme}://{parsed.netloc}"
+    except Exception:
+        host_base = OPENWEATHER_BASE_URL.rstrip("/")
+
+    url = f"{host_base}/geo/1.0/reverse"
+    params = {"lat": lat, "lon": lon, "limit": 1, "appid": OPENWEATHER_API_KEY}
+
+    try:
+        resp = requests.get(url, params=params, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as exc:
+        log.error("openweather", f"Reverse geocoding failed for {lat},{lon}: {exc}")
+        return None
+
+    if not data or not isinstance(data, list):
+        return None
+
+    first = data[0]
+    # prefer 'name' and 'state' and 'country'
+    parts = []
+    if first.get("name"):
+        parts.append(first.get("name"))
+    if first.get("state"):
+        parts.append(first.get("state"))
+    if first.get("country"):
+        parts.append(first.get("country"))
+
+    if not parts:
+        return None
+
+    return ", ".join(parts)
+
+
 def fetch_and_store_forecast_by_city(
     db, city: str, start_date: datetime.date, end_date: datetime.date
 ) -> dict:

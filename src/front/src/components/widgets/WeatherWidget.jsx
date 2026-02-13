@@ -31,29 +31,38 @@ export default function WeatherWidget({widgetId, configuration, onDelete, onUpda
     useEffect(() => {
         if (!city) return;
         let mounted = true;
-        setLoading(true);
-        setError(null);
-
-        // build 5 dates starting from today (today .. today+4)
-        const dates = Array.from({length:5}).map((_,i)=>{
-            const d = new Date();
-            d.setDate(d.getDate() + i);
-            return d.toISOString().slice(0,10);
-        });
-
-        Promise.all(dates.map(dt => apiFetch(`/api/weather?city=${encodeURIComponent(city)}&date=${encodeURIComponent(dt)}`)
-            .catch(err => { return []; })))
-            .then((arrs) => {
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // build 5 dates starting from today (today .. today+4)
+                const dates = Array.from({length:5}).map((_,i)=>{
+                    const d = new Date();
+                    d.setDate(d.getDate() + i);
+                    return d.toISOString().slice(0,10);
+                });
+                const arrs = await Promise.all(dates.map(dt => apiFetch(`/api/weather?city=${encodeURIComponent(city)}&date=${encodeURIComponent(dt)}`).catch(() => [])));
                 if (!mounted) return;
-                // flatten and sort by timestamp
-                const flat = (arrs || []).flat().map(r=>r || [] ).flat();
+                const flat = (arrs || []).flat().map(r=>r || []).flat();
                 flat.sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
                 setRows(flat);
-            })
-            .catch((err) => { if (!mounted) return; setError(err.message || String(err)); })
-            .finally(() => { if (mounted) setLoading(false); });
+            } catch (err) {
+                if (!mounted) return; setError(err.message || String(err));
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        };
 
-        return () => { mounted = false; };
+        fetchData();
+
+        // refresh when global weather refresh event fires
+        const onRefresh = () => { fetchData(); };
+        window.addEventListener('weather:refresh', onRefresh);
+
+        // periodic polling every 5 minutes
+        const interval = setInterval(fetchData, 5 * 60 * 1000);
+
+        return () => { mounted = false; window.removeEventListener('weather:refresh', onRefresh); clearInterval(interval); };
     }, [city]);
 
     // persist config only when differs from server config

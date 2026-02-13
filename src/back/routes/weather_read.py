@@ -13,6 +13,19 @@ router = APIRouter(prefix="/api")
 log = BackendLogger()
 
 
+@router.get("/geocode/reverse")
+def reverse_geocode_endpoint(lat: float, lon: float):
+    try:
+        from src.back.services.openweather_service import reverse_geocode
+
+        name = reverse_geocode(lat, lon)
+        if not name:
+            return {"name": None}
+        return {"name": name}
+    except Exception:
+        return {"name": None}
+
+
 @router.get("/weather")
 def get_weather(
     lat: float | None = Query(None),

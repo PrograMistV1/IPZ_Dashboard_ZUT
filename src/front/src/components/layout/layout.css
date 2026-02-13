@@ -56,6 +56,43 @@ body {
   margin-left: auto;
 }
 
+/* ensure right-side topbar items sit inline (city input left of user avatar) */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* City control in topbar (left of profile) */
+.city-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 12px;
+}
+.city-control input {
+  height: 32px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: white;
+  outline: none;
+  min-width: 150px;
+  font-size: 13px;
+}
+.city-control input:focus { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.city-control button {
+  height: 32px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #16a34a; /* green */
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+.city-control button:hover { background: #138a3d; }
+
 
 /* SIDEBAR */
 .sidebar {

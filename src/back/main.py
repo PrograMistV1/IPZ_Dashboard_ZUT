@@ -12,6 +12,7 @@ from src.back.routes.news import router as news_router
 from src.back.routes.rates import router as rates_router
 from src.back.routes.weather import router as weather_router
 from src.back.routes.weather_read import router as weather_read_router
+from src.back.routes.weather_config import router as weather_config_router
 from src.db import init_db
 
 log = BackendLogger()
@@ -34,6 +35,7 @@ app.include_router(news_router)
 app.include_router(economy_router)
 app.include_router(weather_router)
 app.include_router(weather_read_router)
+app.include_router(weather_config_router)
 
 
 static_dir = "src/front/build"
