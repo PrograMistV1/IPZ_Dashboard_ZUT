@@ -1,30 +1,42 @@
-import React, {useEffect, useRef, useState, useMemo} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {apiFetch} from "../../services/api";
 import {updateWidget} from "../../services/dashboard";
 import WeatherChart from "./WeatherChart";
 import "../../styles/currencyWidget.css";
 
+const DEFAULT_SERIES = {temp:true,feels_like:false,pressure:false,humidity:false,wind_speed:false};
+const coerceBool = (value, fallback) => (typeof value === "boolean" ? value : fallback);
+const coerceString = (value) => (typeof value === "string" ? value : "");
+const normalizeSeries = (value) => {
+    if (!value || typeof value !== "object") return {...DEFAULT_SERIES};
+    const next = {...DEFAULT_SERIES};
+    Object.keys(DEFAULT_SERIES).forEach((key) => {
+        next[key] = !!value[key];
+    });
+    return next;
+};
+
 export default function WeatherWidget({widgetId, configuration, onDelete, onUpdate}) {
     const [editing, setEditing] = useState(false);
-    const [city, setCity] = useState(configuration?.city || "");
+    const [city, setCity] = useState(coerceString(configuration?.city));
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const [showChart, setShowChart] = useState(configuration?.showChart ?? true);
-    const [series, setSeries] = useState(configuration?.series || {temp:true,feels_like:false,pressure:false,humidity:false,wind_speed:false});
-    const [showCurrent, setShowCurrent] = useState(configuration?.showCurrent ?? true);
+    const [showChart, setShowChart] = useState(coerceBool(configuration?.showChart, true));
+    const [series, setSeries] = useState(normalizeSeries(configuration?.series));
+    const [showCurrent, setShowCurrent] = useState(coerceBool(configuration?.showCurrent, true));
 
     const initialRef = useRef(true);
 
     useEffect(() => {
         if (!widgetId) return;
-        setCity(configuration?.city || "");
+        setCity(coerceString(configuration?.city));
         setRows([]);
         setError(null);
-        setShowChart(configuration?.showChart ?? true);
-        setSeries(configuration?.series || {temp:true,feels_like:false,pressure:false,humidity:false,wind_speed:false});
-        setShowCurrent(configuration?.showCurrent ?? true);
+        setShowChart(coerceBool(configuration?.showChart, true));
+        setSeries(normalizeSeries(configuration?.series));
+        setShowCurrent(coerceBool(configuration?.showCurrent, true));
         initialRef.current = true;
     }, [widgetId]);
 
@@ -53,10 +65,10 @@ export default function WeatherWidget({widgetId, configuration, onDelete, onUpda
             }
         };
 
-        fetchData();
+        fetchData().then(() => {});
 
         // refresh when global weather refresh event fires
-        const onRefresh = () => { fetchData(); };
+        const onRefresh = () => { fetchData().then(() => {}); };
         window.addEventListener('weather:refresh', onRefresh);
 
         // periodic polling every 5 minutes
@@ -73,10 +85,10 @@ export default function WeatherWidget({widgetId, configuration, onDelete, onUpda
         const serverCfg = configuration || {};
         try {
             const same = JSON.stringify({
-                city: serverCfg.city ?? "",
-                showChart: serverCfg.showChart ?? true,
-                series: serverCfg.series ?? {},
-                showCurrent: serverCfg.showCurrent ?? true,
+                city: coerceString(serverCfg.city),
+                showChart: coerceBool(serverCfg.showChart, true),
+                series: normalizeSeries(serverCfg.series),
+                showCurrent: coerceBool(serverCfg.showCurrent, true),
             }) === JSON.stringify(newConfig);
             if (same) return;
         } catch (e) {}
@@ -114,11 +126,11 @@ export default function WeatherWidget({widgetId, configuration, onDelete, onUpda
                     <label>City<input type="text" value={city} onChange={(e)=>setCity(e.target.value)} /></label>
 
                     <div style={{marginTop:8}}>
-                        <label><input type="checkbox" checked={showCurrent} onChange={()=>setShowCurrent(v=>!v)} /> Show current weather</label>
+                        <label><input type="checkbox" checked={!!showCurrent} onChange={()=>setShowCurrent(v=>!v)} /> Show current weather</label>
                     </div>
 
                     <div style={{marginTop:8}}>
-                        <label><input type="checkbox" checked={showChart} onChange={()=>setShowChart(v=>!v)} /> Forecast</label>
+                        <label><input type="checkbox" checked={!!showChart} onChange={()=>setShowChart(v=>!v)} /> Forecast</label>
                         {showChart && (
                             <div style={{display:'flex', gap:8, flexWrap:'wrap', marginTop:6}}>
                                 {Object.keys(series).map(k=> (
@@ -144,7 +156,7 @@ export default function WeatherWidget({widgetId, configuration, onDelete, onUpda
                                     <div style={{fontSize:18, fontWeight:700, display:'inline'}}>
                                         {Math.round(currentPoint.temp)}°C
                                         <span style={{fontSize:13, opacity:0.9, marginLeft:6}}>
-                                            {currentPoint.weather_description ? currentPoint.weather_description.replace(/^\w/, c => c.toUpperCase()) : (currentPoint.weather_main || '')}
+                                            {currentPoint?.["weather_description"] ? currentPoint["weather_description"].replace(/^\w/, c => c.toUpperCase()) : (currentPoint["weather_main"] || '')}
                                         </span>
                                     </div>
                                 </div>
