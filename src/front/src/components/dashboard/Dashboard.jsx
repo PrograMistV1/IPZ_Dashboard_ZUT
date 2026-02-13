@@ -13,7 +13,7 @@ export default function Dashboard() {
     const [slotsCount, setSlotsCount] = useState(4);
     const [widgets, setWidgets] = useState({});
 
-    const [loading, setLoading] = useState(false);
+    const [, setLoading] = useState(false);
 
     const addSlot = async () => {
         if (!dashboardId || slotsCount >= 8) return;
@@ -124,7 +124,8 @@ export default function Dashboard() {
             setLoading(false);
         };
 
-        loadDashboard();
+        loadDashboard().then(() => {
+        });
     }, [dashboardId]);
 
 
@@ -166,7 +167,6 @@ export default function Dashboard() {
                     console.debug("Widget created response:", created);
                 } catch (apiErr) {
                     console.error("API error creating widget:", apiErr, apiErr?.details || null);
-                    throw apiErr;
                 }
 
                 setWidgets((prev) => ({
