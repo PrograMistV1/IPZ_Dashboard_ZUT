@@ -1,17 +1,47 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from pydantic_core import PydanticCustomError
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from src.back.core.security import get_current_user
 from src.back.logger.logger import BackendLogger
+from src.back.routes.utils import config_to_dict
+from src.back.services.openweather_service import geocode_city
 from src.db import get_db
 from src.models.weather_config import WeatherConfig
-from src.back.services.openweather_service import geocode_city
 
 router = APIRouter(prefix="/api")
 log = BackendLogger()
+
+
+def _validate_configuration(v: dict | None) -> dict | None:
+    """Validate the configuration field."""
+    if v is None:
+        return v
+    if not isinstance(v, dict):
+        raise PydanticCustomError("value_error", "configuration must be an object")
+    return v
+
+
+def _geocode_city_to_coords(city_name: str) -> tuple[float, float] | None:
+    """Geocode a city name to coordinates. Returns (lat, lon) or None."""
+    try:
+        return geocode_city(city_name)
+    except (ValueError, TypeError, KeyError, ConnectionError, TimeoutError):
+        return None
+
+
+def _get_user_config(config_id: int, user_id: int, db: Session) -> WeatherConfig:
+    """Retrieve a config by ID and verify user access."""
+    cfg: WeatherConfig | None = (
+        db.query(WeatherConfig).filter(WeatherConfig.id == config_id).first()
+    )
+    if not cfg:
+        raise HTTPException(status_code=404, detail="Config not found")
+    if cfg.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return cfg
 
 
 class WeatherConfigCreateRequest(BaseModel):
@@ -20,19 +50,15 @@ class WeatherConfigCreateRequest(BaseModel):
 
     @field_validator("name")
     @classmethod
-    def name_validator(cls, v: str):
+    def name_validator(cls, v: str) -> str:
         if not v or not isinstance(v, str) or not v.strip():
             raise PydanticCustomError("value_error", "Name must be provided")
         return v.strip()
 
     @field_validator("configuration")
     @classmethod
-    def config_validator(cls, v):
-        if v is None:
-            return v
-        if not isinstance(v, dict):
-            raise PydanticCustomError("value_error", "configuration must be an object")
-        return v
+    def config_validator(cls, v: dict | None) -> dict | None:
+        return _validate_configuration(v)
 
 
 class WeatherConfigUpdateRequest(BaseModel):
@@ -40,12 +66,8 @@ class WeatherConfigUpdateRequest(BaseModel):
 
     @field_validator("configuration")
     @classmethod
-    def config_validator(cls, v):
-        if v is None:
-            return v
-        if not isinstance(v, dict):
-            raise PydanticCustomError("value_error", "configuration must be an object")
-        return v
+    def config_validator(cls, v: dict | None) -> dict | None:
+        return _validate_configuration(v)
 
 
 @router.get("/weather/configs")
@@ -58,16 +80,7 @@ def list_configs(
         .order_by(WeatherConfig.updated_at.desc())
         .all()
     )
-    return [
-        {
-            "id": c.id,
-            "name": c.name,
-            "configuration": c.configuration,
-            "created_at": c.created_at.isoformat(),
-            "updated_at": c.updated_at.isoformat(),
-        }
-        for c in configs
-    ]
+    return [config_to_dict(c) for c in configs]
 
 
 @router.post("/weather/configs", status_code=201)
@@ -78,13 +91,9 @@ def create_config(
 ):
     cfg_data = req.configuration or {}
     # If user supplied a city, geocode it and store only coordinates
-    if isinstance(cfg_data, dict) and "city" in cfg_data:
+    if "city" in cfg_data:
         city_name = cfg_data.get("city")
-        geo = None
-        try:
-            geo = geocode_city(city_name)
-        except Exception:
-            geo = None
+        geo = _geocode_city_to_coords(city_name)
         if not geo:
             raise HTTPException(
                 status_code=400, detail="City not found or geocoding failed"
@@ -120,11 +129,7 @@ def get_config(
     user_id: int = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    cfg = db.query(WeatherConfig).filter(WeatherConfig.id == config_id).first()
-    if not cfg:
-        raise HTTPException(status_code=404, detail="Config not found")
-    if cfg.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+    cfg = _get_user_config(config_id, user_id, db)
     return {"id": cfg.id, "name": cfg.name, "configuration": cfg.configuration}
 
 
@@ -135,11 +140,7 @@ def update_config(
     user_id: int = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    cfg = db.query(WeatherConfig).filter(WeatherConfig.id == config_id).first()
-    if not cfg:
-        raise HTTPException(status_code=404, detail="Config not found")
-    if cfg.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+    cfg = _get_user_config(config_id, user_id, db)
     try:
         if req.configuration is not None:
             # merge incoming configuration into existing one so we don't lose lat/lon
@@ -150,23 +151,16 @@ def update_config(
             # If incoming has 'city', geocode and replace with coords only
             if "city" in incoming:
                 city_name = incoming.get("city")
-                geo = None
-                try:
-                    geo = geocode_city(city_name)
-                except Exception:
-                    geo = None
-                if not geo:
-                    # if geocoding fails, keep existing coords and do not overwrite
-                    pass
-                else:
+                geo = _geocode_city_to_coords(city_name)
+                if geo:
                     lat, lon = geo
                     merged.update({"lat": lat, "lon": lon})
+                # if geocoding fails, keep existing coords and do not overwrite
             else:
                 # overlay other provided keys (but avoid storing 'city' if present elsewhere)
                 for k, v in incoming.items():
-                    if k == "city":
-                        continue
-                    merged[k] = v
+                    if k != "city":
+                        merged[k] = v
 
             cfg.configuration = merged
 
