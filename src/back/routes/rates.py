@@ -103,9 +103,11 @@ def fetch_rates_from_nbp(currency: str, start: date, end: date):
 def save_rates_to_db(db: Session, currency: str, rates: list[dict]):
     results = []
     try:
-        for r in rates:
-            rate_date = datetime.strptime(r["effectiveDate"], "%Y-%m-%d").date()
-            rate = r["mid"]
+        for rate_entry in rates:
+            rate_date = datetime.strptime(
+                rate_entry["effectiveDate"], "%Y-%m-%d"
+            ).date()
+            rate = rate_entry["mid"]
 
             existing = (
                 db.query(CurrencyRate)
@@ -137,7 +139,11 @@ def backfill_missing_dates(db: Session, currency: str, start: date, end: date):
     try:
         existing = (
             db.query(CurrencyRate)
-            .filter(CurrencyRate.currency == currency, CurrencyRate.date <= end)
+            .filter(
+                CurrencyRate.currency == currency,
+                CurrencyRate.date >= start,
+                CurrencyRate.date <= end,
+            )
             .order_by(CurrencyRate.date)
             .all()
         )
@@ -207,10 +213,6 @@ def backfill_missing_dates(db: Session, currency: str, start: date, end: date):
 @router.post("/rates")
 def get_rates(req: RateRequest, db: Session = Depends(get_db)):
     log.info("rates_endpoint", "Received request for rates")
-
-    if req.currency not in VALID_CURRENCIES:
-        log.debug("rates_endpoint", f"Invalid currency: {req.currency}")
-        raise HTTPException(status_code=400, detail="Unsupported currency")
 
     start, end = validate_dates(req.date_from, req.date_to)
     log.debug("rates_endpoint", f"Validated dates: {start} - {end}")
