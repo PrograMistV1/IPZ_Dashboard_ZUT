@@ -61,12 +61,6 @@ function TopBarCityControl() {
         className="geo-btn"
         title="Use my location"
         onClick={handleGeolocation}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleGeolocation();
-          }
-        }}
       >📍</button>
       <input
         value={val}
