@@ -59,6 +59,7 @@ function TopBarCityControl() {
       <button
         className="geo-btn"
         title="Use my location"
+        aria-label="Use my location"
         onClick={handleGeolocation}
       >📍</button>
       <input
