@@ -3,7 +3,7 @@ import GridLayout from "react-grid-layout";
 import {serverTypeMap} from "../widgets/registry";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-import "./widgetGrid.css";
+import "../../styles/widgetGrid.css";
 
 const GRID_COLS = 12;
 const ROW_HEIGHT = 80;

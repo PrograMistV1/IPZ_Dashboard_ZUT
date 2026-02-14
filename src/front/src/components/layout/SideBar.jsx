@@ -7,7 +7,7 @@ import dashboardInfoIcon from "../../assets/icons/dashboard-info.png";
 import economyIcon from "../../assets/icons/economy.png";
 import weatherIcon from "../../assets/icons/weather.png";
 
-import "./layout.css";
+import "../../styles/layout.css";
 
 export default function SideBar() {
     const navigate = useNavigate();

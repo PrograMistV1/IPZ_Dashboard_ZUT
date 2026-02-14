@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import "./feedWidget.css";
+import "../../styles/feedWidget.css";
 
 /**
  * FeedWidget - wrapper component for displaying multiple data items as a scrollable feed

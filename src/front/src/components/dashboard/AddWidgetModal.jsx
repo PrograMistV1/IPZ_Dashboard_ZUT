@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {widgetTypes} from "../widgets/registry";
-import "./addWidgetModal.css";
+import "../../styles/addWidgetModal.css";
 
 export default function AddWidgetModal({onAdd, onClose}) {
     const [selectedType, setSelectedType] = useState(null);

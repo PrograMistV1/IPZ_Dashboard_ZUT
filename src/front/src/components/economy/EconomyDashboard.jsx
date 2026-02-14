@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { listEconomyConfigs, createEconomyConfig, updateEconomyConfig } from "../../services/economy";
-import "./economy.css";
+import React, {useState} from "react";
+import {createEconomyConfig, listEconomyConfigs, updateEconomyConfig} from "../../services/economy";
+import "../../styles/economy.css";
 import SmallCurrencyCard from "./SmallCurrencyCard";
 import PopularCurrenciesChart from "./PopularCurrenciesChart";
 import NewsHeadlines from "./NewsHeadlines";

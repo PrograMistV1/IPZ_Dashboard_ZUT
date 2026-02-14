@@ -4,7 +4,7 @@ import {tokenManager} from "../../services/tokenManager";
 import * as dashboardService from "../../services/dashboard";
 import WidgetGrid from "./WidgetGrid";
 import AddWidgetModal from "./AddWidgetModal";
-import "./dashboard.css";
+import "../../styles/dashboard.css";
 
 export default function Dashboard() {
     const {setDashboardInfo} = useOutletContext() || {};

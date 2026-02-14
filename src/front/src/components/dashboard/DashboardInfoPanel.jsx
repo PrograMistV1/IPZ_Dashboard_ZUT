@@ -1,5 +1,5 @@
 import React from "react";
-import "./dashboard.css";
+import "../../styles/dashboard.css";
 
 export default function DashboardInfoPanel({
   widgets,

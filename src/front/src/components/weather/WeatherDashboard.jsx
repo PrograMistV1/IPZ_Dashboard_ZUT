@@ -3,7 +3,7 @@ import {listWeatherConfigs} from "../../services/weather";
 import {apiFetch} from "../../services/api";
 import WeatherChart from "../widgets/WeatherChart";
 import WeatherNews from "./WeatherNews";
-import "./weather.css";
+import "../../styles/weather.css";
 
 export default function WeatherDashboard() {
     const [city, setCity] = useState("");

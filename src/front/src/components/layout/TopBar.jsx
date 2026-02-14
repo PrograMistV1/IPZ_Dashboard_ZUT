@@ -2,7 +2,7 @@ import React, {useState} from "react";
 import UserMenu from "./UserMenu";
 import {useLocation} from "react-router-dom";
 import {createWeatherConfig, listWeatherConfigs, updateWeatherConfig} from "../../services/weather";
-import "./layout.css";
+import "../../styles/layout.css";
 
 function TopBarCityControl() {
   const [val, setVal] = useState("");
