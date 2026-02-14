@@ -40,7 +40,7 @@ export default function CurrencyWidget({
         setChartType(configuration?.chartType || "line");
         setRates([]);
         setError("");
- 
+
         if (initialConfigRef.current === null) {
             initialConfigRef.current = configuration || null;
         }
@@ -160,13 +160,7 @@ export default function CurrencyWidget({
                 <h3>{currency || "choose a currency"}</h3>
 
                 <div className="currency-actions">
-                    <button
-                        className="icon-btn"
-                        title="Settings"
-                        onClick={() => setEditing(true)}
-                    >
-                        ⚙
-                    </button>
+                    <button className="icon-btn" title="Settings" onClick={() => setEditing(true)}>⚙</button>
 
                     <button
                         className="icon-btn danger"

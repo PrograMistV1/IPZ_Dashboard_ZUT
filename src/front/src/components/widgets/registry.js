@@ -1,11 +1,13 @@
 import CurrencyWidget from "./CurrencyWidget";
 import NewsFeedWidget from "./NewsFeedWidget";
 import CurrencyFeedWidget from "./CurrencyFeedWidget";
+import WeatherWidget from "./WeatherWidget";
 
 /**
  * Widget data types configuration
  * - news: feed mode only (single news item doesn't make sense)
  * - currency: feed or standard (with chart)
+ * - weather: standard mode with chart display
  */
 export const widgetTypes = {
     news: {
@@ -20,6 +22,12 @@ export const widgetTypes = {
         modes: ["feed", "standard"],
         defaultMode: "feed",
     },
+    weather: {
+        title: "Weather",
+        description: "Weather forecast with temperature and conditions",
+        modes: ["standard"],
+        defaultMode: "standard",
+    },
 };
 
 /**
@@ -33,6 +41,9 @@ export const widgetComponents = {
         feed: CurrencyFeedWidget,
         standard: CurrencyWidget,
     },
+    weather: {
+        standard: WeatherWidget,
+    },
 };
 
 /**
@@ -43,6 +54,7 @@ export const serverTypeMap = {
     newsFeed: NewsFeedWidget,
     currencyFeed: CurrencyFeedWidget,
     rates: CurrencyWidget,
+    weather: WeatherWidget,
 };
 
 /**
