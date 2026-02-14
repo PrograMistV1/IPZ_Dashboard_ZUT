@@ -1,18 +1,16 @@
 import React from "react";
+import UserMenu from "./UserMenu";
 import "./layout.css";
 
 export default function EconomyTopBar() {
   return (
     <header className="topbar economy-topbar">
       <div className="topbar-controls">
-        <span className="economy-title">
-          Economy
-        </span>
+        {/* Title intentionally removed for economy template */}
       </div>
 
       <div className="topbar-right">
-        {/* Поки що пусто.
-            Тут пізніше будуть фільтри, кнопки, селекти і т.д. */}
+        <UserMenu />
       </div>
     </header>
   );

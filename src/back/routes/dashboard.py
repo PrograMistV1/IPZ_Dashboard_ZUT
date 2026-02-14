@@ -287,6 +287,7 @@ def create_widget(
         "newsfeed": "newsFeed",
         "history": "history",
         "history_operations": "history",
+        "weather": "weather",
     }
 
     widget_type = (
