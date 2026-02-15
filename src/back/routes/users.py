@@ -188,3 +188,26 @@ def update_user(
         "role": user.role,
         "isEnabled": bool(user.is_enabled),
     }
+
+
+@router.delete("/{id}")
+def disable_user(
+    id: int, user_id: int = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    current = db.query(User).filter(User.id == user_id).first()
+    if not current:
+        raise HTTPException(status_code=404, detail="Current user not found")
+    if current.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+
+    user = db.query(User).filter(User.id == id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_enabled = False
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return {"id": user.id, "isEnabled": bool(user.is_enabled)}
