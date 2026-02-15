@@ -1,4 +1,4 @@
-from typing import LiteralString, cast
+from typing import LiteralString, cast, Optional
 
 from email_validator import validate_email, EmailNotValidError
 from fastapi import APIRouter, Depends, HTTPException
@@ -69,6 +69,24 @@ class CreateUserRequest(BaseModel):
         return v
 
 
+class UpdateUserRequest(BaseModel):
+    role: Optional[str] = None
+    isEnabled: Optional[bool] = None
+
+    @field_validator("role")
+    @classmethod
+    def role_validator(cls, v: Optional[str]):
+        if v is None:
+            return v
+        if not isinstance(v, str):
+            raise PydanticCustomError("value_error", "Role must be a string.")
+        if v not in ("ADMIN", "USER"):
+            raise PydanticCustomError(
+                "value_error", "Role must be either 'ADMIN' or 'USER'."
+            )
+        return v
+
+
 @router.get("/")
 def list_users(user_id: int = Depends(get_current_user), db: Session = Depends(get_db)):
     current = db.query(User).filter(User.id == user_id).first()
@@ -120,6 +138,44 @@ def create_user(
         role=req.role,
         is_enabled=req.isEnabled,
     )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "role": user.role,
+        "isEnabled": bool(user.is_enabled),
+    }
+
+
+@router.put("/{id}")
+def update_user(
+    id: int,
+    req: UpdateUserRequest,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current = db.query(User).filter(User.id == user_id).first()
+    if not current:
+        raise HTTPException(status_code=404, detail="Current user not found")
+    if current.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+
+    user = db.query(User).filter(User.id == id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if req.role is not None:
+        if req.role not in ("ADMIN", "USER"):
+            raise HTTPException(status_code=400, detail="Invalid role")
+        user.role = req.role
+
+    if req.isEnabled is not None:
+        user.is_enabled = bool(req.isEnabled)
 
     db.add(user)
     db.commit()
