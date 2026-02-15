@@ -14,6 +14,7 @@ from src.back.routes.weather import router as weather_router
 from src.back.routes.weather_read import router as weather_read_router
 from src.back.routes.weather_config import router as weather_config_router
 from src.back.routes.users import router as users_router
+from src.back.routes.logs import router as logs_router
 from src.db import init_db
 
 log = BackendLogger()
@@ -38,6 +39,7 @@ app.include_router(weather_router)
 app.include_router(weather_read_router)
 app.include_router(weather_config_router)
 app.include_router(users_router)
+app.include_router(logs_router)
 
 
 static_dir = "src/front/build"
