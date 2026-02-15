@@ -12,6 +12,7 @@ import LoginHistoryPage from "../pages/LoginHistoryPage";
 import WelcomePage from "../pages/WelcomePage";
 import EconomyDashboard from "../components/economy/EconomyDashboard";
 import WeatherDashboard from "../components/weather/WeatherDashboard";
+import AdminPage from "../pages/AdminPage";
 
 import "../styles/global.css";
 
@@ -48,6 +49,9 @@ function AuthGate() {
                     <Route path="/economy" element={<EconomyDashboard/>}/>
                     <Route path="/weather" element={<WeatherDashboard/>}/>
                     <Route path="/login-history" element={<LoginHistoryPage/>}/>
+                    {user?.role === 'ADMIN' && (
+                        <Route path="/admin" element={<AdminPage/>} />
+                    )}
                 </Route>
             </Routes>
         </DashboardProvider>
