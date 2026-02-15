@@ -108,6 +108,10 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     if not user or not user.check_password(req.password):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
+    # Block login if account is disabled
+    if not getattr(user, "is_enabled", True):
+        raise HTTPException(status_code=401, detail="Account disabled")
+
     token = create_access_token(user.id)
 
     db.add(
@@ -123,6 +127,8 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
         "access_token": token,
         "user_id": user.id,
         "username": user.username,
+        "role": getattr(user, "role", "USER"),
+        "isEnabled": bool(getattr(user, "is_enabled", True)),
     }
 
 
@@ -163,4 +169,9 @@ def get_my_account(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    return {"user_id": user_id, "login": user.username}
+    return {
+        "user_id": user_id,
+        "username": user.username,
+        "role": getattr(user, "role", "USER"),
+        "isEnabled": bool(getattr(user, "is_enabled", True)),
+    }

@@ -4,8 +4,8 @@ import {tokenManager} from "../../services/tokenManager";
 
 const AuthContext = createContext(null);
 
-/** @typedef {{access_token: string, user_id: number, username: string}} LoginResponse */
-/** @typedef {{user_id: number, username: string}} UserMeResponse */
+/** @typedef {{access_token: string, user_id: number, username: string, role: string, isEnabled: boolean}} LoginResponse */
+/** @typedef {{user_id: number, username: string, role: string, isEnabled: boolean}} UserMeResponse */
 
 export function AuthProvider({children}) {
     const [user, setUser] = useState(null);
@@ -19,7 +19,13 @@ export function AuthProvider({children}) {
                     try {
                         /** @type {UserMeResponse} */
                         const userData = await apiFetch("/auth/me");
-                        setUser({username: userData.username, logged: true});
+                        setUser({
+                            id: userData.user_id,
+                            username: userData.username,
+                            role: userData.role,
+                            isEnabled: userData.isEnabled,
+                            logged: true,
+                        });
                     } catch (err) {
                         console.error("Failed to load user data:", err);
                         tokenManager.clear();
@@ -40,6 +46,7 @@ export function AuthProvider({children}) {
 
     const login = useCallback(async (username, password) => {
         try {
+
             /** @type {LoginResponse} */
             const data = await apiFetch("/auth/login", {
                 method: "POST", body: JSON.stringify({username, password}),
@@ -52,7 +59,11 @@ export function AuthProvider({children}) {
 
             tokenManager.set(data.access_token);
             setUser({
-                id: data.user_id, username: data.username, logged: true,
+                id: data.user_id,
+                username: data.username,
+                role: data.role,
+                isEnabled: data.isEnabled,
+                logged: true,
             });
             return true;
         } catch (err) {
