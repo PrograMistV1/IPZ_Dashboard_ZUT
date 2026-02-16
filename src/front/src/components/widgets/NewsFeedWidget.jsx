@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
+import ReactDOM from "react-dom";
 import FeedWidget, {NewsFeedItem} from "./FeedWidget";
 import {getNews} from "../../services/news";
 import {updateWidget} from "../../services/dashboard";
@@ -24,6 +25,8 @@ export default function NewsFeedWidget({
     const [error, setError] = useState(null);
     const [category, setCategory] = useState(configuration?.category || "general");
     const [scrollDirection, setScrollDirection] = useState(configuration?.scrollDirection || "vertical");
+
+    const [portalTarget, setPortalTarget] = useState(null);
 
     const initialLoadRef = useRef(true);
     const previousConfigRef = useRef(JSON.stringify({category, scrollDirection}));
@@ -139,6 +142,55 @@ export default function NewsFeedWidget({
         </div>
     );
 
+    // Respond to DashboardInfoPanel asking to mount settings into a target container
+    useEffect(() => {
+        const handler = (e) => {
+            try {
+                const detail = e?.detail || {};
+                if (detail.widgetId && detail.widgetId === widgetId) {
+                    const target = detail.targetEl || null;
+                    setPortalTarget(target);
+                }
+            } catch (err) {
+                // ignore
+            }
+        };
+        window.addEventListener('request-widget-settings', handler);
+        return () => window.removeEventListener('request-widget-settings', handler);
+    }, [widgetId]);
+
+    // When settings change while portal is open, re-dispatch target so portal receives the update reliably
+    useEffect(() => {
+        try {
+            if (portalTarget instanceof Element) {
+                window.dispatchEvent(new CustomEvent('request-widget-settings', {detail: {widgetId, targetEl: portalTarget}}));
+            }
+        } catch (err) {
+            // ignore
+        }
+    }, [category, scrollDirection, portalTarget, widgetId]);
+
+    // Respond to close requests
+    useEffect(() => {
+        const handler = (e) => {
+            try {
+                const detail = e?.detail || {};
+                if (detail.widgetId && detail.widgetId === widgetId) {
+                    setPortalTarget(null);
+                }
+            } catch (err) {
+                // ignore
+            }
+        };
+        window.addEventListener('close-widget-settings', handler);
+        return () => window.removeEventListener('close-widget-settings', handler);
+    }, [widgetId]);
+
+    const handleOpenSettings = () => {
+        // Ask DashboardInfoPanel to provide a container for this widget's settings
+        window.dispatchEvent(new CustomEvent('request-settings-open', {detail: {widgetId}}));
+    };
+
     // Transform articles for feed
     const feedItems = articles.map((article, index) => ({
         id: article.url || index,
@@ -150,17 +202,21 @@ export default function NewsFeedWidget({
     }));
 
     return (
-        <FeedWidget
-            title={`News — ${category}`}
-            ItemComponent={NewsFeedItem}
-            items={feedItems}
-            loading={loading}
-            onDelete={onDelete}
-            onSettings={() => {
-            }}
-            settingsPanel={settingsPanel}
-            emptyMessage={error || "No articles found"}
-            scrollDirection={scrollDirection}
-        />
+        <>
+            <FeedWidget
+                title={`News — ${category}`}
+                ItemComponent={NewsFeedItem}
+                items={feedItems}
+                loading={loading}
+                onDelete={onDelete}
+                onSettings={handleOpenSettings}
+                // settingsPanel moved out to DashboardInfoPanel via portal
+                emptyMessage={error || "No articles found"}
+                scrollDirection={scrollDirection}
+            />
+
+            {/* Portal mount point: when portalTarget is set, render settingsPanel into it so it remains reactive */}
+            {portalTarget && portalTarget instanceof Element && ReactDOM.createPortal(settingsPanel, portalTarget)}
+        </>
     );
 }

@@ -63,7 +63,7 @@ export default function WidgetGrid({
                 width={containerWidth}
                 margin={GRID_MARGIN}
                 onLayoutChange={handleLayoutChange}
-                draggableHandle=".currency-header, .news-header, .feed-header"
+                draggableHandle=".currency-header, .news-header"
                 isResizable={true}
                 isDraggable={true}
                 compactType={null}

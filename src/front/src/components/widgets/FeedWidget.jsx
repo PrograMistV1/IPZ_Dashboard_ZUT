@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef} from "react";
 import "../../styles/feedWidget.css";
 
 /**
@@ -12,8 +12,7 @@ import "../../styles/feedWidget.css";
  * @param {boolean} props.loading - whether data is loading
  * @param {string} props.title - widget title
  * @param {Function} props.onDelete - function to delete widget
- * @param {Function} props.onSettings - function to open settings
- * @param {React.ReactNode} props.settingsPanel - settings panel component
+ * @param {Function} props.onSettings - function to open settings (handled by parent / DashboardInfoPanel)
  * @param {string} props.emptyMessage - message when no data
  * @param {('vertical'|'horizontal')} props.scrollDirection - scroll direction
  */
@@ -23,15 +22,13 @@ export default function FeedWidget({
                                        onLoadMore,
                                        hasMore = false,
                                        loading = false,
-                                       title = "Feed",
-                                       onDelete,
-                                       onSettings,
-                                       settingsPanel,
+                                       title: _title = "Feed",
+                                       onDelete: _onDelete,
+                                       onSettings: _onSettings,
                                        emptyMessage = "No items",
                                        itemProps = {},
                                        scrollDirection = "vertical",
                                    }) {
-    const [showSettings, setShowSettings] = useState(false);
     const feedRef = useRef(null);
 
     const isHorizontal = scrollDirection === "horizontal";
@@ -61,47 +58,6 @@ export default function FeedWidget({
 
     return (
         <div className={`feed-widget ${isHorizontal ? "horizontal" : "vertical"}`}>
-            {/* Header */}
-            <div className="feed-header">
-                <h4 className="feed-title">{title}</h4>
-                <div className="feed-actions">
-                    {onSettings && (
-                        <button
-                            className="feed-icon-btn"
-                            title="Settings"
-                            onClick={() => setShowSettings(!showSettings)}
-                        >
-                            ⚙
-                        </button>
-                    )}
-                    {onDelete && (
-                        <button
-                            className="feed-icon-btn danger"
-                            title="Delete"
-                            onClick={() => {
-                                if (window.confirm("Delete this widget?")) {
-                                    onDelete();
-                                }
-                            }}
-                        >
-                            🗑
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Settings Panel */}
-            {showSettings && settingsPanel && (
-                <div className="feed-settings">
-                    {settingsPanel}
-                    <button
-                        className="feed-settings-close"
-                        onClick={() => setShowSettings(false)}
-                    >
-                        Close
-                    </button>
-                </div>
-            )}
 
             {/* Feed Content */}
             <div className={`feed-content ${isHorizontal ? "horizontal" : "vertical"}`} ref={feedRef}>
@@ -129,9 +85,6 @@ export default function FeedWidget({
     );
 }
 
-/**
- * Simple component for news item in feed
- */
 export function NewsFeedItem({item}) {
     return (
         <div className="news-feed-item">
@@ -153,9 +106,6 @@ export function NewsFeedItem({item}) {
     );
 }
 
-/**
- * Component for currency item in feed
- */
 export function CurrencyFeedItem({item}) {
     const changeClass = item.change > 0 ? "positive" : item.change < 0 ? "negative" : "";
 

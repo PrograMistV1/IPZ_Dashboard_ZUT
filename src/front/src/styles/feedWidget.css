@@ -7,53 +7,6 @@
     overflow: hidden;
 }
 
-/* Header */
-.feed-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 14px;
-    background: #6a6a6a;
-    border-bottom: 1px solid #5a5a5a;
-    cursor: grab;
-}
-
-.feed-header:active {
-    cursor: grabbing;
-}
-
-.feed-title {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-}
-
-.feed-actions {
-    display: flex;
-    gap: 6px;
-}
-
-.feed-icon-btn {
-    background: transparent;
-    border: none;
-    color: #ddd;
-    cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.feed-icon-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.feed-icon-btn.danger:hover {
-    color: #ff5252;
-}
-
 /* Settings Panel */
 .feed-settings {
     padding: 12px 14px;

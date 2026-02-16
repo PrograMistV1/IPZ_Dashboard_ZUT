@@ -102,6 +102,38 @@
   cursor: pointer;
 }
 
+/* Settings container that appears under the widget row */
+.dashboard-widget-settings-container {
+  margin-top: 6px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.15s ease;
+  height: 0;
+  opacity: 0;
+}
+
+.dashboard-widget-settings-container.active {
+  height: auto;
+  opacity: 1;
+}
+
+.dashboard-widget-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: #6a6a6a;
+  border-bottom: 1px solid #5a5a5a;
+  color: #fff;
+}
+
+.dashboard-widget-settings-body {
+  padding: 10px;
+  background: #5f5f5f;
+  color: #fff;
+}
+
 /* News widget styles */
 .news-widget {
   width: 100%;

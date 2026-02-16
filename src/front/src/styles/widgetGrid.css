@@ -48,13 +48,11 @@
 
 /* Make headers grabbable */
 .currency-header,
-.news-header,
-.feed-header {
+.news-header {
     cursor: grab;
 }
 
 .currency-header:active,
-.news-header:active,
-.feed-header:active {
+.news-header:active {
     cursor: grabbing;
 }
