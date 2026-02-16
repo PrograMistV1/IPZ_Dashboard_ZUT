@@ -146,15 +146,6 @@ export default function Dashboard() {
                 <p>Loading dashboard...</p>
             ) : (
                 <>
-                    <div className="dashboard-header">
-                        <button
-                            className="add-widget-btn"
-                            onClick={() => setShowAddModal(true)}
-                        >
-                            + Add Widget
-                        </button>
-                    </div>
-
                     {widgets.length > 0 ? (
                         <WidgetGrid
                             widgets={widgets}

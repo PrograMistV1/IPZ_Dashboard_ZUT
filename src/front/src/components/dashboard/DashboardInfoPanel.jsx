@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from "react";
 import "../../styles/dashboard.css";
 
 export default function DashboardInfoPanel({
-                                               widgets, onClearWidget,
+                                               widgets, onClearWidget, onAddWidget,
                                            }) {
     const widgetCount = widgets?.length || 0;
     const [activeSettingsWidgetId, setActiveSettingsWidgetId] = useState(null);
@@ -91,6 +91,11 @@ export default function DashboardInfoPanel({
             <div className="dashboard-info-row">
                 <span>Widgets:</span>
                 <span>{widgetCount}</span>
+            </div>
+
+            {/* Add Widget button placed here in the info panel */}
+            <div className="dashboard-info-row">
+                <button className="add-widget-btn" onClick={() => (typeof onAddWidget === 'function') && onAddWidget()} title="Add Widget">+ Add Widget</button>
             </div>
 
             {widgetCount > 0 && (<div className="dashboard-info-section">
