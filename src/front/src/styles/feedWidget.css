@@ -2,31 +2,33 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #7a7a7a;
+    background: #ffffff; /* widget background should be white */
+    border: 1px solid #e6e6e6;
     border-radius: 10px;
     overflow: hidden;
+    color: #111;
 }
 
 /* Settings Panel */
 .feed-settings {
     padding: 12px 14px;
-    background: #5f5f5f;
-    border-bottom: 1px solid #4a4a4a;
+    background: #ffffff;
+    border-bottom: 1px solid #ebecec;
 }
 
 .feed-settings-close {
     margin-top: 10px;
     padding: 6px 12px;
-    background: #4a4a4a;
-    border: 1px solid #5a5a5a;
+    background: #f5f5f6;
+    border: 1px solid #e6e6e6;
     border-radius: 4px;
-    color: #ddd;
+    color: #222;
     cursor: pointer;
     font-size: 12px;
 }
 
 .feed-settings-close:hover {
-    background: #5a5a5a;
+    background: #efefef;
 }
 
 /* Content - Vertical (default) */
@@ -34,7 +36,8 @@
     flex: 1;
     padding: 8px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    scrollbar-color: rgba(0,0,0,0.12) transparent;
+    background: #f4f6f8; /* light gray content background */
 }
 
 .feed-content.vertical {
@@ -61,20 +64,20 @@
 }
 
 .feed-content::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(0,0,0,0.12);
     border-radius: 3px;
 }
 
 .feed-empty {
     text-align: center;
-    color: #aaa;
+    color: #666;
     padding: 20px;
     font-size: 13px;
 }
 
 .feed-loading {
     text-align: center;
-    color: #aaa;
+    color: #666;
     padding: 12px;
     font-size: 13px;
 }
@@ -83,26 +86,28 @@
     width: 100%;
     padding: 10px;
     margin-top: 8px;
-    background: #5a5a5a;
-    border: 1px solid #6a6a6a;
+    background: #f6f6f7;
+    border: 1px solid #e6e6e6;
     border-radius: 6px;
-    color: #ddd;
+    color: #111;
     cursor: pointer;
     font-size: 13px;
-    transition: background 0.2s;
+    transition: background 0.15s, box-shadow 0.15s;
 }
 
 .feed-load-more:hover {
-    background: #6a6a6a;
+    background: #eef0f1;
 }
 
 /* Feed Item */
 .feed-item {
     padding: 10px 12px;
-    background: #6a6a6a;
+    background: #eef2f5; /* content cards non-white */
+    border: 1px solid #e6eaec;
     border-radius: 8px;
     margin-bottom: 8px;
-    transition: background 0.2s;
+    transition: background 0.15s, box-shadow 0.15s;
+    box-shadow: 0 1px 0 rgba(16,24,40,0.02);
 }
 
 /* Horizontal feed item */
@@ -114,7 +119,8 @@
 }
 
 .feed-item:hover {
-    background: #757575;
+    background: #e7ecef; /* hover a bit darker */
+    box-shadow: 0 4px 10px rgba(16,24,40,0.04);
 }
 
 .feed-item:last-child {
@@ -129,7 +135,7 @@
 }
 
 .news-feed-title {
-    color: #fff;
+    color: #111;
     text-decoration: none;
     font-weight: 500;
     font-size: 13px;
@@ -142,7 +148,7 @@
 
 .news-feed-description {
     margin: 0;
-    color: #ccc;
+    color: #444;
     font-size: 12px;
     line-height: 1.4;
     display: -webkit-box;
@@ -155,7 +161,7 @@
     display: flex;
     gap: 8px;
     font-size: 11px;
-    color: #aaa;
+    color: #777;
 }
 
 .news-feed-source {
@@ -177,12 +183,12 @@
 
 .currency-feed-code {
     font-weight: 600;
-    color: #fff;
+    color: #111;
     font-size: 14px;
 }
 
 .currency-feed-rate {
-    color: #ddd;
+    color: #111;
     font-size: 14px;
     font-family: monospace;
 }
@@ -195,11 +201,11 @@
 }
 
 .currency-feed-change.positive {
-    color: #4ade80;
-    background: rgba(74, 222, 128, 0.15);
+    color: #166534;
+    background: rgba(16,101,84,0.07);
 }
 
 .currency-feed-change.negative {
-    color: #f87171;
-    background: rgba(248, 113, 113, 0.15);
+    color: #991b1b;
+    background: rgba(185,28,28,0.06);
 }
