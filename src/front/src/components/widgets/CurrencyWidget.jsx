@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Widget from './Widget';
 import {
     VictoryAxis,
@@ -10,39 +10,29 @@ import {
     VictoryVoronoiContainer
 } from 'victory';
 
-const RANGE_TO_DAYS = {week: 7, month: 30, year: 365};
-
 async function fetchRates(currency, from, to) {
     const res = await fetch("http://127.0.0.1:8000/rates", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({currency, date_from: from, date_to: to}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currency, date_from: from, date_to: to }),
     });
     if (!res.ok) throw new Error('Failed to load rates');
     const data = await res.json();
     return data.rates || [];
 }
 
-function getDefaultBase(data, rates) {
-    return data?.base || (rates.length ? rates[0].code : 'USD');
-}
-
-function normalizeRates(res) {
-    return (res || []).map(r => ({
-        date: r.date,
-        value: Number(r.rate)
-    })).sort((a, b) => a.date.localeCompare(b.date));
-}
-
-export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
+export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
     const rates = data && data.rates ? data.rates : [];
-    const base = getDefaultBase(data, rates);
+    const base = data?.base || (rates.length ? rates[0].code : 'USD');
 
     const [selectedRange, setSelectedRange] = useState(() => data?.range || 'month');
+    const rangeToDays = useMemo(() => ({ week: 7, month: 30, year: 365 }), []);
+
     const [series, setSeries] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Load data for selectedRange (single-currency series)
     useEffect(() => {
         let mounted = true;
         const load = async () => {
@@ -51,26 +41,34 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
                 setError(null);
                 const end = new Date();
                 const start = new Date();
-                const days = RANGE_TO_DAYS[selectedRange] || 30;
+                const days = rangeToDays[selectedRange] || 30;
                 start.setDate(end.getDate() - (days - 1));
                 const from = start.toISOString().slice(0, 10);
                 const to = end.toISOString().slice(0, 10);
                 const res = await fetchRates(base, from, to);
                 if (!mounted) return;
-                setSeries(normalizeRates(res));
+                // res expected: [{date:'YYYY-MM-DD', rate: '123.45'}]
+                const normalized = (res || []).map(r => ({
+                    date: r.date,
+                    value: Number(r.rate)
+                })).sort((a, b) => a.date.localeCompare(b.date));
+                setSeries(normalized);
             } catch (err) {
                 if (!mounted) return;
                 setError(err.message || String(err));
             } finally {
-                if (mounted) setLoading(false);
+                if (mounted) {
+                    setLoading(false);
+                }
             }
         };
         load();
         return () => {
             mounted = false;
         };
-    }, [base, selectedRange]);
+    }, [base, selectedRange, rangeToDays]);
 
+    // Handle global save-widget-settings as compatibility (in case panel dispatches it)
     useEffect(() => {
         const handler = (e) => {
             try {
@@ -89,62 +87,101 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
         return () => window.removeEventListener('save-widget-settings', handler);
     }, [id]);
 
-    const handleRangeChange = useCallback((range) => {
-        setSelectedRange(range);
-        window.dispatchEvent(new CustomEvent('save-widget-settings', {
-            detail: {
-                widgetId: id,
-                settings: {range}
-            }
-        }));
-        window.dispatchEvent(new CustomEvent('close-widget-settings', {detail: {widgetId: id}}));
-    }, [id]);
-
+    // Settings UI (portalized by Widget)
     const settingsNode = (
         <div className="widget-settings-portal">
             <div className="widget-settings-inner">
                 <strong>Period — {id}</strong>
-                <div style={{marginTop: 8, display: 'flex', gap: 8}}>
-                    <button onClick={() => handleRangeChange('week')} aria-pressed={selectedRange === 'week'}>Week
+                <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                    <button onClick={() => {
+                        setSelectedRange('week');
+                        window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                            detail: {
+                                widgetId: id,
+                                settings: { range: 'week' }
+                            }
+                        }));
+                        window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
+                    }} aria-pressed={selectedRange === 'week'}>Week
                     </button>
-                    <button onClick={() => handleRangeChange('month')} aria-pressed={selectedRange === 'month'}>Month
+                    <button onClick={() => {
+                        setSelectedRange('month');
+                        window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                            detail: {
+                                widgetId: id,
+                                settings: { range: 'month' }
+                            }
+                        }));
+                        window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
+                    }} aria-pressed={selectedRange === 'month'}>Month
                     </button>
-                    <button onClick={() => handleRangeChange('year')} aria-pressed={selectedRange === 'year'}>Year
+                    <button onClick={() => {
+                        setSelectedRange('year');
+                        window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                            detail: {
+                                widgetId: id,
+                                settings: { range: 'year' }
+                            }
+                        }));
+                        window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
+                    }} aria-pressed={selectedRange === 'year'}>Year
                     </button>
                 </div>
             </div>
         </div>
     );
 
-    const padding = {left: 40, top: 8, right: 8, bottom: 32};
-    const width = 400;
-    const height = 250;
-    const chartData = series.map((point) => ({x: point.date, y: point.value}));
+    // --- Dynamic chart size ---
+    const chartContainerRef = useRef(null);
+    const [chartSize, setChartSize] = useState({ width: 400, height: 250 });
+
+    useEffect(() => {
+        const node = chartContainerRef.current;
+        if (!node) return;
+        function updateSize() {
+            setChartSize({
+                width: node.clientWidth || 400,
+                height: node.clientHeight || 250
+            });
+        }
+        updateSize();
+        const resizeObserver = new window.ResizeObserver(updateSize);
+        resizeObserver.observe(node);
+        return () => resizeObserver.disconnect();
+    }, []);
+
+    // Chart rendering using Victory
+    const padding = { left: 40, top: 8, right: 8, bottom: 32 };
+    const width = chartSize.width;
+    const height = chartSize.height;
+
+    const chartData = series.map((point) => ({ x: point.date, y: point.value }));
 
     return (
         <Widget id={id} mode={mode} data={data} settings={settingsNode} className="widget--chart">
-            <div style={{width: '100%', height: '100%', display: 'flex', flex: 1, minHeight: 0}}>
-                <div style={{width: '100%', height: '100%', display: 'flex', flex: 1, minHeight: 0}}>
+            <div style={{ width: '100%', height: '100%', display: 'flex', flex: 1, minHeight: 0 }} ref={chartContainerRef}>
+                <div style={{ width: '100%', height: '100%', display: 'flex', flex: 1, minHeight: 0 }}>
                     {loading ? (
-                        <div style={{padding: 12}}>Loading chart…</div>
+                        <div style={{ padding: 12 }}>Loading chart…</div>
                     ) : error ? (
-                        <div style={{padding: 12}}>Error: {error}</div>
+                        <div style={{ padding: 12 }}>Error: {error}</div>
                     ) : (!series || series.length === 0) ? (
-                        <div style={{padding: 12}}>No data</div>
+                        <div style={{ padding: 12 }}>No data</div>
                     ) : (
                         <VictoryChart
                             theme={VictoryTheme.material}
                             width={width}
                             height={height}
                             padding={padding}
-                            domainPadding={{y: 10}}
-                            style={{parent: {height: '100%', width: '100%', display: 'flex', flex: 1, minHeight: 0}}}
+                            domainPadding={{ y: 10 }}
+                            style={{ parent: { height: '100%', width: '100%', display: 'flex', flex: 1, minHeight: 0 } }}
                             containerComponent={
                                 <VictoryVoronoiContainer
-                                    labels={({datum}) => `${datum.x}\n${datum.y}`}
+                                    labels={({ datum }) => `${datum.x}\n${datum.y}`}
                                     labelComponent={
                                         <VictoryTooltip
-                                            flyoutStyle={{fill: '#fff', stroke: '#2563eb', strokeWidth: 1}}
+                                            flyoutStyle={{ fill: '#fff', stroke: '#2563eb', strokeWidth: 1 }}
+                                            style={{ fontSize: 13, fill: '#222' }}
                                             pointerLength={8}
                                             cornerRadius={4}
                                             constrainToVisibleArea
@@ -159,24 +196,29 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
                         >
                             <VictoryAxis
                                 dependentAxis
+                                style={{
+                                    axis: { stroke: '#888' },
+                                    tickLabels: { fontSize: 10, padding: 4 }
+                                }}
                             />
                             <VictoryAxis
                                 style={{
-                                    tickLabels: {fontSize: 10, padding: 4, angle: -45}
+                                    axis: { stroke: '#888' },
+                                    tickLabels: { fontSize: 10, padding: 4, angle: -45 }
                                 }}
                                 fixLabelOverlap
                             />
                             <VictoryLine
                                 name="line"
                                 data={chartData}
-                                style={{data: {stroke: '#2563eb', strokeWidth: 2.2}}}
+                                style={{ data: { stroke: '#2563eb', strokeWidth: 2.2 } }}
                                 voronoiBlacklist={["line"]}
                             />
                             <VictoryScatter
                                 name="points"
                                 data={chartData}
                                 size={3.5}
-                                style={{data: {fill: '#2563eb'}}}
+                                style={{ data: { fill: '#2563eb' } }}
                             />
                         </VictoryChart>
                     )}
