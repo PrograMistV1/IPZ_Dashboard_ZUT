@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import Widget from './Widget';
-import {CURRENCY_OPTIONS} from '../../constants/api';
+import {CURRENCY_OPTIONS, DIRECTIONS} from '../../constants/api';
+import {updateWidget} from '../../services/dashboard';
 
 async function fetchRates(currency, from, to) {
     const res = await fetch("http://127.0.0.1:8000/rates", {
@@ -13,11 +14,14 @@ async function fetchRates(currency, from, to) {
     return data.rates || [];
 }
 
-export default function CurrencyFeedWidget({id, mode = 'feed', data: _data}) {
+export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUpdate}) {
+    const config = _data && (_data.configuration || _data) || {};
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [direction, setDirection] = useState(() => (_data && _data.direction) || 'vertical');
+    const [direction, setDirection] = useState(config.direction || DIRECTIONS[0].value);
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState(null);
 
     useEffect(() => {
         let mounted = true;
@@ -57,23 +61,24 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data}) {
         return () => { mounted = false; };
     }, []);
 
-    useEffect(() => {
-        const handler = (e) => {
-            try {
-                const detail = e?.detail || {};
-                if (!detail) return;
-                if (String(detail.widgetId) !== String(id)) return;
-                const settings = detail.settings || {};
-                if (settings.direction && ['vertical', 'horizontal'].includes(settings.direction)) {
-                    setDirection(settings.direction);
-                }
-            } catch (err) {
-                // ignore
+    // Save direction to DB on change
+    const handleDirectionChange = async (e) => {
+        const newDirection = e.target.value;
+        setDirection(newDirection);
+        setSaving(true);
+        setSaveError(null);
+        const newConfig = { direction: newDirection };
+        try {
+            await updateWidget(id, { configuration: newConfig });
+            if (typeof onUpdate === 'function') {
+                onUpdate(id, newConfig);
             }
-        };
-        window.addEventListener('save-widget-settings', handler);
-        return () => window.removeEventListener('save-widget-settings', handler);
-    }, [id]);
+        } catch (err) {
+            setSaveError('Error saving settings');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const settingsNode = (
         <div className="widget-settings-portal">
@@ -84,22 +89,18 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data}) {
                         Direction:
                         <select
                             value={direction}
-                            onChange={e => {
-                                setDirection(e.target.value);
-                                window.dispatchEvent(new CustomEvent('save-widget-settings', {
-                                    detail: {
-                                        widgetId: id,
-                                        settings: { direction: e.target.value }
-                                    }
-                                }));
-                            }}
+                            onChange={handleDirectionChange}
                             onMouseDown={e => e.stopPropagation()}
                             onPointerDown={e => e.stopPropagation()}
+                            disabled={saving}
                         >
-                            <option value="vertical">Vertical</option>
-                            <option value="horizontal">Horizontal</option>
+                            {DIRECTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
                         </select>
+                        {saving && <span style={{ fontSize: 12, color: '#888' }}>Saving…</span>}
                     </label>
+                    {saveError && <div style={{ color: '#ef4444', fontSize: 12 }}>{saveError}</div>}
                 </div>
             </div>
         </div>
