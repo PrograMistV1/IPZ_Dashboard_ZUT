@@ -9,6 +9,7 @@ import {
     VictoryTooltip,
     VictoryVoronoiContainer
 } from 'victory';
+import {CURRENCY_OPTIONS} from '../../constants/api';
 
 async function fetchRates(currency, from, to) {
     const res = await fetch("http://127.0.0.1:8000/rates", {
@@ -25,6 +26,8 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
     const rates = data && data.rates ? data.rates : [];
     const base = data?.base || (rates.length ? rates[0].code : 'USD');
 
+    // --- New state for selected currency ---
+    const [selectedCurrency, setSelectedCurrency] = useState(() => data?.currency || base || 'USD');
     const [selectedRange, setSelectedRange] = useState(() => data?.range || 'month');
     const rangeToDays = useMemo(() => ({ week: 7, month: 30, year: 365 }), []);
 
@@ -32,7 +35,7 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Load data for selectedRange (single-currency series)
+    // Load data when currency or range changes
     useEffect(() => {
         let mounted = true;
         const load = async () => {
@@ -45,7 +48,7 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
                 start.setDate(end.getDate() - (days - 1));
                 const from = start.toISOString().slice(0, 10);
                 const to = end.toISOString().slice(0, 10);
-                const res = await fetchRates(base, from, to);
+                const res = await fetchRates(selectedCurrency, from, to);
                 if (!mounted) return;
                 // res expected: [{date:'YYYY-MM-DD', rate: '123.45'}]
                 const normalized = (res || []).map(r => ({
@@ -66,9 +69,9 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
         return () => {
             mounted = false;
         };
-    }, [base, selectedRange, rangeToDays]);
+    }, [selectedCurrency, selectedRange, rangeToDays]);
 
-    // Handle global save-widget-settings as compatibility (in case panel dispatches it)
+    // Handle global save-widget-settings
     useEffect(() => {
         const handler = (e) => {
             try {
@@ -79,6 +82,9 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
                 if (settings.range && ['week', 'month', 'year'].includes(settings.range)) {
                     setSelectedRange(settings.range);
                 }
+                if (settings.currency && CURRENCY_OPTIONS.includes(settings.currency)) {
+                    setSelectedCurrency(settings.currency);
+                }
             } catch (err) {
                 // ignore
             }
@@ -87,45 +93,69 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
         return () => window.removeEventListener('save-widget-settings', handler);
     }, [id]);
 
-    // Settings UI (portalized by Widget)
+    // --- Settings UI ---
     const settingsNode = (
         <div className="widget-settings-portal">
             <div className="widget-settings-inner">
-                <strong>Period — {id}</strong>
-                <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                    <button onClick={() => {
-                        setSelectedRange('week');
-                        window.dispatchEvent(new CustomEvent('save-widget-settings', {
-                            detail: {
-                                widgetId: id,
-                                settings: { range: 'week' }
-                            }
-                        }));
-                        window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
-                    }} aria-pressed={selectedRange === 'week'}>Week
-                    </button>
-                    <button onClick={() => {
-                        setSelectedRange('month');
-                        window.dispatchEvent(new CustomEvent('save-widget-settings', {
-                            detail: {
-                                widgetId: id,
-                                settings: { range: 'month' }
-                            }
-                        }));
-                        window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
-                    }} aria-pressed={selectedRange === 'month'}>Month
-                    </button>
-                    <button onClick={() => {
-                        setSelectedRange('year');
-                        window.dispatchEvent(new CustomEvent('save-widget-settings', {
-                            detail: {
-                                widgetId: id,
-                                settings: { range: 'year' }
-                            }
-                        }));
-                        window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
-                    }} aria-pressed={selectedRange === 'year'}>Year
-                    </button>
+                <strong>Settings — {id}</strong>
+                <div style={{ marginTop: 8, display: 'flex', gap: 8, flexDirection: 'column' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        Currency:
+                        <select
+                            value={selectedCurrency}
+                            onChange={e => {
+                                setSelectedCurrency(e.target.value);
+                                window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                    detail: {
+                                        widgetId: id,
+                                        settings: { currency: e.target.value, range: selectedRange }
+                                    }
+                                }));
+                                window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
+                            }}
+                            onMouseDown={e => e.stopPropagation()}
+                            onPointerDown={e => e.stopPropagation()}
+                        >
+                            {CURRENCY_OPTIONS.map(cur => (
+                                <option key={cur} value={cur}>{cur}</option>
+                            ))}
+                        </select>
+                    </label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => {
+                            setSelectedRange('week');
+                            window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                detail: {
+                                    widgetId: id,
+                                    settings: { range: 'week', currency: selectedCurrency }
+                                }
+                            }));
+                            window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
+                        }} aria-pressed={selectedRange === 'week'}>Week
+                        </button>
+                        <button onClick={() => {
+                            setSelectedRange('month');
+                            window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                detail: {
+                                    widgetId: id,
+                                    settings: { range: 'month', currency: selectedCurrency }
+                                }
+                            }));
+                            window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
+                        }} aria-pressed={selectedRange === 'month'}>Month
+                        </button>
+                        <button onClick={() => {
+                            setSelectedRange('year');
+                            window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                detail: {
+                                    widgetId: id,
+                                    settings: { range: 'year', currency: selectedCurrency }
+                                }
+                            }));
+                            window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
+                        }} aria-pressed={selectedRange === 'year'}>Year
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
