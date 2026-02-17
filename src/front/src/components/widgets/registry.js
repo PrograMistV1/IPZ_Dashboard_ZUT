@@ -1,7 +1,7 @@
-import CurrencyWidget from "./CurrencyWidget";
-import NewsFeedWidget from "./NewsFeedWidget";
-import CurrencyFeedWidget from "./CurrencyFeedWidget";
-import WeatherWidget from "./WeatherWidget";
+import CurrencyWidget from "./CurrencyWidget.jsx";
+import NewsFeedWidget from "./NewsFeedWidget.jsx";
+import CurrencyFeedWidget from "./CurrencyFeedWidget.jsx";
+import WeatherWidget from "./WeatherWidget.jsx";
 
 /**
  * Widget data types configuration

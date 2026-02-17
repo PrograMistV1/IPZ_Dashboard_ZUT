@@ -1,318 +1,179 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
-import CurrencyLineChart from "./CurrencyLineChart";
-import CurrencyCandleChart from "./CurrencyCandleChart";
-import "../../styles/currencyWidget.css";
-import {updateWidget} from "../../services/dashboard";
+import React, {useEffect, useMemo, useState} from 'react';
+import Widget from './Widget';
+import {ChartGrid, generateXLabels, generateYTicks, useContainerDimensions,} from './chartUtils';
 
-export default function CurrencyWidget({
-                                           widgetId,
-                                           configuration,
-                                           onUpdate,
-                                           enabled = true,
-                                           onDelete,
-                                       }) {
-    const isMountedRef = useRef(false);
-    const initialConfigRef = useRef(null);
+async function fetchRates(currency, from, to) {
+    const res = await fetch("http://127.0.0.1:8000/rates", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({currency, date_from: from, date_to: to}),
+    });
+    if (!res.ok) throw new Error('Failed to load rates');
+    const data = await res.json();
+    return data.rates || [];
+}
 
-    const [editing, setEditing] = useState(false);
+export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
+    const rates = data && data.rates ? data.rates : [];
+    const base = data?.base || (rates.length ? rates[0].code : 'USD');
 
-    const [currency, setCurrency] = useState("");
-    const [dateFrom, setDateFrom] = useState("");
-    const [dateTo, setDateTo] = useState("");
-    const [rates, setRates] = useState([]);
-    const [error, setError] = useState("");
+    const [selectedRange, setSelectedRange] = useState(() => data?.range || 'month');
+    const rangeToDays = useMemo(() => ({week: 7, month: 30, year: 365}), []);
+
+    // no hard minimums here - let the hook measure the real container size
+    const {containerRef, dimensions} = useContainerDimensions(0, 0);
+    const [series, setSeries] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const [showValue, setShowValue] = useState(false);
-    const [showChart, setShowChart] = useState(false);
-    const [showTable, setShowTable] = useState(false);
-    const [chartType, setChartType] = useState("line");
-
+    // load data for selectedRange (single-currency series)
     useEffect(() => {
-        if (!widgetId) return;
-
-        setCurrency(configuration?.currency || "");
-        setDateFrom(configuration?.dateFrom || "");
-        setDateTo(configuration?.dateTo || "");
-        setShowValue(configuration?.showValue ?? false);
-        setShowChart(configuration?.showChart ?? false);
-        setShowTable(configuration?.showTable ?? false);
-        setChartType(configuration?.chartType || "line");
-        setRates([]);
-        setError("");
-
-        if (initialConfigRef.current === null) {
-            initialConfigRef.current = configuration || null;
-        }
-
-        isMountedRef.current = true;
-    }, [widgetId]);
-
-    const fetchRates = useCallback(async () => {
-        setError("");
-        setLoading(true);
-
-        try {
-            const response = await fetch("http://127.0.0.1:8000/rates", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    currency,
-                    date_from: dateFrom,
-                    date_to: dateTo,
-                }),
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                console.error("Error fetching rates:", err);
-                setError(err.detail || "Backend error");
-                setLoading(false);
-                return;
+        let mounted = true;
+        const load = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const end = new Date();
+                const start = new Date();
+                const days = rangeToDays[selectedRange] || 30;
+                start.setDate(end.getDate() - (days - 1));
+                const from = start.toISOString().slice(0, 10);
+                const to = end.toISOString().slice(0, 10);
+                const res = await fetchRates(base, from, to);
+                if (!mounted) return;
+                // res expected: [{date:'YYYY-MM-DD', rate: '123.45'}]
+                const normalized = (res || []).map(r => ({
+                    date: r.date,
+                    value: Number(r.rate)
+                })).sort((a, b) => a.date.localeCompare(b.date));
+                setSeries(normalized);
+            } catch (err) {
+                if (!mounted) return;
+                setError(err.message || String(err));
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
             }
-
-            const data = await response.json();
-            setRates(data.rates || []);
-        } catch (err) {
-            console.error("Error fetching rates:", err);
-            setError(err.message);
-            setLoading(false);
-        }
-
-        setLoading(false);
-    }, [currency, dateFrom, dateTo]);
-
-    useEffect(() => {
-        if (currency && dateFrom && dateTo && enabled) {
-            fetchRates().then(() => {
-            });
-        }
-    }, [currency, dateFrom, dateTo, fetchRates, enabled]);
-
-    useEffect(() => {
-        if (!widgetId || !isMountedRef.current) return;
-
-        const newConfig = {
-            currency,
-            dateFrom,
-            dateTo,
-            showValue,
-            showChart,
-            showTable,
-            chartType,
         };
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, [base, selectedRange, rangeToDays]);
 
-        try {
-            const prev = initialConfigRef.current || {};
-            const prevJson = JSON.stringify(prev || {});
-            const newJson = JSON.stringify(newConfig || {});
-            if (prevJson === newJson) {
-                return;
+    // handle global save-widget-settings as compatibility (in case panel dispatches it)
+    useEffect(() => {
+        const handler = (e) => {
+            try {
+                const detail = e?.detail || {};
+                if (!detail) return;
+                if (String(detail.widgetId) !== String(id)) return;
+                const settings = detail.settings || {};
+                if (settings.range && ['week', 'month', 'year'].includes(settings.range)) {
+                    setSelectedRange(settings.range);
+                }
+            } catch (err) {
+                // ignore
             }
-        } catch (err) {
-        }
+        };
+        window.addEventListener('save-widget-settings', handler);
+        return () => window.removeEventListener('save-widget-settings', handler);
+    }, [id]);
 
-        if (!newConfig.currency && !newConfig.dateFrom && !newConfig.dateTo) {
-            return;
-        }
-
-        updateWidget(widgetId, {
-            configuration: newConfig,
-            enabled,
-        }).then(() => {
-            initialConfigRef.current = newConfig;
-        });
-
-        onUpdate?.(widgetId, newConfig);
-    }, [
-        currency,
-        dateFrom,
-        dateTo,
-        showValue,
-        showChart,
-        showTable,
-        chartType,
-        widgetId,
-        enabled,
-    ]);
-
-    const latestRate =
-        rates.length > 0 ? rates[rates.length - 1].rate : null;
-
-    if (!enabled) {
-        return (
-            <div className="currency-widget disabled">
-                <div className="currency-header">
-                    <h3>Currency rates (NBP)</h3>
-                    <button className="icon-btn" onClick={() => setEditing(true)}>
-                        ⚙
+    // settings UI (portalized by Widget)
+    const settingsNode = (
+        <div className="widget-settings-portal">
+            <div className="widget-settings-inner">
+                <strong>Period — {id}</strong>
+                <div style={{marginTop: 8, display: 'flex', gap: 8}}>
+                    <button onClick={() => {
+                        setSelectedRange('week');
+                        window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                            detail: {
+                                widgetId: id,
+                                settings: {range: 'week'}
+                            }
+                        }));
+                        window.dispatchEvent(new CustomEvent('close-widget-settings', {detail: {widgetId: id}}));
+                    }} aria-pressed={selectedRange === 'week'}>Week
+                    </button>
+                    <button onClick={() => {
+                        setSelectedRange('month');
+                        window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                            detail: {
+                                widgetId: id,
+                                settings: {range: 'month'}
+                            }
+                        }));
+                        window.dispatchEvent(new CustomEvent('close-widget-settings', {detail: {widgetId: id}}));
+                    }} aria-pressed={selectedRange === 'month'}>Month
+                    </button>
+                    <button onClick={() => {
+                        setSelectedRange('year');
+                        window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                            detail: {
+                                widgetId: id,
+                                settings: {range: 'year'}
+                            }
+                        }));
+                        window.dispatchEvent(new CustomEvent('close-widget-settings', {detail: {widgetId: id}}));
+                    }} aria-pressed={selectedRange === 'year'}>Year
                     </button>
                 </div>
-                <p>Widget is disabled</p>
             </div>
-        );
-    }
+        </div>
+    );
+
+    // chart rendering using chartUtils
+    // уменьшенный padding для максимального заполнения графиком
+    const padding = {left: 40, top: 8, right: 8, bottom: 8};
+    // use exact measured dimensions so svg fills the container
+    const width = Math.max(1, dimensions.width);
+    const height = Math.max(1, dimensions.height);
+    const chartWidth = Math.max(1, width - padding.left - padding.right);
+    const chartHeight = Math.max(1, height - padding.top - padding.bottom);
+
+    const n = series.length;
+
+    const scaleX = (i) => padding.left + (n <= 1 ? chartWidth / 2 : (i / (n - 1)) * chartWidth);
+    const values = series.map(s => s.value).filter(v => v != null && !isNaN(v));
+    const yMin = values.length ? Math.min(...values) : 0;
+    const yMax = values.length ? Math.max(...values) : 1;
+    const yRange = Math.max(1e-6, yMax - yMin);
+    const scaleY = (v) => padding.top + chartHeight - ((v - yMin) / yRange) * chartHeight;
+
+    const pathPoints = series.map((p, i) => `${scaleX(i)},${scaleY(p.value)}`).join(' ');
+
+    const yTicks = generateYTicks(yMin, yRange, scaleY, 4);
+    const xLabels = generateXLabels(series, chartWidth, scaleX, 'date');
 
     return (
-        <div className="currency-widget">
-            {/* ===== HEADER ===== */}
-            <div className="currency-header">
-                <h3>{currency || "choose a currency"}</h3>
+        <Widget id={id} mode={mode} data={data} settings={settingsNode} className="widget--chart">
+            {/* Make container take full size and allow svg to fill it */}
+            <div ref={containerRef} style={{width: '100%', height: '100%', display: 'flex', flex: 1, minHeight: 0}}>
+                {loading ? (
+                    <div style={{padding: 12}}>Loading chart…</div>
+                ) : error ? (
+                    <div style={{padding: 12}}>Error: {error}</div>
+                ) : (!series || series.length === 0) ? (
+                    <div style={{padding: 12}}>No data</div>
+                ) : (
+                    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none"
+                         style={{width: '100%', height: '100%', display: 'block', flex: 1, minHeight: 0}}>
+                        <ChartGrid height={height} padding={padding} yTicks={yTicks} xLabels={xLabels}
+                                   chartWidth={chartWidth} chartHeight={chartHeight}/>
 
-                <div className="currency-actions">
-                    <button className="icon-btn" title="Settings" onClick={() => setEditing(true)}>⚙</button>
+                        <polyline points={pathPoints} fill="none" stroke="#2563eb" strokeWidth={2.2}
+                                  strokeLinejoin="round" strokeLinecap="round"/>
 
-                    <button
-                        className="icon-btn danger"
-                        title="Delete"
-                        onClick={() => {
-                            if (
-                                window.confirm(
-                                    "Are you sure you want to delete this widget?"
-                                )
-                            ) {
-                                onDelete?.();
-                            }
-                        }}
-                    >
-                        🗑
-                    </button>
-                </div>
+                        {/* small circles for points */}
+                        {series.map((p, i) => (
+                            <circle key={p.date} cx={scaleX(i)} cy={scaleY(p.value)} r={2.8} fill="#2563eb"/>
+                        ))}
+                    </svg>
+                )}
             </div>
-
-            {/* ===== SETTINGS PANEL ===== */}
-            {editing && (
-                <div className="currency-settings-panel">
-                    <div className="settings-header">
-                        <h4>Widget settings</h4>
-                        <button
-                            className="icon-btn"
-                            onClick={() => setEditing(false)}
-                        >
-                            ✕
-                        </button>
-                    </div>
-
-                    <div className="currency-form">
-                        <select
-                            value={currency}
-                            onChange={(e) => setCurrency(e.target.value)}
-                        >
-                            <option value="" disabled>
-                                Select currency
-                            </option>
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                            <option value="GBP">GBP</option>
-                            <option value="CHF">CHF</option>
-                            <option value="JPY">JPY</option>
-                        </select>
-
-                        <input
-                            type="date"
-                            value={dateFrom}
-                            onChange={(e) => setDateFrom(e.target.value)}
-                        />
-
-                        <input
-                            type="date"
-                            value={dateTo}
-                            onChange={(e) => setDateTo(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="currency-toggles">
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={showChart}
-                                onChange={() => setShowChart((v) => !v)}
-                            />
-                            Chart
-                        </label>
-
-                        {showChart && (
-                            <>
-                                <label>
-                                    <input
-                                        type="radio"
-                                        checked={chartType === "line"}
-                                        onChange={() => setChartType("line")}
-                                    />
-                                    Line
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="radio"
-                                        checked={chartType === "candle"}
-                                        onChange={() => setChartType("candle")}
-                                    />
-                                    Candle
-                                </label>
-                            </>
-                        )}
-
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={showValue}
-                                onChange={() => setShowValue((v) => !v)}
-                            />
-                            Value
-                        </label>
-
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={showTable}
-                                onChange={() => setShowTable((v) => !v)}
-                            />
-                            Table
-                        </label>
-                    </div>
-                </div>
-            )}
-
-            {/* ===== CONTENT ===== */}
-            {loading && <p>Loading...</p>}
-            {error && <p className="error">{error}</p>}
-
-            {showValue && latestRate && (
-                <div className="currency-value">
-                    <strong>Current rate:</strong> {latestRate}
-                </div>
-            )}
-
-            {showChart && rates.length > 1 && (
-                <div className="currency-chart-box">
-                    {chartType === "line" && (
-                        <CurrencyLineChart rates={rates}/>
-                    )}
-                    {chartType === "candle" && (
-                        <CurrencyCandleChart rates={rates}/>
-                    )}
-                </div>
-            )}
-
-            {showTable && rates.length > 0 && (
-                <table className="currency-table">
-                    <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Rate</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {rates.map((r, i) => (
-                        <tr key={i}>
-                            <td>{r.date}</td>
-                            <td>{r.rate}</td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            )}
-        </div>
+        </Widget>
     );
 }

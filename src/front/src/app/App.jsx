@@ -10,8 +10,6 @@ import LoginPage from "../pages/auth/Login";
 import RegisterPage from "../pages/auth/Register";
 import LoginHistoryPage from "../pages/LoginHistoryPage";
 import WelcomePage from "../pages/WelcomePage";
-import EconomyDashboard from "../components/economy/EconomyDashboard";
-import WeatherDashboard from "../components/weather/WeatherDashboard";
 
 import "../styles/global.css";
 
@@ -45,8 +43,6 @@ function AuthGate() {
                 <Route element={<AppLayout/>}>
                     <Route path="*" element={<WelcomePage/>}/>
                     <Route path="/dashboard/:id" element={<Dashboard/>}/>
-                    <Route path="/economy" element={<EconomyDashboard/>}/>
-                    <Route path="/weather" element={<WeatherDashboard/>}/>
                     <Route path="/login-history" element={<LoginHistoryPage/>}/>
                 </Route>
             </Routes>

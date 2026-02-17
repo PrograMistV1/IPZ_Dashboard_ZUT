@@ -73,11 +73,14 @@ export default function WidgetGrid({
                     const WidgetComponent = serverTypeMap[widget.type];
                     if (!WidgetComponent) return null;
 
+                    const mode = widget.configuration?.mode || widget.configuration?.defaultMode || 'feed';
+
                     return (
                         <div key={String(widget.id)} className="widget-grid-item">
                             <WidgetComponent
-                                widgetId={widget.id}
-                                configuration={widget.configuration}
+                                id={widget.id}
+                                mode={mode}
+                                data={widget.configuration}
                                 onUpdate={onWidgetUpdate}
                                 onDelete={() => onWidgetDelete?.(widget.id)}
                             />

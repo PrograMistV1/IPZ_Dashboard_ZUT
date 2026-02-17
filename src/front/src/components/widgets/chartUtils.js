@@ -3,12 +3,12 @@ import {useEffect, useRef, useState} from "react";
 /**
  * Hook for measuring container dimensions with resize support
  */
-export function useContainerDimensions(minWidth = 200, minHeight = 120) {
+export function useContainerDimensions(minWidth = 0, minHeight = 0) {
     const containerRef = useRef(null);
-    const [dimensions, setDimensions] = useState({width: 400, height: 180});
+    const [dimensions, setDimensions] = useState({width: minWidth, height: minHeight});
 
     useEffect(() => {
-        const updateDimensions = () => {
+        const update = () => {
             if (containerRef.current) {
                 const {width, height} = containerRef.current.getBoundingClientRect();
                 setDimensions({
@@ -18,9 +18,22 @@ export function useContainerDimensions(minWidth = 200, minHeight = 120) {
             }
         };
 
-        updateDimensions();
-        window.addEventListener("resize", updateDimensions);
-        return () => window.removeEventListener("resize", updateDimensions);
+        // try an initial update in case element is already mounted
+        update();
+
+        // use ResizeObserver for more reliable size updates
+        let ro;
+        if (typeof ResizeObserver !== 'undefined') {
+            ro = new ResizeObserver(() => update());
+            if (containerRef.current) ro.observe(containerRef.current);
+        } else {
+            window.addEventListener("resize", update);
+        }
+
+        return () => {
+            if (ro) ro.disconnect();
+            else window.removeEventListener("resize", update);
+        };
     }, [minWidth, minHeight]);
 
     return {containerRef, dimensions};
@@ -30,7 +43,6 @@ export function useContainerDimensions(minWidth = 200, minHeight = 120) {
  * Chart grid component - renders background, axes and grid lines
  */
 export function ChartGrid({
-                              width,
                               height,
                               padding,
                               yTicks,
@@ -132,32 +144,17 @@ export function generateYTicks(yMin, yRange, scaleY, tickCount = 4) {
  */
 export function generateXLabels(data, chartWidth, scaleX, dateKey = "date") {
     const labels = [];
-    const maxLabels = Math.floor(chartWidth / 60);
+    if (!data || data.length === 0) return labels;
+
+    const maxLabels = Math.max(1, Math.floor(chartWidth / 60));
     const labelStep = Math.max(1, Math.ceil(data.length / maxLabels));
 
     for (let i = 0; i < data.length; i += labelStep) {
+        const raw = data[i] && data[i][dateKey] ? String(data[i][dateKey]) : '';
         labels.push({
             x: scaleX(i),
-            label: data[i][dateKey].slice(5),
+            label: raw.length >= 5 ? raw.slice(5) : raw,
         });
     }
     return labels;
-}
-
-/**
- * Find nearest data point index to mouse X position
- */
-export function findNearestIndex(mouseX, dataLength, scaleX) {
-    let nearestIndex = 0;
-    let minDist = Infinity;
-
-    for (let i = 0; i < dataLength; i++) {
-        const dist = Math.abs(scaleX(i) - mouseX);
-        if (dist < minDist) {
-            minDist = dist;
-            nearestIndex = i;
-        }
-    }
-
-    return {nearestIndex, minDist};
 }

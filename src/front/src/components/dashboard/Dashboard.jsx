@@ -7,6 +7,7 @@ import AddWidgetModal from "./AddWidgetModal";
 import "../../styles/dashboard.css";
 
 export default function Dashboard() {
+    // Wrap dashboard area with provider so widgets and the info panel can share settings state
     const {setDashboardInfo} = useOutletContext() || {};
     const {id} = useParams();
 

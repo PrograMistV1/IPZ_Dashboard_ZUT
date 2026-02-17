@@ -8,82 +8,73 @@ export default function DashboardInfoPanel({
     const [activeSettingsWidgetId, setActiveSettingsWidgetId] = useState(null);
     const containersRef = useRef({});
 
-    // When a widget requests opening settings (by dispatching 'request-settings-open'),
-    // mark it active so we render a container under its row and send the container back to the widget.
-    useEffect(() => {
-        const handler = (e) => {
-            try {
-                const detail = e?.detail || {};
-                if (!detail || !detail.widgetId) return;
-                const newId = detail.widgetId;
-                // close previous if any
-                setActiveSettingsWidgetId((prev) => {
-                    if (prev && prev !== newId) {
-                        window.dispatchEvent(new CustomEvent('close-widget-settings', {detail: {widgetId: prev}}));
-                    }
-                    return newId;
+    const dispatchWidgetSettings = (widgetId, el) => {
+        try {
+            if (!el) return;
+            if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+                window.requestAnimationFrame(() => {
+                    window.dispatchEvent(new CustomEvent('request-widget-settings', {
+                        detail: {widgetId, targetEl: el}
+                    }));
                 });
-            } catch (err) {
-                // ignore
+            } else {
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('request-widget-settings', {
+                        detail: {widgetId, targetEl: el}
+                    }));
+                }, 20);
             }
-        };
-        window.addEventListener('request-settings-open', handler);
-        return () => window.removeEventListener('request-settings-open', handler);
-    }, []);
-
-    // When activeSettingsWidgetId changes, attempt to send the container element back to the widget
-    useEffect(() => {
-        if (!activeSettingsWidgetId) return;
-        const el = containersRef.current[activeSettingsWidgetId] || null;
-        if (el instanceof Element) {
-            window.dispatchEvent(new CustomEvent('request-widget-settings', {
-                detail: {
-                    widgetId: activeSettingsWidgetId,
-                    targetEl: el
-                }
-            }));
+        } catch (err) {
+            console.error('[DashboardInfoPanel] dispatchWidgetSettings error', err);
         }
-    }, [activeSettingsWidgetId]);
-
-    // Ensure that when widgets prop or active widget changes (for example after updating configuration)
-    // we re-dispatch the container element so the widget's portal receives updates and stays reactive.
-    useEffect(() => {
-        if (!activeSettingsWidgetId) return;
-        const el = containersRef.current[activeSettingsWidgetId] || null;
-        if (el instanceof Element) {
-            // re-dispatch to make sure widget gets the latest target whenever widgets list updates
-            try {
-                window.dispatchEvent(new CustomEvent('request-widget-settings', {
-                    detail: {
-                        widgetId: activeSettingsWidgetId,
-                        targetEl: el
-                    }
-                }));
-            } catch (err) {
-                // ignore
-            }
-        }
-    }, [widgets, activeSettingsWidgetId]);
+    };
 
     const requestSettingsFor = (widgetId) => {
-        // Toggle: if already active for this widget, close it
-        if (activeSettingsWidgetId === widgetId) {
-            // inform widget to unmount its portal
-            window.dispatchEvent(new CustomEvent('close-widget-settings', {detail: {widgetId}}));
+        const idStr = String(widgetId);
+        if (activeSettingsWidgetId === idStr) {
+            // close and inform widget
+            try {
+                window.dispatchEvent(new CustomEvent('close-widget-settings', {detail: {widgetId: idStr}}));
+            } catch (err) {
+                // ignore
+            }
             setActiveSettingsWidgetId(null);
             return;
         }
 
-        // close previous if opening a different widget
-        if (activeSettingsWidgetId && activeSettingsWidgetId !== widgetId) {
-            window.dispatchEvent(new CustomEvent('close-widget-settings', {detail: {widgetId: activeSettingsWidgetId}}));
+        // close previous if needed
+        if (activeSettingsWidgetId && activeSettingsWidgetId !== idStr) {
+            try {
+                window.dispatchEvent(new CustomEvent('close-widget-settings', {detail: {widgetId: activeSettingsWidgetId}}));
+            } catch (err) {
+                // ignore
+            }
         }
 
-        // User clicked the settings button in the list — open the panel under that row
-        setActiveSettingsWidgetId(widgetId);
+        setActiveSettingsWidgetId(idStr);
     };
 
-    return (<div className="dashboard-info">
+    // When active widget changes, dispatch its container if exists
+    useEffect(() => {
+        if (!activeSettingsWidgetId) return;
+        const el = containersRef.current[activeSettingsWidgetId] || null;
+        console.debug('[DashboardInfoPanel] activeSettingsWidgetId changed', {activeSettingsWidgetId, hasEl: !!el});
+        if (el instanceof Element) {
+            dispatchWidgetSettings(activeSettingsWidgetId, el);
+        }
+    }, [activeSettingsWidgetId]);
+
+    // Re-dispatch container when widgets array changes (in case DOM updated)
+    useEffect(() => {
+        if (!activeSettingsWidgetId) return;
+        const el = containersRef.current[activeSettingsWidgetId] || null;
+        if (el instanceof Element) {
+            dispatchWidgetSettings(activeSettingsWidgetId, el);
+        }
+    }, [widgets, activeSettingsWidgetId]);
+
+    return (
+        <div className="dashboard-info">
             <div className="dashboard-info-section">
                 <strong>Dashboard info</strong>
             </div>
@@ -95,49 +86,49 @@ export default function DashboardInfoPanel({
 
             {/* Add Widget button placed here in the info panel */}
             <div className="dashboard-info-row">
-                <button className="add-widget-btn" onClick={() => (typeof onAddWidget === 'function') && onAddWidget()} title="Add Widget">+ Add Widget</button>
+                <button className="add-widget-btn" onClick={() => (typeof onAddWidget === 'function') && onAddWidget()}
+                        title="Add Widget">+ Add Widget
+                </button>
             </div>
 
-            {widgetCount > 0 && (<div className="dashboard-info-section">
+            {widgetCount > 0 && (
+                <div className="dashboard-info-section">
                     <strong>Widget list</strong>
 
-                    {widgets.map((widget) => (<React.Fragment key={widget.id}>
-                            <div className="dashboard-widget-row">
-                                <span>{widget.type}</span>
+                    {widgets.map((widget) => {
+                        const widStr = String(widget.id);
+                        const isActive = String(activeSettingsWidgetId) === widStr;
+                        return (
+                            <React.Fragment key={widStr}>
+                                <div className="dashboard-widget-row">
+                                    <span>{widget.type}</span>
 
-                                <div style={{display: 'flex', gap: 8}}>
-                                    <button onClick={() => requestSettingsFor(widget.id)} title="Настроить">⚙</button>
-                                    <button onClick={() => onClearWidget(widget.id)} title="Удалить">🗑</button>
+                                    <div style={{display: 'flex', gap: 8}}>
+                                        <button onClick={() => requestSettingsFor(widget.id)} title="Настроить">⚙
+                                        </button>
+                                        <button onClick={() => onClearWidget(widget.id)} title="Удалить">🗑</button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* container placed directly under the widget row — widget will portal its settings into the .body element */}
-                            <div
-                                className={`dashboard-widget-settings-container ${activeSettingsWidgetId === widget.id ? 'active' : ''}`}>
-                                {activeSettingsWidgetId === widget.id && (
-                                    <div className="dashboard-widget-settings-header">
-                                        <strong>Settings — Widget {widget.id}</strong>
-                                        {/* internal Close button intentionally removed; use the settings toggle button in the list to close */}
-                                    </div>)}
-
-                                <div ref={(el) => {
-                                    containersRef.current[widget.id] = el;
-                                    // if the container just appeared and it's the active widget, notify the widget with the new target
-                                    try {
-                                        if (el instanceof Element && activeSettingsWidgetId === widget.id) {
-                                            window.dispatchEvent(new CustomEvent('request-widget-settings', {
-                                                detail: {
-                                                    widgetId: widget.id,
-                                                    targetEl: el
-                                                }
-                                            }));
+                                {/* container placed directly under the widget row — widget will portal its settings into the .body element */}
+                                <div className={`dashboard-widget-settings-container ${isActive ? 'active' : ''}`}>
+                                    {/* body element used by widgets to portal settings into */}
+                                    <div ref={(el) => {
+                                        containersRef.current[widStr] = el;
+                                        try {
+                                            if (el instanceof Element && isActive) {
+                                                dispatchWidgetSettings(widStr, el);
+                                            }
+                                        } catch (err) {
+                                            // ignore
                                         }
-                                    } catch (err) {
-                                        // ignore
-                                    }
-                                }} className="dashboard-widget-settings-body"/>
-                            </div>
-                        </React.Fragment>))}
-                </div>)}
-        </div>);
+                                    }} className="dashboard-widget-settings-body"/>
+                                </div>
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
 }
