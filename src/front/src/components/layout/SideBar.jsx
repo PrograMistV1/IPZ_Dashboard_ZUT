@@ -3,16 +3,12 @@ import {useLocation, useNavigate} from "react-router-dom";
 import {useDashboards} from "../dashboard/DashboardContext";
 
 import dashboardIcon from "../../assets/icons/dashboard.png";
-import dashboardInfoIcon from "../../assets/icons/dashboard-info.png";
-import economyIcon from "../../assets/icons/economy.png";
-import weatherIcon from "../../assets/icons/weather.png";
-
 import "../../styles/layout.css";
 
 export default function SideBar() {
     const navigate = useNavigate();
     const location = useLocation();
-    const [open, setOpen] = useState(false);
+    const [collapsed, setCollapsed] = useState(false);
 
     const {
         dashboards,
@@ -46,90 +42,59 @@ export default function SideBar() {
     };
 
     return (
-        <aside className="sidebar" onMouseLeave={() => setOpen(false)}>
+        <aside className={`sidebar${collapsed ? " collapsed" : ""}`}>
             {/* ===== HEADER ===== */}
             <div className="sidebar-header">
                 <span className="sidebar-app-icon">
                     <img src={dashboardIcon} alt="Dashboard"/>
                 </span>
                 <span className="sidebar-title">Dashboard</span>
+                <button
+                    style={{
+                        marginLeft: "auto",
+                        background: "none",
+                        border: "none",
+                        color: "#fff",
+                        fontSize: 18,
+                        cursor: "pointer"
+                    }}
+                    onClick={() => setCollapsed(v => !v)}
+                    title={collapsed ? "Развернуть" : "Свернуть"}
+                >
+                    {collapsed ? "→" : "←"}
+                </button>
             </div>
 
             {/* ===== MENU ===== */}
             <ul className="sidebar-menu">
-                {/* ===== DASHBOARD CUSTOM (ACCORDION) ===== */}
-                <li
-                    className="sidebar-item sidebar-accordion"
-                    onClick={() => setOpen((v) => !v)}
-                >
-                    <span className="sidebar-menu-icon">
-                        <img src={dashboardInfoIcon} alt="Dashboard custom"/>
-                    </span>
-                    <span className="label">Dashboard custom</span>
-                    <span className={`accordion-arrow ${open ? "open" : ""}`}>
-                        ▾
-                    </span>
-                </li>
-
-                {/* ===== SUBMENU WITH DASHBOARDS ===== */}
-                {open && (
-                    <ul className="sidebar-submenu">
-                        {/* ===== LIST OF DASHBOARDS ===== */}
-                        {dashboards.map((d) => (
-                            <li
-                                key={d.id}
-                                className={`sidebar-subitem ${
-                                    location.pathname === `/dashboard/${d.id}` ? "active" : ""
-                                }`}
-                            >
-                                <span
-                                    className="sidebar-subitem-title"
-                                    onClick={() => navigate(`/dashboard/${d.id}`)}
-                                >
-                                    {d.name || `Dashboard ${d.id}`}
-                                </span>
-
-                                <button
-                                    className="sidebar-subitem-delete"
-                                    onClick={() => handleDelete(d.id)}
-                                    disabled={dashboards.length <= 1}
-                                    title="Delete dashboard"
-                                >
-                                    ✕
-                                </button>
-                            </li>
-                        ))}
-
-                        {/* ===== ADD DASHBOARD (ALWAYS LAST) ===== */}
-                        <li
-                            className="sidebar-subitem add-dashboard"
-                            onClick={handleCreate}
+                {/* ===== DASHBOARD LIST ===== */}
+                {dashboards.map((d) => (
+                    <li
+                        key={d.id}
+                        className={`sidebar-item ${location.pathname === `/dashboard/${d.id}` ? "active" : ""}`}
+                        onClick={() => navigate(`/dashboard/${d.id}`)}
+                    >
+                        <span className="sidebar-item-title">
+                            {d.name || `Dashboard ${d.id}`}
+                        </span>
+                        <button
+                            className="sidebar-item-delete"
+                            onClick={e => { e.stopPropagation(); handleDelete(d.id); }}
+                            disabled={dashboards.length <= 1}
+                            title="Delete dashboard"
+                            type="button"
                         >
-                            + Add dashboard
-                        </li>
-                    </ul>
-                )}
-
-                {/* ===== ECONOMY ===== */}
+                            ✕
+                        </button>
+                    </li>
+                ))}
+                {/* ===== DASHBOARD ===== */}
                 <li
-                    className="sidebar-item"
-                    onClick={() => navigate("/economy")}
+                    className={`sidebar-item add-dashboard${collapsed ? '' : ''}`}
+                    onClick={handleCreate}
+                    title="Добавить дэшборд"
                 >
-                    <span className="sidebar-menu-icon economy-icon">
-                        <img src={economyIcon} alt="Economy"/>
-                    </span>
-                    <span className="label">Economy</span>
-                </li>
-
-                {/* ===== WEATHER ===== */}
-                <li
-                    className="sidebar-item"
-                    onClick={() => navigate("/weather")}
-                >
-                    <span className="sidebar-menu-icon weather-icon">
-                        <img src={weatherIcon} alt="Weather"/>
-                    </span>
-                    <span className="label">Weather</span>
+                    {collapsed ? '+' : '+ Add dashboard'}
                 </li>
             </ul>
         </aside>

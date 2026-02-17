@@ -491,12 +491,13 @@ body {
   border: none;
   color: #f87171;
   cursor: pointer;
-  font-size: 12px;
-  padding: 2px 6px;
+  font-size: 16px;
+  padding: 2px 8px;
+  transition: color 0.15s;
 }
 
 .sidebar-subitem-delete:hover {
-  color: #ffaaaa;
+  color: #ff2222;
 }
 
 .sidebar-subitem-delete:disabled {
@@ -504,14 +505,75 @@ body {
   cursor: not-allowed;
 }
 
-/* ===== ADD DASHBOARD ===== */
+.sidebar-item-delete {
+  background: transparent;
+  border: none;
+  color: #f87171;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px 8px;
+  transition: color 0.15s;
+  z-index: 2;
+}
 
-.sidebar-subitem.add-dashboard {
+.sidebar-item-delete:hover:not(:disabled) {
+  color: #ff2222;
+}
+
+.sidebar-item-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sidebar-item.add-dashboard {
   margin-top: 6px;
   color: #01ff27;
   font-weight: 600;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-width: 160px;
+  border-radius: 50px;
+  background: transparent;
+  transition: background 0.15s, color 0.15s;
+  cursor: pointer;
+  white-space: nowrap;
+  gap: 8px;
 }
 
-.sidebar-subitem.add-dashboard:hover {
+.sidebar-item.add-dashboard:hover {
   background: rgba(250, 204, 21, 0.15);
+  color: #fff;
+  border-radius: 50px;
+}
+
+.sidebar.collapsed {
+  width: 64px !important;
+}
+
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .sidebar-item-title {
+  display: none !important;
+}
+
+.sidebar.collapsed .sidebar-item.add-dashboard {
+  min-width: 36px;
+  width: 36px;
+  font-size: 22px;
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar.collapsed .sidebar-item {
+  justify-content: center;
+}
+
+.sidebar-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
 }
