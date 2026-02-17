@@ -116,6 +116,27 @@
   cursor: not-allowed;
 }
 
+/* Dashboard-only: make widget buttons icon-like (no white square) with subtle hover */
+.dashboard-grid .widget button,
+.dashboard-grid .dashboard-widget-row button,
+.dashboard-grid .dashboard-info-actions button {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 6px !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+}
+.dashboard-grid .widget button:hover,
+.dashboard-grid .dashboard-widget-row button:hover,
+.dashboard-grid .dashboard-info-actions button:hover {
+  background: rgba(0,0,0,0.06) !important;
+}
+
 /*DASHBOARD INFO*/
 .dashboard-info {
   margin-top: 24px;
@@ -145,11 +166,12 @@
   margin-bottom: 16px;
 }
 
-.dashboard-info-actions button {
+.app-content .dashboard-info-actions button,
+.widget .dashboard-info-actions button {
   padding: 6px 10px;
   border-radius: 6px;
-  border: 1px solid #8f8f8f;
-  background: #d0d0d0;
+  border: 1px solid #8f8f8f !important;
+  background: #d0d0d0 !important;
   cursor: pointer;
 }
 
@@ -166,12 +188,13 @@
   margin-top: 6px;
 }
 
-.dashboard-widget-row button {
+.app-content .dashboard-widget-row button,
+.widget .dashboard-widget-row button {
   padding: 4px 8px;
   font-size: 12px;
   border-radius: 4px;
-  border: 1px solid #ccc;
-  background: hsl(0, 0%, 76%);
+  border: 1px solid #ccc !important;
+  background: hsl(0, 0%, 76%) !important;
   cursor: pointer;
 }
 

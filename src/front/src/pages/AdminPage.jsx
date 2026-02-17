@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from './auth/AuthContext';
 import { listUsers, createUser, updateUser, disableUser, listLogs } from '../services/admin';
+import '../styles/admin.css';
 
-function UsersTable({ onEdit, currentUserId }) {
+function UsersTable({ onEdit, currentUserId, onCreate }) {
   const [users, setUsers] = useState([]);
   const [qUser, setQUser] = useState('');
   const [qEmail, setQEmail] = useState('');
@@ -21,10 +22,19 @@ function UsersTable({ onEdit, currentUserId }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-        <input placeholder="Search username" value={qUser} onChange={e => setQUser(e.target.value)} />
-        <input placeholder="Search email" value={qEmail} onChange={e => setQEmail(e.target.value)} />
-        <button onClick={load}>Refresh</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }} className="search-group">
+          <input type="text" placeholder="Search username" value={qUser} onChange={e => setQUser(e.target.value)} />
+          <input type="text" placeholder="Search email" value={qEmail} onChange={e => setQEmail(e.target.value)} />
+          <button className="icon-btn" onClick={load} aria-label="Refresh">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79L20 21.49 21.49 20 15.5 14zM9.5 14A4.5 4.5 0 119.5 5a4.5 4.5 0 010 9z" fill="#1557a3" />
+            </svg>
+          </button>
+        </div>
+        <div>
+          {onCreate && <button onClick={onCreate}>Create User</button>}
+        </div>
       </div>
       <table className="admin-table">
         <thead>
@@ -94,23 +104,31 @@ function UserForm({ initial, onClose, onSaved }) {
     <div className="modal">
       <form className="modal-content" onSubmit={handleSubmit}>
         <h3>{initial?.id ? 'Edit user' : 'Create user'}</h3>
+        <div className="form-grid">
         {!initial?.id && (
           <>
-            <label>Username<input value={username} onChange={e => setUsername(e.target.value)} required /></label>
-            <label>Email<input value={email} onChange={e => setEmail(e.target.value)} required /></label>
-            <label>Password<input type="password" value={password} onChange={e => setPassword(e.target.value)} required /></label>
+            <label>Username
+              <input className="field" type="text" value={username} onChange={e => setUsername(e.target.value)} required />
+            </label>
+            <label>Email
+              <input className="field" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+            </label>
+            <label>Password
+              <input className="field" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+            </label>
           </>
         )}
         <label>Role
-          <select value={role} onChange={e => setRole(e.target.value)}>
+          <select className="field" value={role} onChange={e => setRole(e.target.value)}>
             <option value="USER">USER</option>
             <option value="ADMIN">ADMIN</option>
           </select>
         </label>
-        <label>
+        <label className="checkbox-row">
           <input type="checkbox" checked={isEnabled} onChange={e => setIsEnabled(e.target.checked)} /> Enabled
         </label>
-        <div style={{ marginTop: 8 }}>
+        </div>
+        <div className="actions">
           <button type="submit">Save</button>
           <button type="button" onClick={onClose}>Cancel</button>
         </div>
@@ -175,11 +193,10 @@ export default function AdminPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button onClick={() => setShowLogs(false)}>Users</button>
         <button onClick={() => setShowLogs(true)}>Logs</button>
-        {!showLogs && <button onClick={() => setShowCreate(true)}>Create User</button>}
       </div>
 
       {!showLogs && (
-        <UsersTable key={reloadKey} currentUserId={user.id} onEdit={(u) => setEditing(u)} />
+        <UsersTable key={reloadKey} currentUserId={user.id} onEdit={(u) => setEditing(u)} onCreate={() => setShowCreate(true)} />
       )}
 
       {showLogs && <LogsTable />}

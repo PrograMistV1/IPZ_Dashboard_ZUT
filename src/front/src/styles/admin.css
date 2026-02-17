@@ -1,0 +1,247 @@
+/* Admin page styles matching project theme */
+.admin-page {
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+  color: #1f2937;
+}
+
+.admin-page h2 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  color: #111827;
+}
+
+.admin-page > .controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* Scope generic button styles to admin page and modal only */
+.admin-page button,
+.modal-content button {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.admin-page button:hover,
+.modal-content button:hover { background: #165fa8; }
+
+.admin-page button.secondary,
+.modal-content button.secondary {
+  background: transparent;
+  border: 1px solid rgba(16,24,40,0.08);
+  color: #111827;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(16,24,40,0.03);
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.admin-table thead th {
+  background: #f8fafc;
+  color: #374151;
+  font-weight: 700;
+}
+
+.admin-table tbody tr:hover {
+  background: #fbfdff;
+}
+
+.admin-table select,
+.admin-table input[type="checkbox"] {
+  padding: 6px 8px;
+  border: 1px solid rgba(16,24,40,0.08);
+  border-radius: 6px;
+  background: white;
+}
+
+/* Modal (UserForm) using project card style */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2,6,23,0.45);
+  z-index: 3000;
+}
+
+.modal-content {
+  width: 420px;
+  max-width: calc(100% - 32px);
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.25);
+  max-height: calc(100vh - 80px);
+  overflow: hidden;
+}
+
+.modal-content h3 { margin: 8px 0 10px 0; font-size: 18px; }
+.modal-content label { display: block; margin: 0; font-size: 13px; color: #374151; }
+.modal-content input[type="text"],
+.modal-content input[type="password"],
+.modal-content input[type="datetime-local"],
+.modal-content select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(16,24,40,0.08);
+  box-sizing: border-box;
+}
+
+.modal-content .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* Make small inputs used at top of tables consistent */
+.admin-page input[type="text"],
+.admin-page input[type="datetime-local"] {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(16,24,40,0.08);
+}
+
+/* General enhanced input styles */
+.admin-page input,
+.modal-content input,
+.admin-page select,
+.modal-content select,
+.admin-table input[type="checkbox"] {
+  height: 36px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e6e9ef;
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 6px rgba(2,6,23,0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+  font-size: 14px;
+}
+
+.admin-page input::placeholder,
+.modal-content input::placeholder {
+  color: #9aa4b2;
+}
+
+.admin-page input:focus,
+.modal-content input:focus,
+.admin-page select:focus,
+.modal-content select:focus {
+  outline: none;
+  border-color: #7aa7ff;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.12);
+  transform: translateY(-1px);
+}
+
+/* Make text inputs full-width within form labels */
+.modal-content label { display: block; margin-bottom: 10px; }
+.modal-content label .field {
+  display: block;
+  width: 100%;
+}
+
+/* Form layout inside modal: stack fields vertically */
+.modal-content .form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.modal-content .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* Ensure form fields all same width */
+.modal-content .field { width: 100%; box-sizing: border-box; }
+
+/* Keep modal content fully visible on smaller screens without inner scrolling when possible */
+@media (max-height: 600px) {
+  .modal-content { width: calc(100% - 40px); max-height: calc(100vh - 40px); padding: 10px; }
+  .modal-content h3 { font-size: 16px; }
+}
+
+/* Checkbox label: align checkbox and text centrally */
+.modal-content .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.modal-content .checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  vertical-align: middle;
+}
+
+/* Smaller inline controls (search row) */
+.search-group { display: flex; gap: 8px; align-items: center; }
+.search-group input { height: 36px; box-sizing: border-box; }
+
+/* Tweak select appearance */
+.admin-table select {
+  height: 36px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: white;
+}
+
+/* Icon button on admin page: square, same height as inputs, centered SVG */
+.admin-page .icon-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(16,24,40,0.06);
+  background: white;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 6px rgba(2,6,23,0.03);
+  cursor: pointer;
+}
+.admin-page .icon-btn svg { display: block; }
+.admin-page .icon-btn:active { transform: translateY(0); }
+.admin-page .icon-btn:hover {
+  background: #f3f6fb;
+  border-color: rgba(16,24,40,0.10);
+  box-shadow: 0 3px 8px rgba(2,6,23,0.06);
+}
+
+/* Checkboxes: slightly larger */
+.admin-table input[type="checkbox"] { width: 18px; height: 18px; }
+
+@media (max-width: 720px) {
+  .modal-content { width: 95%; }
+  .admin-page { padding: 12px; }
+}
