@@ -7,7 +7,6 @@
 .widget__body > *{height:100%}
 .widget--feed .widget__body{max-height:100%;overflow:auto}
 
-/* Для графических виджетов — убрать padding и margin, чтобы svg занимал всю высоту */
-.widget--chart { padding: 0 !important; }
+/* For graphic widgets, remove padding and margin so that the svg takes up the full height */.widget--chart { padding: 0 !important; }
 .widget--chart .widget__body { margin-top: 0 !important; padding: 0 !important; height: 100% !important; min-height: 0 !important; flex: 1 1 auto !important; }
 .widget--chart .widget__body > * { height: 100% !important; min-height: 0 !important; flex: 1 1 auto !important; }
