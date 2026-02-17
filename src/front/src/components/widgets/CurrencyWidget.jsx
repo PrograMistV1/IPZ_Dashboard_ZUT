@@ -111,7 +111,6 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
                                         settings: { currency: e.target.value, range: selectedRange }
                                     }
                                 }));
-                                window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
                             }}
                             onMouseDown={e => e.stopPropagation()}
                             onPointerDown={e => e.stopPropagation()}
@@ -130,7 +129,6 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
                                     settings: { range: 'week', currency: selectedCurrency }
                                 }
                             }));
-                            window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
                         }} aria-pressed={selectedRange === 'week'}>Week
                         </button>
                         <button onClick={() => {
@@ -141,7 +139,6 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
                                     settings: { range: 'month', currency: selectedCurrency }
                                 }
                             }));
-                            window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
                         }} aria-pressed={selectedRange === 'month'}>Month
                         </button>
                         <button onClick={() => {
@@ -152,7 +149,6 @@ export default function CurrencyWidget({ id, mode = 'standard', data = {} }) {
                                     settings: { range: 'year', currency: selectedCurrency }
                                 }
                             }));
-                            window.dispatchEvent(new CustomEvent('close-widget-settings', { detail: { widgetId: id } }));
                         }} aria-pressed={selectedRange === 'year'}>Year
                         </button>
                     </div>
