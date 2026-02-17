@@ -5,7 +5,7 @@
 .widget__btn{background:#f3f3f3;border:1px solid #ddd;padding:4px 8px;border-radius:4px;cursor:pointer}
 .widget__body{margin-top:8px;flex:1 1 auto;min-height:0}
 .widget__body > *{height:100%}
-.widget--feed .widget__body{max-height:200px;overflow:auto}
+.widget--feed .widget__body{max-height:100%;overflow:auto}
 
 /* Для графических виджетов — убрать padding и margin, чтобы svg занимал всю высоту */
 .widget--chart { padding: 0 !important; }
