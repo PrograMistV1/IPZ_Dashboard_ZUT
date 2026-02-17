@@ -40,6 +40,14 @@
   color: #111827;
 }
 
+/* Back button on login history: slightly taller */
+.admin-page .back-btn {
+  height: 42px;
+  padding: 8px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -244,4 +252,10 @@
 @media (max-width: 720px) {
   .modal-content { width: 95%; }
   .admin-page { padding: 12px; }
+}
+
+/* Center third column (e.g. User agent) in admin tables */
+.admin-page .admin-table th:nth-child(3),
+.admin-page .admin-table td:nth-child(3) {
+  text-align: center;
 }

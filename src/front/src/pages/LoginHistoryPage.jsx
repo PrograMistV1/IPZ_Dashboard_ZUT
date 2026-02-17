@@ -2,6 +2,7 @@ import React, {useEffect, useState} from "react";
 import {apiFetch} from "../services/api";
 import {useNavigate} from "react-router-dom";
 import "../styles/auth.css";
+import "../styles/admin.css";
 
 export default function LoginHistoryPage() {
     const [history, setHistory] = useState([]);
@@ -18,25 +19,17 @@ export default function LoginHistoryPage() {
     }, []);
 
     return (
-        <div className="auth-wrapper">
-            <div
-                className="auth-box"
-                style={{width: "100%", maxWidth: 900}}
-            >
-                <button
-                    onClick={() => navigate("/")}
-                    style={{marginBottom: 16}}
-                >
-                    ← Back to dashboard
-                </button>
+        <div className="admin-page">
+            <h2>Login history</h2>
 
-                <h2>Login history</h2>
+            <div style={{marginTop: 12}}>
+                <button className="back-btn" onClick={() => navigate("/")} style={{marginBottom: 12}}>Back to dashboard</button>
 
                 {loading && <p>Loading...</p>}
                 {error && <p className="auth-error">{error}</p>}
 
                 {!loading && !error && (
-                    <table>
+                    <table className="admin-table">
                         <thead>
                         <tr>
                             <th>Date</th>
