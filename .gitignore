@@ -112,3 +112,6 @@ build/
 
 # Log files
 /logs/
+
+# macOS
+.DS_Store
