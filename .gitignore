@@ -115,3 +115,6 @@ build/
 
 # macOS
 .DS_Store
+
+# API test results
+api_test_results.json
