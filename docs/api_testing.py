@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import logging
 from datetime import datetime
 
 BASE_URL = "http://127.0.0.1:8000"
@@ -11,6 +12,8 @@ ADMIN_CREDENTIALS = {"username": "admin", "password": "admin1234"}
 USER_CREDENTIALS = {"username": "Test", "password": "12345678"}
 
 timestamp = int(time.time())
+created_ids = {}
+logger = logging.getLogger(__name__)
 
 # ------------------ OpenAPI ------------------
 
@@ -57,11 +60,12 @@ def build_payload(path, method, role="user"):
     if method not in ["POST", "PUT", "PATCH"]:
         return None
 
-    # Registration (auto user)
+    # Registration (auto user) — use role and high-resolution time to avoid collisions
     if "/auth/register" in path:
+        unique = f"{timestamp}_{role}_{int(time.time() * 1000)}"
         return {
-            "username": f"auto_user_{timestamp}",
-            "email": f"auto_{timestamp}@test.com",
+            "username": f"auto_user_{unique}",
+            "email": f"auto_{unique}@test.com",
             "password": "StrongPass123!",
         }
 
@@ -83,9 +87,10 @@ def build_payload(path, method, role="user"):
 
     # Widgets
     if "/api/dashboards/" in path and "/widgets" in path and method == "POST":
+        # Use a supported widget type ('news') and required configuration
         return {
-            "type": "chart",
-            "configuration": {"title": "Revenue", "chartType": "line"},
+            "type": "news",
+            "configuration": {"category": "general"},
             "position": 1,
             "enabled": True,
         }
@@ -174,7 +179,16 @@ def call_endpoints(endpoints, token=None, role="public"):
     print(f"\n=== TEST: {role.upper()} ===")
 
     for ep in endpoints:
-        path = substitute_path_params(ep["path"])
+        # interpolate ids for templated paths when we have created resources
+        path_template = ep["path"]
+        if "{config_id}" in path_template:
+            base = path_template.split("/{")[0]
+            if base in created_ids:
+                path_template = path_template.replace(
+                    "{config_id}", str(created_ids[base])
+                )
+
+        path = substitute_path_params(path_template)
         url = BASE_URL + path
         params = build_query_params(path)
         payload = build_payload(ep["path"], ep["method"], role)
@@ -199,6 +213,29 @@ def call_endpoints(endpoints, token=None, role="public"):
             print(
                 f"{symbol} {role.upper():6} | {ep['method']:6} {path:40} -> {status} (oczekiwano {expected})"
             )
+
+            # save ids returned by POSTs so subsequent calls can reference them
+            try:
+                body = response.json()
+                if isinstance(body, dict) and "id" in body:
+                    key = ep["path"].rstrip("/")
+                    created_ids[key] = body["id"]
+            except (ValueError, KeyError, json.JSONDecodeError) as e:
+                # Non-JSON responses or missing 'id' are expected for some endpoints;
+                # log at debug level instead of silently passing to satisfy Bandit.
+                logger.debug(
+                    "Could not extract id from response for %s: %s", ep.get("path"), e
+                )
+
+            if not ok:
+                try:
+                    body = response.json()
+                    print(
+                        "  Response body:",
+                        json.dumps(body, ensure_ascii=False, indent=2),
+                    )
+                except Exception:
+                    print("  Response body:", response.text)
 
             if ok:
                 passed += 1

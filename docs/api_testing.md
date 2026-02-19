@@ -20,7 +20,7 @@ INSERT INTO users (username, email, password, role, is_enabled)
 VALUES (
     'admin',
     'admin@example.com',
-    '$2b$12$lQzTdOkVx4Ck0BADynNWuuYDywXOl8C4iGnt/R8/cXk...', -- bcrypt hash dla "admin1234"
+    '$2b$12$vhPnZn/J6do9cP4v.gdhPu8FzHxLj/ctsA61nQ6K7P04KTHyLbkme', 
     'ADMIN',
     1
 );
@@ -34,7 +34,7 @@ INSERT INTO users (username, email, password, role, is_enabled)
 VALUES (
     'Test',
     'Test@test.com',
-    '$2b$12$XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX', -- bcrypt hash dla "12345678"
+    '$2b$12$bayT.ifv1tJco98V5lJtLOX9tyMD68nlU5oSemq/73RHWrzzZKhDu', 
     'USER',
     1
 );
@@ -43,6 +43,27 @@ VALUES (
 
 ⚠️ Upewnij się, że hasła są prawidłowo zahashowane bcryptem.
 W przeciwnym razie logowanie nie zadziała.
+
+Możesz wygenerować hash bcrypt lokalnie przed wstawieniem do bazy. Przykłady (wymagany pakiet `bcrypt`):
+
+PowerShell / Windows:
+
+```powershell
+python -c "import bcrypt; print(bcrypt.hashpw(b'admin1234', bcrypt.gensalt(12)).decode())"
+```
+
+Linux / macOS (bash):
+
+```bash
+python -c 'import bcrypt; print(bcrypt.hashpw(b"admin1234", bcrypt.gensalt(12)).decode())'
+```
+
+Wklej wygenerowany hash do zapytania SQL, np.:
+
+```sql
+INSERT INTO users (username, email, password, role, is_enabled)
+VALUES ('admin','admin@example.com','<PASTE_GENERATED_BCRYPT_HASH>','ADMIN',1);
+```
 
 
 🔹 Konfiguracja skryptu testowego
