@@ -94,6 +94,7 @@ Uruchom serwer FastAPI (testy muszą mieć aktywny backend):
 
 W innym terminalu uruchom testy:
 
+
     python docs/api_testing.py
 
 Wyniki zostaną zapisane w api_test_results.json, a w konsoli pojawi się podsumowanie z ilością testów zaliczonych i niezaliczonych.
