@@ -112,3 +112,6 @@ build/
 
 # Log files
 /logs/
+
+# API test results
+api_test_results.json
