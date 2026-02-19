@@ -21,7 +21,19 @@ log = BackendLogger()
 
 log.info("main", "Starting backend and initializing logger")
 
-app = FastAPI()
+# FastAPI automatically generates an OpenAPI schema and serves Swagger UI
+# under /docs and ReDoc under /redoc.  We customise the metadata here so that
+# developers hitting the backend directly know how to interact with it.
+app = FastAPI(
+    title="IPZ Dashboard Backend API",
+    version="1.0.0",
+    description=(
+        "Backend services for the IPZ Dashboard project. "
+        "Use the Swagger UI at /docs to authenticate and call HTTP methods "
+        "without any frontend."
+    ),
+    # you can customise the docs path if desired, e.g. docs_url="/swagger"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,16 +42,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router)
-app.include_router(dashboard_router)
-app.include_router(rates_router)
-app.include_router(news_router)
-app.include_router(economy_router)
-app.include_router(weather_router)
-app.include_router(weather_read_router)
-app.include_router(weather_config_router)
-app.include_router(users_router)
-app.include_router(logs_router)
+# routers are grouped by functional area so that the Swagger UI presents
+# them in logical sections.
+app.include_router(auth_router, tags=["Authentication"])
+app.include_router(dashboard_router, tags=["Dashboard"])
+app.include_router(rates_router, tags=["Rates"])
+app.include_router(news_router, tags=["News"])
+app.include_router(economy_router, tags=["Economy"])
+app.include_router(weather_router, tags=["Weather"])
+app.include_router(weather_read_router, tags=["Weather"])
+app.include_router(weather_config_router, tags=["Weather"])
+app.include_router(users_router, tags=["Users"])
+app.include_router(logs_router, tags=["Logs"])
 
 
 static_dir = "src/front/build"
