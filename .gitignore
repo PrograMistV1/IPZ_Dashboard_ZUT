@@ -118,3 +118,5 @@ build/
 
 # API test results
 api_test_results.json
+
+reports/
