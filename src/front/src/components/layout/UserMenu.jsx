@@ -21,6 +21,17 @@ export default function UserMenu() {
 
       {open && (
         <div className="user-dropdown">
+          {user?.role === "ADMIN" && (
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/admin");
+              }}
+            >
+              Admin Panel
+            </button>
+          )}
+
           <button
             onClick={() => {
               setOpen(false);
