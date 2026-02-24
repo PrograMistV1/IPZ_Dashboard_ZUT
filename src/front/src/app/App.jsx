@@ -11,8 +11,7 @@ import RegisterPage from "../pages/auth/Register";
 import LoginHistoryPage from "../pages/LoginHistoryPage";
 import WelcomePage from "../pages/WelcomePage";
 
-import EconomyDashboard from "../components/economy/EconomyDashboard";
-import WeatherDashboard from "../components/weather/WeatherDashboard";
+
 import AdminPage from "../pages/AdminPage";
 
 
