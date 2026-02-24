@@ -1,0 +1,187 @@
+.economy-dashboard {
+  padding-top: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== TOP ROW ===== */
+.economy-top {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* ===== MAIN AREA ===== */
+.economy-main {
+  display: grid;
+  grid-template-columns: 2.1fr 1fr; /* Wide + Side */
+  gap: 20px;
+  min-height: 480px;
+}
+
+/* ===== WIDGET BASE ===== */
+.economy-widget {
+  background: #fff;
+  border: 1px solid #e5e7eb;          /* нормальная рамка */
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  box-sizing: border-box;
+}
+
+/* ===== LEFT COLUMN ===== */
+.economy-left-column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== SIZES ===== */
+.economy-widget.small {
+  height: 110px;
+}
+
+.economy-widget.wide {
+  flex: 1 1 auto;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.economy-widget.side {
+  min-height: 320px;
+  padding: 12px;
+}
+
+.economy-widget.bottom {
+  height: 90px;
+}
+
+/* ===== SMALL CURRENCY CARDS ===== */
+.economy-small-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04) inset;
+  position: relative;
+}
+
+.economy-small-card.selected {
+  outline: 3px solid rgba(37,99,235,0.12);
+}
+
+.economy-small-card .card-main {
+  width: 100%;
+  text-align: center;
+}
+
+.currency-name {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.currency-rate {
+  font-size: 18px;
+}
+
+/* ===== DROPDOWN ===== */
+.card-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.card-dropdown-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.card-dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+/* ===== CHART ===== */
+.chart-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popular-chart {
+  width: 100%;
+  max-width: 980px;
+}
+
+.popular-chart svg {
+  width: 100%;
+  height: 360px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+/* ===== LEGEND ===== */
+.legend {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* ===== NEWS ===== */
+.news-column {
+  padding: 12px;
+}
+
+.news-headlines {
+  width: 100%;
+}
+
+.news-headlines h4 {
+  margin: 0 0 8px 0;
+}
+
+.news-headlines ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.news-headlines li a {
+  color: #111;
+  text-decoration: none;
+}
+
+.news-headlines li a:hover {
+  text-decoration: underline;
+}
