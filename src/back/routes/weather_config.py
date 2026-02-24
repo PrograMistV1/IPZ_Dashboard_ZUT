@@ -32,28 +32,32 @@ def _geocode_city_to_coords(city_name: str) -> tuple[float, float] | None:
         return None
 
 
-def _get_user_config(config_id: int, user_id: int, db: Session) -> WeatherConfig:
-    """Retrieve a config by ID and verify user access."""
+def _get_user_config_by_widget(
+    widget_id: int, user_id: int, db: Session
+) -> WeatherConfig:
+    """Retrieve a config by widget ID and verify user access."""
     cfg: WeatherConfig | None = (
-        db.query(WeatherConfig).filter(WeatherConfig.id == config_id).first()
+        db.query(WeatherConfig)
+        .filter(WeatherConfig.widget_id == widget_id, WeatherConfig.user_id == user_id)
+        .first()
     )
     if not cfg:
         raise HTTPException(status_code=404, detail="Config not found")
-    if cfg.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
     return cfg
 
 
 class WeatherConfigCreateRequest(BaseModel):
-    name: str
+    widget_id: int
     configuration: dict | None = None
 
-    @field_validator("name")
+    @field_validator("widget_id")
     @classmethod
-    def name_validator(cls, v: str) -> str:
-        if not v or not isinstance(v, str) or not v.strip():
-            raise PydanticCustomError("value_error", "Name must be provided")
-        return v.strip()
+    def widget_id_validator(cls, v: int) -> int:
+        if not isinstance(v, int) or v < 0:
+            raise PydanticCustomError(
+                "value_error", "widget_id must be a positive integer"
+            )
+        return v
 
     @field_validator("configuration")
     @classmethod
@@ -101,15 +105,22 @@ def create_config(
         lat, lon = geo
         cfg_data = {"lat": lat, "lon": lon}
 
-    cfg = WeatherConfig(user_id=user_id, name=req.name, configuration=cfg_data)
+    cfg = WeatherConfig(
+        user_id=user_id, widget_id=req.widget_id, configuration=cfg_data
+    )
     try:
         db.add(cfg)
         db.commit()
         db.refresh(cfg)
         log.info(
-            "create_weather_config", f"User {user_id} created weather config {cfg.id}"
+            "create_weather_config",
+            f"User {user_id} created weather config {cfg.id} for widget {req.widget_id}",
         )
-        return {"id": cfg.id, "name": cfg.name, "configuration": cfg.configuration}
+        return {
+            "id": cfg.id,
+            "widget_id": cfg.widget_id,
+            "configuration": cfg.configuration,
+        }
     except IntegrityError as exc:
         db.rollback()
         log.error("create_weather_config", f"IntegrityError: {exc}")
@@ -123,24 +134,28 @@ def create_config(
         raise HTTPException(status_code=500, detail="Database operation failed")
 
 
-@router.get("/weather/configs/{config_id}")
+@router.get("/weather/configs/{widget_id}")
 def get_config(
-    config_id: int,
+    widget_id: int,
     user_id: int = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    cfg = _get_user_config(config_id, user_id, db)
-    return {"id": cfg.id, "name": cfg.name, "configuration": cfg.configuration}
+    cfg = _get_user_config_by_widget(widget_id, user_id, db)
+    return {
+        "id": cfg.id,
+        "widget_id": cfg.widget_id,
+        "configuration": cfg.configuration,
+    }
 
 
-@router.patch("/weather/configs/{config_id}")
+@router.patch("/weather/configs/{widget_id}")
 def update_config(
-    config_id: int,
+    widget_id: int,
     req: WeatherConfigUpdateRequest,
     user_id: int = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    cfg = _get_user_config(config_id, user_id, db)
+    cfg = _get_user_config_by_widget(widget_id, user_id, db)
     try:
         if req.configuration is not None:
             # merge incoming configuration into existing one so we don't lose lat/lon
@@ -169,7 +184,7 @@ def update_config(
 
         return {
             "id": cfg.id,
-            "name": cfg.name,
+            "widget_id": cfg.widget_id,
             "configuration": cfg.configuration,
         }
     except SQLAlchemyError as exc:

@@ -1,324 +1,286 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
-import CurrencyLineChart from "./CurrencyLineChart";
-import CurrencyCandleChart from "./CurrencyCandleChart";
-import "../../styles/currencyWidget.css";
-import {updateWidget} from "../../services/dashboard";
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import Widget from './Widget';
+import {
+    VictoryAxis,
+    VictoryChart,
+    VictoryLine,
+    VictoryScatter,
+    VictoryTheme,
+    VictoryTooltip,
+    VictoryVoronoiContainer
+} from 'victory';
+import {CURRENCY_OPTIONS} from '../../constants/api';
 
-export default function CurrencyWidget({
-                                           widgetId,
-                                           configuration,
-                                           onUpdate,
-                                           enabled = true,
-                                           onDelete,
-                                       }) {
-    const isMountedRef = useRef(false);
-    const initialConfigRef = useRef(null);
+async function fetchRates(currency, from, to) {
+    const res = await fetch("http://127.0.0.1:8000/rates", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({currency, date_from: from, date_to: to}),
+    });
+    if (!res.ok) throw new Error('Failed to load rates');
+    const data = await res.json();
+    return data.rates || [];
+}
 
-    const [editing, setEditing] = useState(false);
+export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
+    const rates = data && data.rates ? data.rates : [];
+    const base = data?.base || (rates.length ? rates[0].code : 'USD');
 
-    const [currency, setCurrency] = useState("");
-    const [dateFrom, setDateFrom] = useState("");
-    const [dateTo, setDateTo] = useState("");
-    const [rates, setRates] = useState([]);
-    const [error, setError] = useState("");
+    // --- New state for selected currency ---
+    const [selectedCurrency, setSelectedCurrency] = useState(() => data?.currency || base || 'USD');
+    const [selectedRange, setSelectedRange] = useState(() => data?.range || 'month');
+    const rangeToDays = useMemo(() => ({week: 7, month: 30, year: 365}), []);
+
+    const [series, setSeries] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const [showValue, setShowValue] = useState(false);
-    const [showChart, setShowChart] = useState(false);
-    const [showTable, setShowTable] = useState(false);
-    const [chartType, setChartType] = useState("line");
-
+    // Load data when currency or range changes
     useEffect(() => {
-        if (!widgetId) return;
-
-        setCurrency(configuration?.currency || "");
-        setDateFrom(configuration?.dateFrom || "");
-        setDateTo(configuration?.dateTo || "");
-        setShowValue(configuration?.showValue ?? false);
-        setShowChart(configuration?.showChart ?? false);
-        setShowTable(configuration?.showTable ?? false);
-        setChartType(configuration?.chartType || "line");
-        setRates([]);
-        setError("");
- 
-        if (initialConfigRef.current === null) {
-            initialConfigRef.current = configuration || null;
-        }
-
-        isMountedRef.current = true;
-    }, [widgetId]);
-
-    const fetchRates = useCallback(async () => {
-        setError("");
-        setLoading(true);
-
-        try {
-            const response = await fetch("http://127.0.0.1:8000/rates", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    currency,
-                    date_from: dateFrom,
-                    date_to: dateTo,
-                }),
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                console.error("Error fetching rates:", err);
-                setError(err.detail || "Backend error");
-                setLoading(false);
-                return;
+        let mounted = true;
+        const load = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const end = new Date();
+                const start = new Date();
+                const days = rangeToDays[selectedRange] || 30;
+                start.setDate(end.getDate() - (days - 1));
+                const from = start.toISOString().slice(0, 10);
+                const to = end.toISOString().slice(0, 10);
+                const res = await fetchRates(selectedCurrency, from, to);
+                if (!mounted) return;
+                // res expected: [{date:'YYYY-MM-DD', rate: '123.45'}]
+                const normalized = (res || []).map(r => ({
+                    date: r.date,
+                    value: Number(r.rate)
+                })).sort((a, b) => a.date.localeCompare(b.date));
+                setSeries(normalized);
+            } catch (err) {
+                if (!mounted) return;
+                setError(err.message || String(err));
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
             }
-
-            const data = await response.json();
-            setRates(data.rates || []);
-        } catch (err) {
-            console.error("Error fetching rates:", err);
-            setError(err.message);
-            setLoading(false);
-        }
-
-        setLoading(false);
-    }, [currency, dateFrom, dateTo]);
-
-    useEffect(() => {
-        if (currency && dateFrom && dateTo && enabled) {
-            fetchRates().then(() => {
-            });
-        }
-    }, [currency, dateFrom, dateTo, fetchRates, enabled]);
-
-    useEffect(() => {
-        if (!widgetId || !isMountedRef.current) return;
-
-        const newConfig = {
-            currency,
-            dateFrom,
-            dateTo,
-            showValue,
-            showChart,
-            showTable,
-            chartType,
         };
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, [selectedCurrency, selectedRange, rangeToDays]);
 
-        try {
-            const prev = initialConfigRef.current || {};
-            const prevJson = JSON.stringify(prev || {});
-            const newJson = JSON.stringify(newConfig || {});
-            if (prevJson === newJson) {
-                return;
+    // Handle global save-widget-settings
+    useEffect(() => {
+        const handler = (e) => {
+            try {
+                const detail = e?.detail || {};
+                if (!detail) return;
+                if (String(detail.widgetId) !== String(id)) return;
+                const settings = detail.settings || {};
+                if (settings.range && ['week', 'month', 'year'].includes(settings.range)) {
+                    setSelectedRange(settings.range);
+                }
+                if (settings.currency && CURRENCY_OPTIONS.includes(settings.currency)) {
+                    setSelectedCurrency(settings.currency);
+                }
+            } catch (err) {
+                // ignore
             }
-        } catch (err) {
-        }
+        };
+        window.addEventListener('save-widget-settings', handler);
+        return () => window.removeEventListener('save-widget-settings', handler);
+    }, [id]);
 
-        if (!newConfig.currency && !newConfig.dateFrom && !newConfig.dateTo) {
-            return;
-        }
-
-        updateWidget(widgetId, {
-            configuration: newConfig,
-            enabled,
-        }).then(() => {
-            initialConfigRef.current = newConfig;
-        });
-
-        onUpdate?.(widgetId, newConfig);
-    }, [
-        currency,
-        dateFrom,
-        dateTo,
-        showValue,
-        showChart,
-        showTable,
-        chartType,
-        widgetId,
-        enabled,
-    ]);
-
-    const latestRate =
-        rates.length > 0 ? rates[rates.length - 1].rate : null;
-
-    if (!enabled) {
-        return (
-            <div className="currency-widget disabled">
-                <div className="currency-header">
-                    <h3>Currency rates (NBP)</h3>
-                    <button className="icon-btn" onClick={() => setEditing(true)}>
-                        ⚙
-                    </button>
-                </div>
-                <p>Widget is disabled</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="currency-widget">
-            {/* ===== HEADER ===== */}
-            <div className="currency-header">
-                <h3>{currency || "choose a currency"}</h3>
-
-                <div className="currency-actions">
-                    <button
-                        className="icon-btn"
-                        title="Settings"
-                        onClick={() => setEditing(true)}
-                    >
-                        ⚙
-                    </button>
-
-                    <button
-                        className="icon-btn danger"
-                        title="Delete"
-                        onClick={() => {
-                            if (
-                                window.confirm(
-                                    "Are you sure you want to delete this widget?"
-                                )
-                            ) {
-                                onDelete?.();
-                            }
-                        }}
-                    >
-                        🗑
-                    </button>
-                </div>
-            </div>
-
-            {/* ===== SETTINGS PANEL ===== */}
-            {editing && (
-                <div className="currency-settings-panel">
-                    <div className="settings-header">
-                        <h4>Widget settings</h4>
-                        <button
-                            className="icon-btn"
-                            onClick={() => setEditing(false)}
+    // --- Settings UI ---
+    const settingsNode = (
+        <div className="widget-settings-portal">
+            <div className="widget-settings-inner">
+                <strong>Settings — {id}</strong>
+                <div style={{marginTop: 8, display: 'flex', gap: 8, flexDirection: 'column'}}>
+                    <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                        Currency:
+                        <select
+                            value={selectedCurrency}
+                            onChange={e => {
+                                setSelectedCurrency(e.target.value);
+                                window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                    detail: {
+                                        widgetId: id,
+                                        settings: {currency: e.target.value, range: selectedRange}
+                                    }
+                                }));
+                            }}
+                            onMouseDown={e => e.stopPropagation()}
+                            onPointerDown={e => e.stopPropagation()}
                         >
-                            ✕
+                            {CURRENCY_OPTIONS.map(cur => (
+                                <option key={cur} value={cur}>{cur}</option>
+                            ))}
+                        </select>
+                    </label>
+                    <div style={{display: 'flex', gap: 8}}>
+                        <button onClick={() => {
+                            setSelectedRange('week');
+                            window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                detail: {
+                                    widgetId: id,
+                                    settings: {range: 'week', currency: selectedCurrency}
+                                }
+                            }));
+                        }} aria-pressed={selectedRange === 'week'}>Week
+                        </button>
+                        <button onClick={() => {
+                            setSelectedRange('month');
+                            window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                detail: {
+                                    widgetId: id,
+                                    settings: {range: 'month', currency: selectedCurrency}
+                                }
+                            }));
+                        }} aria-pressed={selectedRange === 'month'}>Month
+                        </button>
+                        <button onClick={() => {
+                            setSelectedRange('year');
+                            window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                detail: {
+                                    widgetId: id,
+                                    settings: {range: 'year', currency: selectedCurrency}
+                                }
+                            }));
+                        }} aria-pressed={selectedRange === 'year'}>Year
                         </button>
                     </div>
-
-                    <div className="currency-form">
-                        <select
-                            value={currency}
-                            onChange={(e) => setCurrency(e.target.value)}
-                        >
-                            <option value="" disabled>
-                                Select currency
-                            </option>
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                            <option value="GBP">GBP</option>
-                            <option value="CHF">CHF</option>
-                            <option value="JPY">JPY</option>
-                        </select>
-
-                        <input
-                            type="date"
-                            value={dateFrom}
-                            onChange={(e) => setDateFrom(e.target.value)}
-                        />
-
-                        <input
-                            type="date"
-                            value={dateTo}
-                            onChange={(e) => setDateTo(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="currency-toggles">
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={showChart}
-                                onChange={() => setShowChart((v) => !v)}
-                            />
-                            Chart
-                        </label>
-
-                        {showChart && (
-                            <>
-                                <label>
-                                    <input
-                                        type="radio"
-                                        checked={chartType === "line"}
-                                        onChange={() => setChartType("line")}
-                                    />
-                                    Line
-                                </label>
-
-                                <label>
-                                    <input
-                                        type="radio"
-                                        checked={chartType === "candle"}
-                                        onChange={() => setChartType("candle")}
-                                    />
-                                    Candle
-                                </label>
-                            </>
-                        )}
-
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={showValue}
-                                onChange={() => setShowValue((v) => !v)}
-                            />
-                            Value
-                        </label>
-
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={showTable}
-                                onChange={() => setShowTable((v) => !v)}
-                            />
-                            Table
-                        </label>
-                    </div>
                 </div>
-            )}
-
-            {/* ===== CONTENT ===== */}
-            {loading && <p>Loading...</p>}
-            {error && <p className="error">{error}</p>}
-
-            {showValue && latestRate && (
-                <div className="currency-value">
-                    <strong>Current rate:</strong> {latestRate}
-                </div>
-            )}
-
-            {showChart && rates.length > 1 && (
-                <div className="currency-chart-box">
-                    {chartType === "line" && (
-                        <CurrencyLineChart rates={rates}/>
-                    )}
-                    {chartType === "candle" && (
-                        <CurrencyCandleChart rates={rates}/>
-                    )}
-                </div>
-            )}
-
-            {showTable && rates.length > 0 && (
-                <table className="currency-table">
-                    <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Rate</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {rates.map((r, i) => (
-                        <tr key={i}>
-                            <td>{r.date}</td>
-                            <td>{r.rate}</td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            )}
+            </div>
         </div>
+    );
+
+    // --- Dynamic chart size ---
+    const chartContainerRef = useRef(null);
+    const [chartSize, setChartSize] = useState({width: 400, height: 250});
+
+    useEffect(() => {
+        const node = chartContainerRef.current;
+        if (!node) return;
+
+        function updateSize() {
+            setChartSize({
+                width: node.clientWidth || 400,
+                height: node.clientHeight || 250
+            });
+        }
+
+        updateSize();
+        const resizeObserver = new window.ResizeObserver(updateSize);
+        resizeObserver.observe(node);
+        return () => resizeObserver.disconnect();
+    }, []);
+
+    // Chart rendering using Victory
+    const padding = {left: 40, top: 8, right: 8, bottom: 32};
+    const width = chartSize.width;
+    const height = chartSize.height;
+
+    const chartData = series.map((point) => ({x: point.date, y: point.value}));
+
+    return (
+        <Widget id={id} mode={mode} data={data} settings={settingsNode} className="widget--chart">
+            <div
+                ref={chartContainerRef}
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    flex: 1,
+                    minHeight: 0,
+                    position: 'relative',
+                }}
+            >
+
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 8,
+                        left: 0,
+                        width: '100%',
+                        textAlign: 'center',
+                        fontWeight: 600,
+                        fontSize: 18,
+                        color: '#111',
+                        letterSpacing: 1,
+                        pointerEvents: 'none',
+                        zIndex: 2,
+                        textShadow: '0 1px 4px #fff',
+                    }}
+                >
+                    {selectedCurrency}
+                </div>
+                <div style={{width: '100%', height: '100%', display: 'flex', flex: 1, minHeight: 0}}>
+                    {loading ? (
+                        <div style={{padding: 12}}>Loading chart…</div>
+                    ) : error ? (
+                        <div style={{padding: 12}}>Error: {error}</div>
+                    ) : (!series || series.length === 0) ? (
+                        <div style={{padding: 12}}>No data</div>
+                    ) : (
+                        <VictoryChart
+                            theme={VictoryTheme.material}
+                            width={width}
+                            height={height}
+                            padding={padding}
+                            domainPadding={{y: 10}}
+                            style={{parent: {height: '100%', width: '100%', display: 'flex', flex: 1, minHeight: 0}}}
+                            containerComponent={
+                                <VictoryVoronoiContainer
+                                    labels={({datum}) => `${datum.x}\n${datum.y}`}
+                                    labelComponent={
+                                        <VictoryTooltip
+                                            flyoutStyle={{fill: '#fff', stroke: '#2563eb', strokeWidth: 1}}
+                                            style={{fontSize: 13, fill: '#222'}}
+                                            pointerLength={8}
+                                            cornerRadius={4}
+                                            constrainToVisibleArea
+                                            dx={0}
+                                            dy={-24}
+                                        />
+                                    }
+                                    voronoiDimension="x"
+                                    voronoiBlacklist={["line"]}
+                                />
+                            }
+                        >
+                            <VictoryAxis
+                                dependentAxis
+                                style={{
+                                    axis: {stroke: '#888'},
+                                    tickLabels: {fontSize: 10, padding: 4}
+                                }}
+                            />
+                            <VictoryAxis
+                                style={{
+                                    axis: {stroke: '#888'},
+                                    tickLabels: {fontSize: 10, padding: 4, angle: -45}
+                                }}
+                                fixLabelOverlap
+                            />
+                            <VictoryLine
+                                name="line"
+                                data={chartData}
+                                style={{data: {stroke: '#2563eb', strokeWidth: 2.2}}}
+                                voronoiBlacklist={["line"]}
+                            />
+                            <VictoryScatter
+                                name="points"
+                                data={chartData}
+                                size={3.5}
+                                style={{data: {fill: '#2563eb'}}}
+                            />
+                        </VictoryChart>
+                    )}
+                </div>
+            </div>
+        </Widget>
     );
 }

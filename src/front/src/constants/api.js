@@ -20,3 +20,18 @@ export const ERROR_MESSAGES = {
     FETCH_HISTORY_ERROR: "Failed to fetch login history",
     FETCH_ACCOUNT_ERROR: "Failed to fetch account information",
 };
+
+export const NEWS_CATEGORIES = [
+    { value: 'general', label: 'General' },
+    { value: 'business', label: 'Business' },
+    { value: 'technology', label: 'Technology' },
+    { value: 'sports', label: 'Sports' },
+    { value: 'health', label: 'Health' },
+    { value: 'science', label: 'Science' },
+    { value: 'entertainment', label: 'Entertainment' },
+];
+
+export const DIRECTIONS = [
+    { value: 'vertical', label: 'Vertical' },
+    { value: 'horizontal', label: 'Horizontal' },
+];

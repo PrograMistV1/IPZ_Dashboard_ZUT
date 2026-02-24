@@ -19,6 +19,8 @@ class Widget(Base):
 
     configuration: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
+    layout: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -37,9 +39,9 @@ class Widget(Base):
 
     @validates("type")
     def validate_type(self, _, value):
-        allowed = {"rates", "news", "history", "weather"}
+        allowed = {"rates", "history", "currencyFeed", "newsFeed", "weather"}
         if value not in allowed:
-            raise ValueError("Unsupported widget type")
+            raise ValueError("Unsupported widget type", value)
         return value
 
     @validates("position")

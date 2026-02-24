@@ -1,0 +1,286 @@
+/* Dashboard Container */
+.dashboard-container {
+  padding: 16px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.add-widget-btn {
+  padding: 10px 20px;
+  background: #2563eb;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-widget-btn:hover {
+  background: #1d4ed8;
+}
+
+.dashboard-placeholder {
+  font-size: 16px;
+  color: #333;
+  text-align: center;
+  padding: 40px;
+  background: #e0e0e0;
+  border-radius: 8px;
+}
+
+/* Ensure widget root fills the slot */
+.widget {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/*+ Add widget*/
+.widget-slot > button {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0px solid #aaa;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+
+  font-size: 14px;
+}
+
+/* ADD WIDGET PANEL */
+.add-widget-panel {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #b4b4b4;
+
+  box-sizing: border-box;
+}
+
+.add-widget-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.add-widget-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 8px;
+
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+/*BUTTONS*/
+.widget-type {
+  border: 1px solid #000;
+  
+
+  background: rgba(255, 255, 255, 0.03);
+  color: #040404;
+
+  transition: all 0.2s ease;
+}
+
+.widget-type:hover {
+  border-color: #888;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.widget-type.active {
+  background: #2563eb;      
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+
+/* Add / Cancel */
+.widget-action {
+  border: 1px solid #ccc;
+  background: #ededed;
+}
+
+.widget-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dashboard-only: make widget buttons icon-like (no white square) with subtle hover */
+.dashboard-grid .widget button,
+.dashboard-grid .dashboard-widget-row button,
+.dashboard-grid .dashboard-info-actions button {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 6px !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+}
+.dashboard-grid .widget button:hover,
+.dashboard-grid .dashboard-widget-row button:hover,
+.dashboard-grid .dashboard-info-actions button:hover {
+  background: rgba(0,0,0,0.06) !important;
+}
+
+/*DASHBOARD INFO*/
+.dashboard-info {
+  margin-top: 24px;
+  padding: 16px;
+  background: #a8a8a8;
+  
+  border-radius: 8px;
+  max-width: 420px;
+}
+
+.dashboard-info-section {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #333;
+}
+
+.dashboard-info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.dashboard-info-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.app-content .dashboard-info-actions button,
+.widget .dashboard-info-actions button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #8f8f8f !important;
+  background: #d0d0d0 !important;
+  cursor: pointer;
+}
+
+.dashboard-info-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dashboard-widget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.app-content .dashboard-widget-row button,
+.widget .dashboard-widget-row button {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc !important;
+  background: hsl(0, 0%, 76%) !important;
+  cursor: pointer;
+}
+
+/* Settings container that appears under the widget row */
+.dashboard-widget-settings-container {
+  margin-top: 6px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.15s ease;
+  height: 0;
+  opacity: 0;
+}
+
+.dashboard-widget-settings-container.active {
+  height: auto;
+  opacity: 1;
+}
+
+.dashboard-widget-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: #6a6a6a;
+  border-bottom: 1px solid #5a5a5a;
+  color: #fff;
+}
+
+.dashboard-widget-settings-body {
+  padding: 10px;
+  background: #5f5f5f;
+  color: #fff;
+}
+
+/* News widget styles */
+.news-widget {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.news-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.news-item a {
+  color: #111;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.news-meta {
+  font-size: 12px;
+  color: #333;
+}
+
+.widget-loading, .widget-error {
+  font-size: 14px;
+  color: #222;
+}
+
+/* container that fills remaining space and provides scrolling */
+.news-content {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.news-item {
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}

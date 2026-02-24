@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../pages/auth/AuthContext";
-import "./layout.css";
+import React, {useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {useAuth} from "../../pages/auth/AuthContext";
+import "../../styles/layout.css";
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
