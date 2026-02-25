@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from "react";
 import "../../styles/dashboard.css";
 
 export default function DashboardInfoPanel({
-                                               widgets, onClearWidget, onAddWidget,
+                                               widgets, onClearWidget, onAddWidget, onClose,
                                            }) {
     const widgetCount = widgets?.length || 0;
     const [activeSettingsWidgetId, setActiveSettingsWidgetId] = useState(null);
@@ -86,8 +86,15 @@ export default function DashboardInfoPanel({
 
             {/* Add Widget button placed here in the info panel */}
             <div className="dashboard-info-row">
-                <button className="add-widget-btn" onClick={() => (typeof onAddWidget === 'function') && onAddWidget()}
-                        title="Add Widget">+ Add Widget
+                <button
+                    className="add-widget-btn"
+                    onClick={() => {
+                        if (typeof onAddWidget === 'function') onAddWidget();
+                        // if parent provided onClose (from AppLayout), close the drawer immediately
+                        if (typeof onClose === 'function') onClose();
+                    }}
+                    title="Add Widget"
+                >+ Add Widget
                 </button>
             </div>
 

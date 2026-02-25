@@ -49,7 +49,8 @@ body {
   display: flex;
   align-items: center;
   padding: 10px 16px;
-  background: #e4e4e4;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
 .topbar-right {
@@ -128,21 +129,20 @@ body {
 
 
 
-.sidebar-item {
+.sidebar-header {
   display: flex;
   align-items: center;
 
-  gap: 5px;
-  padding: 4px 12px;   
+  padding: 8px 12px;
+  gap: 10px;
+
+  font-size: 26px;
+  font-weight: 700;
+
+  white-space: nowrap;
+
+  padding-left: 9px; 
 }
-
-
-
-.sidebar-item:hover,
-.sidebar-item.active {
-  background: #1e293b;
-}
-
 /*górne logo*/
 .sidebar-logo {
   font-size: 22px;
@@ -200,13 +200,13 @@ body {
 .sidebar-header {
   display: flex;
   align-items: center;
+  color: #d7a020;
 
   padding: 8px 12px;
   gap: 10px;
 
   font-size: 26px;
   font-weight: 700;
-  color: #d7a020;
 
   white-space: nowrap;
 
@@ -248,6 +248,19 @@ body {
 .sidebar-menu li.active {
   background: #1976d2;
   color: white;
+}
+
+/* Make left-panel text white and bold everywhere (exclude header/title so it can be styled separately) */
+.sidebar,
+.sidebar .label,
+.sidebar-menu > li,
+.sidebar-item,
+.sidebar-menu li,
+.sidebar-subitem,
+.sidebar-subitem-title,
+.sidebar-subitem.add-dashboard {
+  color: #ffffff;
+  font-weight: 700;
 }
 
 
@@ -449,7 +462,7 @@ body {
 
 .sidebar-submenu {
   list-style: none;
-  padding: 4px 0 8px 52px;
+  padding: 4px 0 8px 12px;
   margin: 0;
 }
 
@@ -462,7 +475,8 @@ body {
   margin-bottom: 4px;
 
   font-size: 13px;
-  color: #f0f0f0;
+  color: #ffffff;
+  font-weight: 700;
 
   border-radius: 6px;
   cursor: pointer;
@@ -482,21 +496,45 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #ffffff;
+  font-weight: 700;
 }
 
 /* ===== DELETE ICON ===== */
 
 .sidebar-subitem-delete {
-  background: transparent;
-  border: none;
-  color: #f87171;
+
+  /* make delete cross more visible: larger hit area, stronger color and subtle background */
+  background: rgba(248,113,113,0.06);
+  border: 1px solid rgba(248,113,113,0.18);
+  color: #dc2626;
   cursor: pointer;
-  font-size: 12px;
-  padding: 2px 6px;
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  line-height: 1;
+  transition: background 120ms, color 120ms, transform 80ms;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 
 .sidebar-subitem-delete:hover {
-  color: #ffaaaa;
+  background: rgba(220,38,38,0.12);
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.sidebar-subitem-delete:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(220,38,38,0.12);
+}
+
+.sidebar-subitem-delete:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: rgba(0,0,0,0.06);
+  color: #ffb3b3;
 }
 
 .sidebar-subitem-delete:disabled {
@@ -508,8 +546,8 @@ body {
 
 .sidebar-subitem.add-dashboard {
   margin-top: 6px;
-  color: #01ff27;
-  font-weight: 600;
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .sidebar-subitem.add-dashboard:hover {

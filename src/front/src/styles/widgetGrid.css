@@ -10,6 +10,9 @@
 .widget-grid-item {
     overflow: hidden;
     display: flex;
+    border-radius: 12px;
+    box-shadow: 0 5px 12px rgba(0,0,0,0.22), 0 2px 5px rgba(0,0,0,0.12);
+    transition: box-shadow 200ms ease, transform 200ms ease;
 }
 
 .widget-grid-item > * {

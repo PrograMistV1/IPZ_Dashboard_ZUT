@@ -1,6 +1,8 @@
 .weather-dashboard {
-  padding: 18px;
+  padding: 16px;
   box-sizing: border-box;
+  background: #d5e4ff; /* same as main dashboard */
+  min-height: 100%;
   font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: #222;
 }

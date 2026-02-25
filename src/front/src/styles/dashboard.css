@@ -1,6 +1,8 @@
 /* Dashboard Container */
 .dashboard-container {
   padding: 16px;
+  background: #d5e4ff; 
+  min-height: 100%;
 }
 
 .dashboard-header {
@@ -283,4 +285,18 @@
 .news-item {
   padding-bottom: 6px;
   border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+/* Persistent elevation for dashboard widgets (always on) */
+.dashboard-grid .widget,
+.dashboard-container .widget {
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.22), 0 2px 5px rgba(0,0,0,0.12);
+  transition: box-shadow 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-grid .widget,
+  .dashboard-container .widget { transition: none; }
 }

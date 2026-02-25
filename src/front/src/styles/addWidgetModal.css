@@ -1,75 +1,73 @@
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    inset: 0;
+    background: rgba(37, 99, 235, 0.08); 
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: 18px;
 }
 
-.modal-content {
-    background: #333;
+.modal-content-add-widget {
+    background: #9fcffb; /* slightly darker blue */
     border-radius: 12px;
-    width: 90%;
-    max-width: 450px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    border: 1px solid #444;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 10px 26px rgba(2,6,23,0.36), 0 4px 12px rgba(2,6,23,0.22);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+    transform: translateX(0);
+    transition: transform 320ms cubic-bezier(.2,.9,.2,1), opacity 200ms;
 }
 
 .modal-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid #444;
-}
-
-.modal-header h3 {
-    margin: 0;
-    color: #fff;
-    font-size: 18px;
+    justify-content: flex-end;
+    padding: 10px 14px;
+    background: transparent;
 }
 
 .modal-close {
     background: transparent;
     border: none;
-    color: #888;
-    font-size: 24px;
+    color: #334155;
+    font-size: 22px;
     cursor: pointer;
     line-height: 1;
-    padding: 0;
-    transition: color 0.2s;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background 0.12s, color 0.12s;
 }
 
 .modal-close:hover {
-    color: #fff;
+    background: rgba(37,99,235,0.12);
+    color: #2f7cef;
 }
 
 .modal-body {
-    padding: 20px;
+    padding: 18px 22px;
 }
 
 .modal-label {
-    color: #aaa;
+    color: #274056;
     font-size: 14px;
     margin: 0 0 12px 0;
+    font-weight: 600;
 }
 
 .widget-type-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 16px;
 }
 
 .widget-type-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 16px;
 }
 
@@ -77,71 +75,76 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
-    padding: 12px 16px;
-    background: #444;
-    border: 2px solid #555;
-    border-radius: 8px;
-    color: #ddd;
+    gap: 6px;
+    padding: 14px 16px;
+    background: linear-gradient(270deg, #f7efe0 0%, #efe2c9 50%, #f7efe0 100%);
+    background-size: 200% 100%;
+    animation: beigeShimmer 6s linear infinite;
+    border: 1px solid rgba(120,100,80,0.12);
+    border-radius: 10px;
+    color: #0f172a;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
     text-align: left;
     position: relative;
 }
 
 .widget-type-card:hover {
-    background: #4a4a4a;
-    border-color: #666;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(2,6,23,0.06);
 }
 
 .widget-type-card.active {
-    background: #2563eb;
-    border-color: #3b82f6;
-    color: #fff;
+    /* Keep original warm background but slightly darker to indicate active */
+    filter: brightness(0.90);
+    border-color: rgba(120,100,80,0.18);
+    /* keep text color same as inactive state */
+    color: #0f172a;
+    box-shadow: 0 8px 24px rgba(2,6,23,0.06);
 }
 
 .widget-type-title {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 15px;
+    font-weight: 700;
 }
 
 .widget-type-desc {
-    font-size: 12px;
-    color: #aaa;
+    font-size: 13px;
+    color: #274056;
 }
 
 .widget-type-card.active .widget-type-desc {
-    color: rgba(255, 255, 255, 0.7);
+    /* keep description readable and consistent with default */
+    color: #274056;
 }
 
 .widget-type-modes {
-    font-size: 11px;
-    color: #888;
+    font-size: 12px;
+    color: #617a88;
     margin-top: 4px;
 }
 
 .widget-type-card.active .widget-type-modes {
-    color: rgba(255, 255, 255, 0.6);
+    color: #617a88;
 }
 
 .widget-type-badge {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    padding: 2px 6px;
+    top: 10px;
+    right: 10px;
+    padding: 4px 8px;
     background: #10b981;
     color: #fff;
-    font-size: 10px;
-    font-weight: 600;
-    border-radius: 4px;
-    text-transform: uppercase;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px;
 }
 
 /* Mode selection grid */
 .widget-mode-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 16px;
 }
 
@@ -149,105 +152,102 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 16px;
-    background: #444;
-    border: 2px solid #555;
-    border-radius: 8px;
-    color: #ddd;
+    gap: 8px;
+    padding: 14px 12px;
+    background: linear-gradient(270deg, #fbf5e8 0%, #efe6d0 50%, #fbf5e8 100%);
+    background-size: 200% 100%;
+    animation: beigeShimmer 6s linear infinite;
+    border: 1px solid rgba(120,100,80,0.08);
+    border-radius: 10px;
+    color: #0f172a;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
     text-align: center;
 }
 
 .widget-mode-btn:hover {
-    background: #4a4a4a;
-    border-color: #666;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(2,6,23,0.06);
 }
 
 .widget-mode-btn.active {
-    background: #2563eb;
-    border-color: #3b82f6;
-    color: #fff;
+    /* Active: darker background but keep text colors unchanged */
+    filter: brightness(0.88);
+    border-color: rgba(120,100,80,0.16);
+    color: #0f172a; /* same as default text */
+    box-shadow: 0 6px 20px rgba(2,6,23,0.06);
 }
 
-.mode-icon {
-    font-size: 24px;
+.mode-icon { font-size: 22px; }
+.mode-title { font-size: 14px; font-weight: 700; }
+.mode-desc { font-size: 12px; color: #64748b; }
+.widget-mode-btn.active .mode-desc { color: #64748b; }
+
+.widget-type-btn { padding: 12px 14px; background: linear-gradient(270deg, #fbf5e8 0%, #efe6d0 50%, #fbf5e8 100%); background-size: 200% 100%; animation: beigeShimmer 6s linear infinite; border: 1px solid rgba(120,100,80,0.08); border-radius: 10px; color: #0f172a; font-size: 14px; cursor: pointer; transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s; }
+.widget-type-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(2,6,23,0.06); }
+/* Active state for category buttons: use slightly darker beige to match design */
+.widget-type-btn.active { background: linear-gradient(270deg, #efe6d0 0%, #e6d6b8 50%, #efe6d0 100%); border-color: rgba(120,100,80,0.16); color: #07202a; box-shadow: 0 6px 20px rgba(2,6,23,0.06); }
+
+/* Make active news/category and mode buttons slightly darker than their base color */
+.widget-type-btn.active { filter: brightness(0.95); border-color: rgba(120,100,80,0.16); color: #07202a; box-shadow: 0 6px 20px rgba(2,6,23,0.06); }
+
+/* Pressed state for buttons: slightly darker to give tactile feedback */
+.widget-type-card:active,
+.widget-mode-btn:active,
+.widget-type-btn:active,
+.modal-btn:active {
+    filter: brightness(0.86);
+    transform: translateY(0);
 }
 
-.mode-title {
-    font-size: 14px;
-    font-weight: 600;
+/* When an already-selected data-type card is pressed, make it visibly darker */
+.widget-type-card.active:active {
+    filter: brightness(0.82);
 }
 
-.mode-desc {
-    font-size: 11px;
-    color: #aaa;
+/* When a mode button is selected and user presses it, make it visibly darker */
+.widget-mode-btn.active:active {
+    filter: brightness(0.82);
 }
 
-.widget-mode-btn.active .mode-desc {
-    color: rgba(255, 255, 255, 0.7);
-}
+.modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 12px 18px; border-top: 2px solid #5980d5; background: transparent; }
 
-.widget-type-btn {
-    padding: 12px 16px;
-    background: #444;
-    border: 2px solid #555;
-    border-radius: 8px;
-    color: #ddd;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.widget-type-btn:hover {
-    background: #4a4a4a;
-    border-color: #666;
-}
-
-.widget-type-btn.active {
-    background: #2563eb;
-    border-color: #3b82f6;
-    color: #fff;
-}
-
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding: 16px 20px;
-    border-top: 1px solid #444;
-}
-
-.modal-btn {
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
+.modal-btn { padding: 10px 18px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: transform 0.08s, box-shadow 0.12s; }
 .modal-btn.cancel {
-    background: #444;
-    border: 1px solid #555;
-    color: #ddd;
+    background: linear-gradient(270deg, #f7efe0 0%, #efe2c9 50%, #f7efe0 100%);
+    background-size: 200% 100%;
+    animation: beigeShimmer 6s linear infinite;
+    border: 1px solid rgba(120,100,80,0.1);
+    color: #07202a;
 }
-
 .modal-btn.cancel:hover {
-    background: #555;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(2,6,23,0.06);
 }
-
 .modal-btn.add {
-    background: #2563eb;
-    border: 1px solid #3b82f6;
-    color: #fff;
+    background: linear-gradient(270deg, #f7efe0 0%, #efe2c9 50%, #f7efe0 100%);
+    background-size: 200% 100%;
+    animation: beigeShimmer 6s linear infinite;
+    border: 1px solid rgba(120,100,80,0.1);
+    color: #07202a;
+}
+.modal-btn.add:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(2,6,23,0.06); }
+.modal-btn.add:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Slide-in-from-right */
+.modal-content { /* ensure immediate visible without slide animation */ }
+@keyframes beigeShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-.modal-btn.add:hover {
-    background: #1d4ed8;
+@keyframes blueShimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-.modal-btn.add:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+@media (prefers-reduced-motion: reduce) {
+    .modal-content-add-widget { animation: none; background-position: 50% 50%; }
 }

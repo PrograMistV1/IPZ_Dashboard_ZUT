@@ -35,7 +35,7 @@ if not NEWSAPI_KEY:
 
 # TTL (minutes) for news cache. When cached articles are older than this,
 # the service will re-fetch from the upstream NewsAPI.
-NEWS_CACHE_TTL_MINUTES = int(os.getenv("NEWS_CACHE_TTL_MINUTES", 10))
+NEWS_CACHE_TTL_MINUTES = int(os.getenv("NEWS_CACHE_TTL_MINUTES", 180))
 
 # OpenWeather configuration. Set `OPENWEATHER_API_KEY` in environment (do NOT commit keys).
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
