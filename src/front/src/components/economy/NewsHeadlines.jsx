@@ -33,15 +33,16 @@ export default function NewsHeadlines({ category = "business", limit = 8 }) {
   return (
     <div className="news-headlines">
       <h4>Business news</h4>
-      <ul>
+      <div className="news-list">
         {articles.map((a, i) => (
-          <li key={i}>
-            <a href={a.url} target="_blank" rel="noreferrer">
-              {a.title}
+          <div key={i} className="news-item">
+            <a href={a.url} target="_blank" rel="noreferrer" className="news-link">
+              <div className="news-title">{a.title}</div>
+              {a.description && <div className="news-desc">{a.description}</div>}
             </a>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

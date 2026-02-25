@@ -7,25 +7,31 @@
 
 /* ===== TOP ROW ===== */
 .economy-top {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   gap: 12px;
+  overflow-x: auto;
+  padding: 12px 8px;
+  position: relative;
+  align-items: center;
 }
+
+.economy-top-item { position: relative; }
+.set-main-btn { display: none; }
 
 /* ===== MAIN AREA ===== */
 .economy-main {
   display: grid;
-  grid-template-columns: 2.1fr 1fr; /* Wide + Side */
+  grid-template-columns: 2fr 1fr; /* Wide + Side */
   gap: 20px;
-  min-height: 480px;
+  min-height: 520px;
 }
 
 /* ===== WIDGET BASE ===== */
 .economy-widget {
   background: #fff;
-  border: 1px solid #e5e7eb;          /* нормальная рамка */
-  border-radius: 14px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  border: 1px solid rgba(167,139,250,0.2);
+  border-radius: 18px;
+  box-shadow: 0 6px 18px rgba(11,59,115,0.04);
   box-sizing: border-box;
 }
 
@@ -42,15 +48,14 @@
 
 .economy-widget.wide {
   flex: 1 1 auto;
-  padding: 12px;
+  padding: 16px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
 }
 
 .economy-widget.side {
-  min-height: 320px;
-  padding: 12px;
+  min-height: 520px;
+  padding: 14px;
 }
 
 .economy-widget.bottom {
@@ -59,20 +64,23 @@
 
 /* ===== SMALL CURRENCY CARDS ===== */
 .economy-small-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 8px 12px;
+  background: linear-gradient(90deg, #e6fffb, #f0f9ff);
+  border-radius: 12px;
+  padding: 12px 16px;
+  min-width: 180px;
+  height: 88px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.04) inset;
   position: relative;
+  box-sizing: border-box;
 }
 
 .economy-small-card.selected {
-  outline: 3px solid rgba(37,99,235,0.12);
+  box-shadow: 0 8px 24px rgba(124,58,237,0.12);
+  border: 1px solid rgba(124,58,237,0.12);
 }
 
 .economy-small-card .card-main {
@@ -81,13 +89,52 @@
 }
 
 .currency-name {
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.currency-rate {
+  font-weight: 800;
   font-size: 18px;
+  line-height: 1.1;
 }
+.currency-rate { font-size: 14px; color: #374151; margin-top: 6px; }
+
+.card-primary-btn { position: absolute; right: 12px; top: 12px; background: transparent; border: none; color: #6b21a8; font-size: 18px; cursor: pointer; }
+
+/* add-tile */
+.add-tile { display:flex; align-items:center; justify-content:center; }
+.add-square { width: 180px; height: 88px; border-radius: 12px; border: 2px dashed #a6e1ff; display:flex; align-items:center; justify-content:center; color:#0284c7; font-size:36px; background: rgba(166,230,255,0.06); }
+
+/* scroll arrows */
+.top-scroll { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 6px; border: none; background: rgba(15,23,42,0.04); cursor: pointer; display:flex; align-items:center; justify-content:center; }
+.top-scroll.left { left: 8px; }
+.top-scroll.right { right: 8px; }
+
+/* add currency modal */
+.add-currency-modal { position: fixed; left:0; top:0; right:0; bottom:0; background: rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; z-index:200; }
+.add-currency-panel { width: 420px; max-width: 94%; background: #fff; padding: 18px; border-radius: 12px; box-shadow: 0 12px 40px rgba(15,23,42,0.2); position: relative; }
+.add-currency-panel h3 { margin: 0 0 8px 0; }
+.add-currency-search { box-sizing: border-box; width:100%; padding:8px 10px; margin-bottom:8px; border:1px solid #ddd; border-radius:6px; display:block; }
+.add-currency-list { max-height: 300px; overflow:auto; display:flex; flex-direction:column; gap:6px; }
+.add-currency-item { padding:10px 12px; border-radius:8px; cursor:pointer; border:1px solid transparent; }
+.add-currency-item:hover { background:#f3f8ff; border-color:#dbeafe; }
+
+/* modal close button (top-right X) */
+.modal-close { position: absolute; right: 10px; top: 8px; width: 32px; height: 32px; border-radius: 6px; border: none; background: transparent; color: #374151; font-size: 20px; cursor: pointer; }
+.modal-close:hover { background: rgba(0,0,0,0.04); }
+
+/* Chart header controls */
+.chart-header { display:flex; flex-direction: column; gap: 12px; }
+.chart-top-controls { display:flex; justify-content: space-between; align-items: center; }
+.chart-selected { display:flex; flex-direction: column; }
+.selected-label { font-size: 12px; color:#6b7280; }
+.selected-value { font-size: 20px; font-weight:800; color:#0f172a; }
+.chart-timeframe button { margin-left: 8px; padding: 6px 10px; border-radius: 8px; border:none; background:#f3f4f6; cursor:pointer; }
+.chart-timeframe button.active { background: #7c3aed; color:#fff; box-shadow: 0 6px 12px rgba(124,58,237,0.12); }
+/* refresh button removed */
+
+/* news stacked boxes */
+.stacked-news { background: transparent; padding: 8px; }
+.news-headlines { display:flex; flex-direction: column; gap: 14px; }
+.news-headlines h4 { background: linear-gradient(90deg, #fff8e6, #f6f0ff); padding: 12px; border-radius: 14px; border: 2px solid rgba(167,139,250,0.12); }
+.news-headlines ul { background: linear-gradient(90deg, #fff8e6, #f6f0ff); padding: 12px; border-radius: 14px; border: 2px solid rgba(167,139,250,0.12); min-height: 220px; }
+.news-headlines li { padding: 6px 0; }
 
 /* ===== DROPDOWN ===== */
 .card-dropdown {
@@ -168,20 +215,8 @@
   margin: 0 0 8px 0;
 }
 
-.news-headlines ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.news-headlines li a {
-  color: #111;
-  text-decoration: none;
-}
-
-.news-headlines li a:hover {
-  text-decoration: underline;
-}
+.news-list { display:flex; flex-direction: column; gap: 12px; }
+.news-item { background: linear-gradient(135deg, rgba(255,248,230,0.95), rgba(246,240,255,0.8)); padding: 12px; border-radius: 12px; border: 2px solid rgba(167,139,250,0.12); box-shadow: 0 4px 10px rgba(124,58,237,0.04); }
+.news-link { color: #0f172a; text-decoration: none; display:block; }
+.news-title { font-weight: 700; margin-bottom: 6px; }
+.news-desc { color: #374151; font-size: 14px; line-height: 1.4; }

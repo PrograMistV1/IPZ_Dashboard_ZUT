@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CURRENCY_OPTIONS } from "../../constants/api";
 
-export default function SmallCurrencyCard({ currency, selected, onSelect, options = CURRENCY_OPTIONS }) {
+export default function SmallCurrencyCard({ currency, selected, onSelect, onPrimaryClick, options = CURRENCY_OPTIONS, showPrimaryButton = true, onCardClick }) {
   const [rate, setRate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -52,10 +52,20 @@ export default function SmallCurrencyCard({ currency, selected, onSelect, option
 
   return (
     <div ref={rootRef} className={"economy-small-card" + (selected ? " selected" : "")}>
-      <div className="card-main" onClick={() => setOpen((v) => !v)} role="button" tabIndex={0}>
+      <div
+        className="card-main"
+        onClick={() => { if (onCardClick) return onCardClick(currency); setOpen((v) => !v); }}
+        onDoubleClick={() => setOpen((v) => !v)}
+        role="button"
+        tabIndex={0}
+      >
         <div className="currency-name">{currency}</div>
         <div className="currency-rate">{loading ? "…" : error ? "—" : rate ?? "—"}</div>
       </div>
+
+      {showPrimaryButton && (
+        <button className="card-primary-btn" title="Show in main chart" onClick={() => onPrimaryClick?.(currency)}>›</button>
+      )}
 
       {open && (
         <div className="card-dropdown">

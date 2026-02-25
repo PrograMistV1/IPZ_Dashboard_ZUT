@@ -11,6 +11,8 @@ from src.db import get_db
 from src.models.dashboard import Dashboard
 from src.models.login_history import LoginHistory
 from src.models.user import User
+from src.models.weather_config import WeatherConfig
+from src.models.economy_config import EconomyConfig
 
 router = APIRouter(prefix="/auth")
 
@@ -96,6 +98,23 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     dashboard = Dashboard(user_id=user.id, name="My dashboard")
     db.add(dashboard)
     db.commit()
+
+    # Create default template configs for new user so Weather/Economy pages
+    # have their per-user templates present immediately (matches behavior in main).
+    try:
+        weather_cfg = WeatherConfig(
+            user_id=user.id, name="weather-dashboard", configuration={}
+        )
+        economy_cfg = EconomyConfig(
+            user_id=user.id,
+            name="economy-dashboard",
+            configuration={"topSelected": ["USD", "EUR", "GBP", "CHF", "JPY", "UAH"]},
+        )
+        db.add(weather_cfg)
+        db.add(economy_cfg)
+        db.commit()
+    except Exception:
+        db.rollback()
 
     return {"message": "User registered successfully", "dashboard_id": dashboard.id}
 

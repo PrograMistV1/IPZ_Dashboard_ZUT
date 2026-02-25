@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {widgetTypes} from "../widgets/registry";
+import {apiFetch} from "../../services/api";
 import "../../styles/addWidgetModal.css";
 
 export default function AddWidgetModal({onAdd, onClose}) {
@@ -38,16 +39,50 @@ export default function AddWidgetModal({onAdd, onClose}) {
 
     const handleAdd = () => {
         if (!canAdd) return;
+        const proceed = async () => {
+            let config = {
+                mode: selectedMode,
+            };
 
-        let config = {
-            mode: selectedMode,
+            if (needsCategory) {
+                config.category = newsCategory;
+            }
+
+            if (selectedType === 'weather') {
+                // Try to obtain geolocation and reverse-geocode to a city name
+                if (!navigator?.geolocation) {
+                    alert('Geolocation is not supported by your browser. Please allow location or add widget later.');
+                    return;
+                }
+
+                try {
+                    const pos = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 10000});
+                    });
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    // attempt reverse geocode
+                    try {
+                        const res = await apiFetch(`/api/geocode/reverse?lat=${lat}&lon=${lon}`);
+                        if (res && res.name) config.city = res.name;
+                        // always store coords for accuracy
+                        config.lat = lat;
+                        config.lon = lon;
+                    } catch (e) {
+                        // still proceed with coords
+                        config.lat = lat;
+                        config.lon = lon;
+                    }
+                } catch (err) {
+                    alert('Unable to determine location. Widget not added.');
+                    return;
+                }
+            }
+
+            onAdd(selectedType, selectedMode, config);
         };
 
-        if (needsCategory) {
-            config.category = newsCategory;
-        }
-
-        onAdd(selectedType, selectedMode, config);
+        proceed();
     };
 
     const selectedTypeInfo = selectedType ? widgetTypes[selectedType] : null;
