@@ -260,11 +260,11 @@ export default function WeatherDashboard() {
                     <div className="charts-row">
                         <div className="chart-card temp-card">
                             <h5>Temperature (5 days)</h5>
-                            <WeatherChart rows={allRows} series={{temp: true}}/>
+                            <WeatherChart rows={allRows} series={{temp: true}} height={180} />
                         </div>
                         <div className="chart-card humidity-card">
                             <h5>Humidity (5 days)</h5>
-                            <WeatherChart rows={allRows} series={{humidity: true}}/>
+                            <WeatherChart rows={allRows} series={{humidity: true}} height={180} />
                         </div>
                     </div>
                     <div style={{marginTop: 18}}>

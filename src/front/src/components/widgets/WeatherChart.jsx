@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from "react";
+import React, {useMemo, useState, useRef, useEffect} from "react";
 
 const COLORS = {
   temp: "#00e676",
@@ -21,7 +21,7 @@ function lightenHex(hex, amount = 0.2) {
   return `#${((1 << 24) + (nr << 16) + (ng << 8) + nb).toString(16).slice(1)}`;
 }
 
-export default function WeatherChart({rows, series}) {
+export default function WeatherChart({rows, series, height: overrideHeight}) {
   // convert rows to points and pick one value per day close to 12:00
   const points = useMemo(() => {
     const raw = (rows || []).map((r) => ({
@@ -62,13 +62,33 @@ export default function WeatherChart({rows, series}) {
         });
   }, [rows]);
 
+  // measure container so SVG uses exact pixel dimensions (prevents CSS-driven scaling artifacts)
+  const containerRef = useRef(null);
+  const [containerSize, setContainerSize] = useState({ width: 800, height: 360 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const r = entry.contentRect || entry.target.getBoundingClientRect();
+        setContainerSize({ width: Math.max(200, Math.floor(r.width)), height: Math.max(120, Math.floor(r.height)) });
+      }
+    });
+    ro.observe(el);
+    // initial
+    const rect = el.getBoundingClientRect();
+    setContainerSize({ width: Math.max(200, Math.floor(rect.width)), height: Math.max(120, Math.floor(rect.height)) });
+    return () => ro.disconnect();
+  }, []);
+
   const [hover, setHover] = useState({ key: null, idx: null });
 
   const enabledKeys = Object.keys(series || {}).filter((k) => series[k]);
   if (points.length === 0 || enabledKeys.length === 0) return null;
 
-  const width = 600;
-  const height = 140;
+  const width = containerSize.width || 600;
+  const height = overrideHeight || containerSize.height || 360;
   const padding = 40;
 
   const xScale = (i) => padding + (i / (points.length - 1 || 1)) * (width - padding * 2);
@@ -76,7 +96,7 @@ export default function WeatherChart({rows, series}) {
   // For each key we compute its own scale so charts are readable.
 
   return (
-    <div style={{display:'flex', flexDirection:'column', gap:12}}>
+    <div ref={containerRef} style={{display:'flex', flexDirection:'column', gap:12}}>
       {enabledKeys.map((key) => {
         const color = COLORS[key] || '#888';
         const toNumber = (v) => (typeof v === 'number' ? v : Number(v));

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 
 const COLORS = ["#2563eb", "#f97316", "#10b981", "#ef4444", "#a78bfa"];
 
@@ -21,8 +21,11 @@ export default function PopularCurrenciesChart({ currencies = ["USD", "EUR", "GB
   const containerRef = useRef(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-  // helper to trigger load based on from/to or days
-  const loadForRange = async (from, to) => {
+  // stable key for currencies to make deps statically checkable
+  const currenciesKey = useMemo(() => (Array.isArray(currencies) ? currencies.join(",") : String(currencies)), [currencies]);
+
+  // helper to trigger load based on from/to or days (stable reference)
+  const loadForRange = useCallback(async (from, to) => {
     setLoading(true);
     setError(null);
     try {
@@ -38,7 +41,7 @@ export default function PopularCurrenciesChart({ currencies = ["USD", "EUR", "GB
     } finally {
       setLoading(false);
     }
-  };
+  }, [currenciesKey]);
 
   useEffect(() => {
     let mounted = true;
@@ -53,7 +56,7 @@ export default function PopularCurrenciesChart({ currencies = ["USD", "EUR", "GB
     };
     load();
     return () => (mounted = false);
-  }, [currencies.join(","), daysProp]);
+  }, [loadForRange, daysProp]);
 
   // observe container size so svg can grow when parent grows
   useEffect(() => {
@@ -72,7 +75,7 @@ export default function PopularCurrenciesChart({ currencies = ["USD", "EUR", "GB
     const rect = node.getBoundingClientRect();
     setContainerSize({ width: Math.max(200, Math.floor(rect.width)), height: Math.max(120, Math.floor(rect.height)) });
     return () => ro.disconnect();
-  }, [containerRef.current]);
+  }, []);
 
   const chart = useMemo(() => {
     const allDatesSet = new Set();
@@ -120,7 +123,7 @@ export default function PopularCurrenciesChart({ currencies = ["USD", "EUR", "GB
     }
 
     return { width, height, padding, dates, series, paths, yTicks, min, max };
-  }, [data]);
+  }, [data, containerSize.width, containerSize.height, overrideHeight, overridePadding]);
 
   if (loading) return <div className="chart-box">Loading chart…</div>;
   if (error) return <div className="chart-box">Error: {error}</div>;
