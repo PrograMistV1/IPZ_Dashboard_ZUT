@@ -1,6 +1,6 @@
 import React from "react";
 import UserMenu from "./UserMenu";
-import "./layout.css";
+import "../../styles/layout.css";
 
 export default function EconomyTopBar() {
   return (

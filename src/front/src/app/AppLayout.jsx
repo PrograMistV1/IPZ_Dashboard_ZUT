@@ -4,6 +4,7 @@ import TopBar from "../components/layout/TopBar";
 import EconomyTopBar from "../components/layout/EconomyTopBar";
 import SideBar from "../components/layout/SideBar";
 import DashboardInfoPanel from "../components/dashboard/DashboardInfoPanel";
+import infoIcon from "../assets/icons/info.png";
 import {useAuth} from "../pages/auth/AuthContext";
 
 export default function AppLayout() {
@@ -39,7 +40,9 @@ export default function AppLayout() {
                         className={`dashboard-info-handle ${infoOpen ? "open" : ""}`}
                         onClick={() => setInfoOpen((v) => !v)}
                         title="Dashboard settings"
-                    />
+                    >
+                        <img src={infoIcon} alt="info" className="dashboard-info-icon" />
+                    </div>
                 )}
 
                 {isDashboardPage && dashboardInfo && (

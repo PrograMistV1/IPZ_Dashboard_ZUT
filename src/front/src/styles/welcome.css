@@ -1,23 +1,38 @@
 .welcome-container {
-    padding: 40px 20px;
+    /* match dashboard main background and center content horizontally */
+    background: #d5e4ff;
+    min-height: calc(100vh - 64px);
+    box-sizing: border-box; /* include padding in height calculation to avoid overflow */
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 72px; /* move text slightly lower */
 }
 
 .welcome-content {
-    text-align: left;
+    text-align: center;
+    width: 100%;
+    max-width: 900px;
+    background: transparent; /* no white card, match placeholder style */
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .welcome-content h1 {
-    margin: 0 0 10px 0;
-    font-size: 36px;
-    color: #333;
-    font-weight: 600;
+    margin: 0 0 8px 0;
+    font-size: 20px; /* increased by 1px as requested */
+    color: #333; /* user requested color */
+    font-weight: 400; /* normal weight */
+    text-align: center;
 }
 
 .welcome-greeting {
     margin: 0;
     font-size: 16px;
-    color: #666;
+    color: #444;
     line-height: 1.6;
+    text-align: center;
 }
 
 @media (max-width: 600px) {

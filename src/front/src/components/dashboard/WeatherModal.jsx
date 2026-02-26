@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import "./miniActionModal.css";
+import "../../styles/miniActionModal.css";
 
 export default function WeatherModal({onSelect, onCancel}) {
   const [city, setCity] = useState("");

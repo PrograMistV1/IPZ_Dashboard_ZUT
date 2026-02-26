@@ -1,97 +1,107 @@
 import React, {useEffect, useState} from "react";
 import {useOutletContext, useParams} from "react-router-dom";
-import DashboardGrid from "./DashboardGrid";
-import * as dashboardService from "../../services/dashboard";
 import {tokenManager} from "../../services/tokenManager";
+import * as dashboardService from "../../services/dashboard";
+import WidgetGrid from "./WidgetGrid";
+import AddWidgetModal from "./AddWidgetModal";
+import "../../styles/dashboard.css";
 
 export default function Dashboard() {
+    // Wrap dashboard area with provider so widgets and the info panel can share settings state
     const {setDashboardInfo} = useOutletContext() || {};
     const {id} = useParams();
 
     const dashboardId = parseInt(id, 10);
 
-    const [slotsCount, setSlotsCount] = useState(4);
-    const [widgets, setWidgets] = useState({});
+    const [widgets, setWidgets] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
 
-    const [, setLoading] = useState(false);
-
-    const addSlot = async () => {
-        if (!dashboardId || slotsCount >= 8) return;
-
-        const newCount = slotsCount + 1;
-        setSlotsCount(newCount);
+    const addWidget = async (type, mode, config = {}) => {
+        if (!dashboardId) return;
 
         try {
-            await dashboardService.updateDashboard(dashboardId, {
-                slotsCount: newCount,
+            // Build server type based on type and mode
+            let serverType;
+            if (type === "news") {
+                serverType = "newsFeed"; // news is always feed
+            } else if (type === "currency") {
+                serverType = mode === "feed" ? "currencyFeed" : "rates";
+            } else {
+                serverType = type;
+            }
+
+            // Don't include `mode` in configuration for weather widgets (always standard)
+            const payloadConfig = { ...config };
+            if (type !== 'weather') payloadConfig.mode = mode;
+
+            const created = await dashboardService.createWidget(dashboardId, {
+                type: serverType,
+                configuration: payloadConfig,
             });
+
+            const newWidget = {
+                id: created.id,
+                type: created.type,
+                configuration: created.configuration,
+                enabled: created.enabled,
+                layout: {
+                    x: 0,
+                    y: Infinity, // Will be placed at the bottom
+                    w: 4,
+                    h: 4,
+                },
+            };
+
+            setWidgets((prev) => [...prev, newWidget]);
+            setShowAddModal(false);
         } catch (err) {
-            console.error("Failed to update slotsCount", err);
+            console.error("Failed to create widget", err);
         }
     };
 
-    const removeSlot = async () => {
-        if (!dashboardId || slotsCount <= 1) return;
-
-        const lastSlot = slotsCount;
-        const widget = widgets[lastSlot];
-        const token = tokenManager.get();
-        if (!token) return;
-
-        if (widget) {
-            await fetch(
-                `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widget.id}`,
-                {
-                    method: "DELETE",
-                    headers: {Authorization: `Bearer ${token}`},
-                }
-            );
-
-            setWidgets((prev) => {
-                const copy = {...prev};
-                delete copy[lastSlot];
-                return copy;
-            });
-        }
-
-        const newCount = slotsCount - 1;
-        setSlotsCount(newCount);
-
-        try {
-            await dashboardService.updateDashboard(dashboardId, {
-                slotsCount: newCount,
-            });
-        } catch (err) {
-            console.error("Failed to update slotsCount", err);
-        }
-    };
-
-    const clearWidget = async (slot) => {
-        const widget = widgets[slot];
-        if (!widget || !dashboardId) return;
+    const clearWidget = async (widgetId) => {
+        if (!widgetId || !dashboardId) return;
 
         const token = tokenManager.get();
         if (!token) return;
 
         await fetch(
-            `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widget.id}`,
+            `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/${widgetId}`,
             {
                 method: "DELETE",
                 headers: {Authorization: `Bearer ${token}`},
             }
         );
 
-        setWidgets((prev) => {
-            const copy = {...prev};
-            delete copy[slot];
-            return copy;
-        });
+        setWidgets((prev) => prev.filter((w) => w.id !== widgetId));
     };
 
-    const mapServerTypeToRegistry = (type) => {
-        if (type === "rates") return "currency";
-        if (type === "news") return "news";
-        return type;
+    const updateWidgetConfig = (widgetId, newConfig) => {
+        setWidgets((prev) =>
+            prev.map((w) =>
+                w.id === widgetId ? {...w, configuration: newConfig} : w
+            )
+        );
+    };
+
+    const handleLayoutChange = async (layoutMap) => {
+        // Update local state
+        setWidgets((prev) =>
+            prev.map((w) => ({
+                ...w,
+                layout: layoutMap[String(w.id)] || w.layout,
+            }))
+        );
+
+        // Save layout to backend for each widget
+        for (const [widgetId, layout] of Object.entries(layoutMap)) {
+            try {
+                await dashboardService.updateWidget(parseInt(widgetId), {layout});
+            } catch (err) {
+                console.error(`Failed to save layout for widget ${widgetId}`, err);
+            }
+        }
     };
 
     useEffect(() => {
@@ -102,170 +112,68 @@ export default function Dashboard() {
             try {
                 const d = await dashboardService.getDashboard(dashboardId);
 
-                setSlotsCount(d.slotsCount ?? 4);
+                const loadedWidgets = (d.widgets || []).map((w, index) => ({
+                    id: w.id,
+                    type: w.type, // Server types directly map to registry
+                    configuration: w.configuration,
+                    enabled: w.enabled,
+                    layout: w.layout || {
+                        x: (index % 3) * 4,
+                        y: Math.floor(index / 3) * 4,
+                        w: 4,
+                        h: 4,
+                    },
+                }));
 
-                const newWidgets = {};
-                (d.widgets || []).forEach((w) => {
-                    if (w.position) {
-                        newWidgets[w.position] = {
-                            id: w.id,
-                            type: mapServerTypeToRegistry(w.type),
-                            configuration: w.configuration,
-                            enabled: w.enabled,
-                            position: w.position,
-                        };
-                    }
-                });
+                setWidgets(loadedWidgets);
 
-                setWidgets(newWidgets);
+                
             } catch (err) {
                 console.error("Failed to load dashboard", err);
             }
             setLoading(false);
         };
 
-        loadDashboard().then(() => {
-        });
+        loadDashboard();
     }, [dashboardId]);
-
-
-    useEffect(() => {
-        const handler = async (e) => {
-            if (!dashboardId) return;
-
-            const {type, slot, config: detailConfig} = e.detail || {};
-            if (!type || !slot) return;
-            if (slot > slotsCount || widgets[slot]) return;
-
-            const config = detailConfig || {};
-
-            if (type === "news") {
-                const category = config.category;
-                if (!category) return;
-            }
-
-            try {
-                const typeMap = {currency: "rates", news: "news", weather: "weather", rates: "rates"};
-                const serverType = (type && typeof type === "string") ? (typeMap[type.toLowerCase()] || type.toLowerCase()) : type;
-
-                const payload = {
-                    type: serverType,
-                    configuration: config,
-                    position: slot,
-                };
-
-                console.debug("Creating widget payload:", payload);
-
-                if (!payload.type || typeof payload.type !== "string") {
-                    console.error("Invalid widget type in payload:", payload.type);
-                    return;
-                }
-
-                let created;
-                try {
-                    created = await dashboardService.createWidget(dashboardId, payload);
-                    console.debug("Widget created response:", created);
-                } catch (apiErr) {
-                    console.error("API error creating widget:", apiErr, apiErr?.details || null);
-                }
-
-                setWidgets((prev) => ({
-                    ...prev,
-                    [slot]: {
-                        id: created.id,
-                        type: mapServerTypeToRegistry(created.type),
-                        configuration: created.configuration,
-                        enabled: created.enabled,
-                        position: created.position,
-                    },
-                }));
-            } catch (err) {
-                console.error("Failed to create widget", err);
-            }
-        };
-
-        window.addEventListener("add-widget", handler);
-        return () => window.removeEventListener("add-widget", handler);
-    }, [dashboardId, slotsCount, widgets]);
-
-    const updateWidgetLocal = (widgetId, newConfig) => {
-        setWidgets((prev) => {
-            const copy = {...prev};
-            Object.keys(copy).forEach((slot) => {
-                if (copy[slot]?.id === widgetId) {
-                    copy[slot] = {
-                        ...copy[slot],
-                        configuration: newConfig,
-                    };
-                }
-            });
-            return copy;
-        });
-    };
-
-    const handleReorder = async (orderedSlots) => {
-        if (!dashboardId) return;
-
-        const newWidgets = {};
-        orderedSlots.forEach((w, i) => {
-            const position = i + 1;
-            if (w.widget) {
-                newWidgets[position] = {
-                    ...widgets[w.widget.position],
-                    position,
-                };
-            }
-        });
-
-        setWidgets(newWidgets);
-
-        const token = tokenManager.get();
-        if (!token) return;
-
-        try {
-            await fetch(
-                `http://127.0.0.1:8000/api/dashboards/${dashboardId}/widgets/reorder`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        widgets: orderedSlots
-                            .map((w, i) =>
-                                w.widget?.id ? {id: w.widget.id, position: i + 1} : null
-                            )
-                            .filter(Boolean),
-                    }),
-                }
-            );
-        } catch (err) {
-            console.error("Failed to reorder widgets", err);
-        }
-    };
 
     useEffect(() => {
         if (!setDashboardInfo) return;
 
         setDashboardInfo({
-            slotsCount,
             widgets,
-            onAddSlot: addSlot,
-            onRemoveSlot: removeSlot,
             onClearWidget: clearWidget,
+            onAddWidget: () => setShowAddModal(true),
         });
-    }, [slotsCount, widgets]);
+    }, [widgets]);
 
     return (
-        <>
-            <DashboardGrid
-                slotsCount={slotsCount}
-                widgets={widgets}
-                onReorder={handleReorder}
-                onWidgetUpdate={updateWidgetLocal}
-                onClearWidget={clearWidget}
-            />
-        </>
+        <div className="dashboard-container">
+            {loading ? (
+                <p>Loading dashboard...</p>
+            ) : (
+                <>
+                    {widgets.length > 0 ? (
+                        <WidgetGrid
+                            widgets={widgets}
+                            onLayoutChange={handleLayoutChange}
+                            onWidgetUpdate={updateWidgetConfig}
+                            onWidgetDelete={clearWidget}
+                        />
+                    ) : (
+                        <div className="empty-add-card" onClick={() => setShowAddModal(true)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter' || e.key===' ') setShowAddModal(true); }}>
+                            <span>+ Add widget</span>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {showAddModal && (
+                <AddWidgetModal
+                    onAdd={addWidget}
+                    onClose={() => setShowAddModal(false)}
+                />
+            )}
+        </div>
     );
 }

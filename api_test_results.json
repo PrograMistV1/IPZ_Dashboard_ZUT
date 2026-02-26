@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-19T21:24:20.983948",
+  "generated_at": "2026-02-26T19:04:57.504190",
   "passed": 96,
   "failed": 0,
   "results": [
@@ -551,7 +551,7 @@
     {
       "role": "admin",
       "method": "GET",
-      "path": "/api/economy/configs/16",
+      "path": "/api/economy/configs/68",
       "status": 200,
       "expected": [
         200,
@@ -563,7 +563,7 @@
     {
       "role": "admin",
       "method": "PATCH",
-      "path": "/api/economy/configs/16",
+      "path": "/api/economy/configs/68",
       "status": 200,
       "expected": [
         200,
@@ -634,7 +634,7 @@
     {
       "role": "admin",
       "method": "GET",
-      "path": "/api/weather/configs/22",
+      "path": "/api/weather/configs/31",
       "status": 200,
       "expected": [
         200,
@@ -646,7 +646,7 @@
     {
       "role": "admin",
       "method": "PATCH",
-      "path": "/api/weather/configs/22",
+      "path": "/api/weather/configs/31",
       "status": 200,
       "expected": [
         200,
@@ -938,7 +938,7 @@
     {
       "role": "user",
       "method": "GET",
-      "path": "/api/economy/configs/17",
+      "path": "/api/economy/configs/70",
       "status": 200,
       "expected": [
         200,
@@ -950,7 +950,7 @@
     {
       "role": "user",
       "method": "PATCH",
-      "path": "/api/economy/configs/17",
+      "path": "/api/economy/configs/70",
       "status": 200,
       "expected": [
         200,
@@ -1021,7 +1021,7 @@
     {
       "role": "user",
       "method": "GET",
-      "path": "/api/weather/configs/23",
+      "path": "/api/weather/configs/33",
       "status": 200,
       "expected": [
         200,
@@ -1033,7 +1033,7 @@
     {
       "role": "user",
       "method": "PATCH",
-      "path": "/api/weather/configs/23",
+      "path": "/api/weather/configs/33",
       "status": 200,
       "expected": [
         200,

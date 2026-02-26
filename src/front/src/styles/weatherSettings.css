@@ -1,0 +1,33 @@
+/* Weather Settings Panel Styles */
+
+.weather-settings-container {
+    display: block;
+}
+
+.weather-forecast-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.weather-chart-metrics {
+    margin-top: 8px;
+    margin-left: 24px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.weather-chart-metric-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.weather-chart-metric-option input[type="radio"] {
+    cursor: pointer;
+}
+
+.weather-chart-metric-option label {
+    cursor: pointer;
+}

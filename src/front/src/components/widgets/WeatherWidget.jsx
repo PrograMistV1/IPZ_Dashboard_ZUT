@@ -1,186 +1,279 @@
-import React, {useEffect, useMemo, useRef, useState} from "react";
-import {apiFetch} from "../../services/api";
-import {updateWidget} from "../../services/dashboard";
-import WeatherChart from "./WeatherChart";
-import "../../styles/currencyWidget.css";
+import React, {useEffect, useState} from 'react';
+import geoIcon from '../../assets/icons/geo.png';
+import Widget from './Widget';
+import {updateWidget} from '../../services/dashboard';
+import {apiFetch} from '../../services/api';
+import WeatherChart from './WeatherChart';
 
-const DEFAULT_SERIES = {temp:true,feels_like:false,pressure:false,humidity:false,wind_speed:false};
-const coerceBool = (value, fallback) => (typeof value === "boolean" ? value : fallback);
-const coerceString = (value) => (typeof value === "string" ? value : "");
-const normalizeSeries = (value) => {
-    if (!value || typeof value !== "object") return {...DEFAULT_SERIES};
-    const next = {...DEFAULT_SERIES};
-    Object.keys(DEFAULT_SERIES).forEach((key) => {
-        next[key] = !!value[key];
+
+export default function WeatherWidget({id, data = {}, onUpdate}) {
+    // data: { configuration: { city, date, ... }, forecast: [...] }
+    const config = data && (data.configuration || data) || {};
+    const [selectedCity, setSelectedCity] = useState(config.city || '');
+    const [selectedDate, setSelectedDate] = useState(() => {
+        const today = new Date();
+        return today.toISOString().slice(0, 10);
     });
-    return next;
-};
-
-export default function WeatherWidget({widgetId, configuration, onDelete, onUpdate}) {
-    const [editing, setEditing] = useState(false);
-    const [city, setCity] = useState(coerceString(configuration?.city));
-    const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [forecast, setForecast] = useState(data && data.forecast ? data.forecast : []);
+    const [showCurrent, setShowCurrent] = useState((config && config.showCurrent) ?? true);
+    const [showChart, setShowChart] = useState((config && typeof config.showChart === 'boolean') ? config.showChart : true);
+    const [chartSeries, setChartSeries] = useState((config && config.chartSeries) || 'temp');
+    const [coords, setCoords] = useState({ lat: config?.lat ?? null, lon: config?.lon ?? null });
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState(null);
+    const [geoLoading, setGeoLoading] = useState(false);
 
-    const [showChart, setShowChart] = useState(coerceBool(configuration?.showChart, true));
-    const [series, setSeries] = useState(normalizeSeries(configuration?.series));
-    const [showCurrent, setShowCurrent] = useState(coerceBool(configuration?.showCurrent, true));
-
-    const initialRef = useRef(true);
-
+    // Load multi-day forecast when city changes
     useEffect(() => {
-        if (!widgetId) return;
-        setCity(coerceString(configuration?.city));
-        setRows([]);
-        setError(null);
-        setShowChart(coerceBool(configuration?.showChart, true));
-        setSeries(normalizeSeries(configuration?.series));
-        setShowCurrent(coerceBool(configuration?.showCurrent, true));
-        initialRef.current = true;
-    }, [widgetId]);
-
-    useEffect(() => {
-        if (!city) return;
         let mounted = true;
-        const fetchData = async () => {
+
+        async function loadForecastRange(days = 4) {
+            // Determine query mode: prefer city, fallback to saved coords
+            const useCity = selectedCity && selectedCity.trim();
+            const useCoords = !useCity && coords && coords.lat != null && coords.lon != null;
+
+            if (!useCity && !useCoords) {
+                setForecast([]);
+                setError('Please enter a city or set location');
+                return;
+            }
+
             setLoading(true);
             setError(null);
             try {
-                // build 5 dates starting from today (today .. today+4)
-                const dates = Array.from({length:5}).map((_,i)=>{
-                    const d = new Date();
-                    d.setDate(d.getDate() + i);
-                    return d.toISOString().slice(0,10);
-                });
-                const arrs = await Promise.all(dates.map(dt => apiFetch(`/api/weather?city=${encodeURIComponent(city)}&date=${encodeURIComponent(dt)}`).catch(() => [])));
-                if (!mounted) return;
-                const flat = (arrs || []).flat().map(r=>r || []).flat();
-                flat.sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
-                setRows(flat);
-            } catch (err) {
-                if (!mounted) return; setError(err.message || String(err));
+                const base = new Date(); // always use current date
+                const dates = [];
+                for (let i = 0; i <= days; i++) {
+                    const d = new Date(base.getTime() + i * 24 * 60 * 60 * 1000);
+                    dates.push(d.toISOString().slice(0, 10));
+                }
+
+                const results = await Promise.all(dates.map(async (dt) => {
+                    try {
+                        if (useCity) {
+                            return await apiFetch(`/api/weather?city=${encodeURIComponent(selectedCity)}&date=${encodeURIComponent(dt)}`);
+                        } else {
+                            return await apiFetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}&date=${encodeURIComponent(dt)}`);
+                        }
+                    } catch (e) {
+                        return [];
+                    }
+                }));
+
+                // flatten
+                const all = results.flat().filter(Boolean);
+                if (mounted) setForecast(all);
+            } catch (e) {
+                if (mounted) setError(e.message || String(e));
             } finally {
                 if (mounted) setLoading(false);
             }
-        };
-
-        fetchData().then(() => {});
-
-        // refresh when global weather refresh event fires
-        const onRefresh = () => { fetchData().then(() => {}); };
-        window.addEventListener('weather:refresh', onRefresh);
-
-        // periodic polling every 5 minutes
-        const interval = setInterval(fetchData, 5 * 60 * 1000);
-
-        return () => { mounted = false; window.removeEventListener('weather:refresh', onRefresh); clearInterval(interval); };
-    }, [city]);
-
-    // persist config only when differs from server config
-    useEffect(() => {
-        if (!widgetId) return;
-        if (initialRef.current) { initialRef.current = false; return; }
-        const newConfig = {city, showChart, series, showCurrent};
-        const serverCfg = configuration || {};
-        try {
-            const same = JSON.stringify({
-                city: coerceString(serverCfg.city),
-                showChart: coerceBool(serverCfg.showChart, true),
-                series: normalizeSeries(serverCfg.series),
-                showCurrent: coerceBool(serverCfg.showCurrent, true),
-            }) === JSON.stringify(newConfig);
-            if (same) return;
-        } catch (e) {}
-        updateWidget(widgetId, {configuration: newConfig}).then(()=>onUpdate?.(widgetId, newConfig)).catch((err)=>console.error(err));
-    }, [city, showChart, series, showCurrent, widgetId, onUpdate, configuration]);
-
-    const currentPoint = useMemo(() => {
-        if (!rows || rows.length === 0) return null;
-        const now = Date.now();
-        let best = rows[0];
-        let bestDiff = Math.abs(new Date(best.timestamp).getTime() - now);
-        for (const r of rows) {
-            const d = Math.abs(new Date(r.timestamp).getTime() - now);
-            if (d < bestDiff) { best = r; bestDiff = d; }
         }
-        return best;
-    }, [rows]);
 
-    return (
-        <div className="widget weather-widget">
-            <div className="news-header">
-                <h4>{city || "(no city)"}</h4>
-                <div className="news-actions">
-                    <button className="icon-btn" title="Settings" onClick={()=>setEditing(true)}>⚙</button>
-                    <button className="icon-btn danger" title="Delete" onClick={()=>{ if (window.confirm("Delete this widget?")) onDelete?.(); }}>🗑</button>
+        loadForecastRange(4);
+        return () => { mounted = false; };
+    }, [selectedCity, coords]);
+
+    // Restore settings from widget config on mount
+    useEffect(() => {
+        if (config.city) setSelectedCity(config.city);
+        if (config.lat != null && config.lon != null) setCoords({ lat: config.lat, lon: config.lon });
+        if (typeof config.showCurrent === 'boolean') setShowCurrent(config.showCurrent);
+        if (typeof config.showChart === 'boolean') setShowChart(config.showChart);
+        if (config.chartSeries) setChartSeries(config.chartSeries);
+        // eslint-disable-next-line
+    }, [id]);
+
+    // Auto-save config when city or date changes
+    useEffect(() => {
+        if (!selectedCity.trim()) return;
+        let ignore = false;
+        const save = async () => {
+            setSaving(true);
+            setSaveError(null);
+            try {
+                // Do not persist `mode` for weather widgets (it's always standard).
+                const { mode: _discardMode, ...cfgBase } = config || {};
+                const configToSave = { ...cfgBase, city: selectedCity, showCurrent, showChart, chartSeries };
+                await updateWidget(id, { configuration: configToSave });
+                if (!ignore && typeof onUpdate === 'function') {
+                    onUpdate(id, configToSave);
+                }
+                window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                    detail: { widgetId: id, settings: configToSave }
+                }));
+            } catch (err) {
+                if (!ignore) setSaveError('Error saving settings');
+            } finally {
+                if (!ignore) setSaving(false);
+            }
+        };
+        save();
+        return () => { ignore = true; };
+        // eslint-disable-next-line
+    }, [selectedCity, selectedDate, showCurrent, showChart, chartSeries]);
+
+    // Handle date selection
+    const handleDateChange = (e) => {
+        setSelectedDate(e.target.value);
+    };
+
+    // Handle manual city input
+    const handleCityInput = (e) => {
+        setSelectedCity(e.target.value);
+        setError(null);
+    };
+
+    // Geolocation button now just sets the found city in the input
+    const handleGeolocation = async () => {
+        if (!navigator.geolocation) {
+            setError('Geolocation is not supported by your browser');
+            return;
+        }
+        setGeoLoading(true);
+        setError(null);
+        try {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                try {
+                    const res = await apiFetch(`/api/geocode/reverse?lat=${lat}&lon=${lon}`);
+                    if (res && res.name) {
+                        setSelectedCity(res.name);
+                    } else {
+                        setError('City not found for your location');
+                    }
+                } catch (e) {
+                    setError('Failed to resolve city by geolocation');
+                } finally {
+                    setGeoLoading(false);
+                }
+            }, (err) => {
+                setError('Unable to determine location: ' + (err?.message || err?.code || 'unknown'));
+                setGeoLoading(false);
+            }, {enableHighAccuracy: true, timeout: 10000});
+        } catch (e) {
+            setError('Geolocation error');
+            setGeoLoading(false);
+        }
+    };
+
+    const settingsNode = (
+        <div className="widget-settings-portal">
+            <div className="widget-settings-inner">
+                <strong>Settings — {id}</strong>
+                <div style={{marginTop: 8, display: 'flex', gap: 8, flexDirection: 'column'}}>
+                    <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                        City:
+                        <span className="city-control">
+                          <input
+                              type="text"
+                              value={selectedCity}
+                              onChange={handleCityInput}
+                              placeholder="Enter city"
+                              className="city-input"
+                              disabled={geoLoading}
+                          />
+                          <button
+                              type="button"
+                              className="geo-btn settings-geo-btn"
+                              onClick={handleGeolocation}
+                              disabled={geoLoading}
+                              title="Detect by geolocation"
+                          >
+                              {geoLoading ? '...' : <img src={geoIcon} alt="geo" className="geo-icon" />}
+                          </button>
+                        </span>
+                    </label>
+                    {/* Date is fixed to current date and not editable */}
+                    <label style={{display:'flex', alignItems:'center', gap:8}}>
+                        <input type="checkbox" checked={showCurrent} onChange={(e)=>setShowCurrent(e.target.checked)} /> Show current weather
+                    </label>
+                    <label style={{display:'flex', alignItems:'center', gap:8}}>
+                        <input type="checkbox" checked={showChart} onChange={(e)=>setShowChart(e.target.checked)} /> Show multi-day chart
+                    </label>
+                    <label style={{display:'flex', alignItems:'center', gap:8}}>
+                        Chart series:
+                        <select value={chartSeries} onChange={(e)=>setChartSeries(e.target.value)}>
+                            <option value="temp">Temperature</option>
+                            <option value="feels_like">Feels like</option>
+                            <option value="humidity">Humidity</option>
+                            <option value="pressure">Pressure</option>
+                            <option value="wind_speed">Wind speed</option>
+                        </select>
+                    </label>
+                    {saving && <span style={{ fontSize: 12, color: '#888' }}>Saving…</span>}
+                    {saveError && <div style={{color: '#ef4444', fontSize: 12}}>{saveError}</div>}
                 </div>
             </div>
+        </div>
+    );
 
-            {editing && (
-                <div className="news-settings-panel">
-                    <div className="settings-header">
-                        <strong>Widget settings</strong>
-                        <button className="icon-btn" onClick={()=>setEditing(false)}>✕</button>
-                    </div>
-                    <label>City<input type="text" value={city} onChange={(e)=>setCity(e.target.value)} /></label>
-
-                    <div style={{marginTop:8}}>
-                        <label><input type="checkbox" checked={!!showCurrent} onChange={()=>setShowCurrent(v=>!v)} /> Show current weather</label>
-                    </div>
-
-                    <div style={{marginTop:8}}>
-                        <label><input type="checkbox" checked={!!showChart} onChange={()=>setShowChart(v=>!v)} /> Forecast</label>
-                        {showChart && (
-                            <div style={{display:'flex', gap:8, flexWrap:'wrap', marginTop:6}}>
-                                {Object.keys(series).map(k=> (
-                                    <label key={k} style={{display:'flex',alignItems:'center',gap:6}}>
-                                        <input type="checkbox" checked={!!series[k]} onChange={()=>setSeries(s=>({...s,[k]:!s[k]}))} /> {k.replace('_',' ')}
-                                    </label>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            <div className="news-content">
-                {loading && <div className="widget-loading">Loading...</div>}
-                {error && <div className="widget-error">{error}</div>}
-
-                {!loading && !error && (
+    return (
+        <Widget id={id} mode={'standard'} data={{location: selectedCity, forecast}} settings={settingsNode}>
+            <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+                <div style={{fontSize: 12, color: '#666'}}>{selectedCity || '—'}</div>
+                {loading ? (
+                    <div style={{padding: 12}}>Loading…</div>
+                ) : error ? (
+                    <div style={{padding: 12, color: '#ef4444'}}>Error: {error}</div>
+                ) : (
                     <div>
-                        {showCurrent && currentPoint && (
-                            <div style={{marginBottom:8}}>
-                                <div>
-                                    <div style={{fontSize:18, fontWeight:700, display:'inline'}}>
-                                        {Math.round(currentPoint.temp)}°C
-                                        <span style={{fontSize:13, opacity:0.9, marginLeft:6}}>
-                                            {currentPoint?.["weather_description"] ? currentPoint["weather_description"].replace(/^\w/, c => c.toUpperCase()) : (currentPoint["weather_main"] || '')}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div style={{marginTop:8, display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:6}}>
-                                    <div>Feels: <strong>{Math.round(currentPoint.feels_like)}°C</strong></div>
-                                    <div>Pressure: <strong>{currentPoint.pressure} hPa</strong></div>
-                                    <div>Humidity: <strong>{currentPoint.humidity}%</strong></div>
-                                    <div>Wind: <strong>{currentPoint.wind_speed} m/s</strong></div>
-                                </div>
+                        {showCurrent && (
+                            <div style={{padding: 8, borderBottom: '1px solid #eee', marginBottom: 8}}>
+                                {forecast.length ? (() => {
+                                    const now = Date.now();
+                                    let best = forecast[0];
+                                    let bestDiff = Math.abs(new Date(forecast[0].timestamp).getTime() - now);
+                                    for (const r of forecast) {
+                                        const d = Math.abs(new Date(r.timestamp).getTime() - now);
+                                        if (d < bestDiff) { best = r; bestDiff = d; }
+                                    }
+                                    return (
+                                        <div style={{marginTop:6}} className="current-blocks">
+                                            <div className="current-block">
+                                                <div className="cb-title">Temp</div>
+                                                <div className="cb-value">{Math.round(best.temp)}°C</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Desc</div>
+                                                <div className="cb-value">{best.weather_description || ''}</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Feels</div>
+                                                <div className="cb-value">{best.feels_like}°C</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Hum</div>
+                                                <div className="cb-value">{best.humidity}%</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Pres</div>
+                                                <div className="cb-value">{best.pressure} hPa</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Wind</div>
+                                                <div className="cb-value">{best.wind_speed} m/s</div>
+                                            </div>
+                                        </div>
+                                    );
+                                })() : <div>No data</div>}
                             </div>
                         )}
 
-                        {showChart && rows.length > 1 && (
-                            <div className="currency-chart-box">
-                                <WeatherChart rows={rows} series={series} />
+                        {showChart && (
+                            <div style={{padding: 6, flex: 1, minHeight: 0}}>
+                                <WeatherChart rows={forecast} series={{ [chartSeries]: true }} />
                             </div>
                         )}
-
-                        {rows.length === 0 && (
-                            <div>No data for selected city</div>
+                        {!showChart && !showCurrent && (
+                            <div style={{padding: 8, color: '#666'}}>Both current and chart are disabled in settings.</div>
                         )}
                     </div>
                 )}
             </div>
-        </div>
+        </Widget>
     );
 }

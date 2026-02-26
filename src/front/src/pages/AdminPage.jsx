@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from './auth/AuthContext';
 import { listUsers, createUser, updateUser, disableUser, listLogs } from '../services/admin';
 import '../styles/admin.css';
@@ -144,8 +145,8 @@ function LogsTable() {
 
   const load = async () => {
     const params = {};
-    if (dateFrom) params.dateFrom = dateFrom;
-    if (dateTo) params.dateTo = dateTo;
+    if (dateFrom) params.dateFrom = dateFrom + 'T00:00:00';
+    if (dateTo) params.dateTo = dateTo + 'T23:59:59';
     const data = await listLogs(params);
     setLogs(data || []);
   };
@@ -155,8 +156,8 @@ function LogsTable() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-        <input type="datetime-local" placeholder="dateFrom (ISO)" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-        <input type="datetime-local" placeholder="dateTo (ISO)" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        <input type="date" placeholder="dateFrom" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+        <input type="date" placeholder="dateTo" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         <button onClick={load}>Filter</button>
       </div>
       <table className="admin-table">
@@ -180,6 +181,7 @@ function LogsTable() {
 
 export default function AdminPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showLogs, setShowLogs] = useState(false);
   const [editing, setEditing] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -191,6 +193,7 @@ export default function AdminPage() {
     <div className="admin-page">
       <h2>Admin Panel</h2>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <button className="back-btn" onClick={() => navigate('/')}>Back to dashboard</button>
         <button onClick={() => setShowLogs(false)}>Users</button>
         <button onClick={() => setShowLogs(true)}>Logs</button>
       </div>

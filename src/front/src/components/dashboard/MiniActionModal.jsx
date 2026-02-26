@@ -1,5 +1,5 @@
 import React from "react";
-import "./miniActionModal.css";
+import "../../styles/miniActionModal.css";
 
 const CATEGORIES = [
   "general",
