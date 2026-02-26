@@ -6,7 +6,7 @@ import {apiFetch} from '../../services/api';
 import WeatherChart from './WeatherChart';
 
 
-export default function WeatherWidget({id, mode = 'standard', data = {}, onUpdate}) {
+export default function WeatherWidget({id, data = {}, onUpdate}) {
     // data: { configuration: { city, date, ... }, forecast: [...] }
     const config = data && (data.configuration || data) || {};
     const [selectedCity, setSelectedCity] = useState(config.city || '');
@@ -94,7 +94,9 @@ export default function WeatherWidget({id, mode = 'standard', data = {}, onUpdat
             setSaving(true);
             setSaveError(null);
             try {
-                const configToSave = { ...config, city: selectedCity, mode, showCurrent, showChart, chartSeries };
+                // Do not persist `mode` for weather widgets (it's always standard).
+                const { mode: _discardMode, ...cfgBase } = config || {};
+                const configToSave = { ...cfgBase, city: selectedCity, showCurrent, showChart, chartSeries };
                 await updateWidget(id, { configuration: configToSave });
                 if (!ignore && typeof onUpdate === 'function') {
                     onUpdate(id, configToSave);
@@ -210,9 +212,9 @@ export default function WeatherWidget({id, mode = 'standard', data = {}, onUpdat
     );
 
     return (
-        <Widget id={id} mode={mode} data={{location: selectedCity, forecast}} settings={settingsNode}>
-            <div>
-                <div style={{fontSize: 12, color: '#666'}}>Location: {selectedCity || '—'} | Date: {selectedDate}</div>
+        <Widget id={id} mode={'standard'} data={{location: selectedCity, forecast}} settings={settingsNode}>
+            <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+                <div style={{fontSize: 12, color: '#666'}}>{selectedCity || '—'}</div>
                 {loading ? (
                     <div style={{padding: 12}}>Loading…</div>
                 ) : error ? (
@@ -221,7 +223,7 @@ export default function WeatherWidget({id, mode = 'standard', data = {}, onUpdat
                     <div>
                         {showCurrent && (
                             <div style={{padding: 8, borderBottom: '1px solid #eee', marginBottom: 8}}>
-                                <div style={{fontSize: 12, color: '#666'}}>Current (nearest):</div>
+                                <div style={{fontSize: 12, color: '#666'}}>Current:</div>
                                 {forecast.length ? (() => {
                                     const now = Date.now();
                                     let best = forecast[0];
@@ -231,9 +233,31 @@ export default function WeatherWidget({id, mode = 'standard', data = {}, onUpdat
                                         if (d < bestDiff) { best = r; bestDiff = d; }
                                     }
                                     return (
-                                        <div style={{marginTop:6}}>
-                                            <div><strong>{Math.round(best.temp)}°C</strong> {best.weather_description || ''}</div>
-                                            <div style={{fontSize:12,color:'#444'}}>Feels: {best.feels_like}°C • Humidity: {best.humidity}% • Pressure: {best.pressure} hPa • Wind: {best.wind_speed} m/s</div>
+                                        <div style={{marginTop:6}} className="current-blocks">
+                                            <div className="current-block">
+                                                <div className="cb-title">Temp</div>
+                                                <div className="cb-value">{Math.round(best.temp)}°C</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Desc</div>
+                                                <div className="cb-value">{best.weather_description || ''}</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Feels</div>
+                                                <div className="cb-value">{best.feels_like}°C</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Hum</div>
+                                                <div className="cb-value">{best.humidity}%</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Pres</div>
+                                                <div className="cb-value">{best.pressure} hPa</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Wind</div>
+                                                <div className="cb-value">{best.wind_speed} m/s</div>
+                                            </div>
                                         </div>
                                     );
                                 })() : <div>No data</div>}
@@ -241,7 +265,7 @@ export default function WeatherWidget({id, mode = 'standard', data = {}, onUpdat
                         )}
 
                         {showChart && (
-                            <div style={{padding: 6}}>
+                            <div style={{padding: 6, flex: 1, minHeight: 0}}>
                                 <WeatherChart rows={forecast} series={{ [chartSeries]: true }} />
                             </div>
                         )}

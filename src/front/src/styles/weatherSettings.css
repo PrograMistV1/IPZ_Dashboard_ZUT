@@ -4,26 +4,6 @@
     display: block;
 }
 
-.weather-display-mode-label {
-    display: block;
-    margin-bottom: 8px;
-    color: #ddd;
-    font-size: 13px;
-}
-
-.weather-display-mode-options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-left: 16px;
-}
-
-.weather-display-mode-option {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
 .weather-forecast-option {
     display: flex;
     align-items: center;

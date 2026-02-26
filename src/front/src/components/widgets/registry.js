@@ -7,7 +7,7 @@ import WeatherWidget from "./WeatherWidget.jsx";
  * Widget data types configuration
  * - news: feed mode only (single news item doesn't make sense)
  * - currency: feed or standard (with chart)
- * - weather: standard mode with chart display
+ * - weather: standard chart display
  */
 export const widgetTypes = {
     news: {
@@ -25,8 +25,6 @@ export const widgetTypes = {
     weather: {
         title: "Weather",
         description: "Weather forecast with temperature and conditions",
-        modes: ["standard"],
-        defaultMode: "standard",
     },
 };
 

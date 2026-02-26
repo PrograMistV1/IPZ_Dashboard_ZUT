@@ -79,13 +79,22 @@ export default function WidgetGrid({
 
                     return (
                         <div key={String(widget.id)} className="widget-grid-item">
-                            <WidgetComponent
-                                id={widget.id}
-                                mode={mode}
-                                data={widget.configuration}
-                                onUpdate={onWidgetUpdate}
-                                onDelete={() => onWidgetDelete?.(widget.id)}
-                            />
+                            {widget.type === 'weather' ? (
+                                <WidgetComponent
+                                    id={widget.id}
+                                    data={widget.configuration}
+                                    onUpdate={onWidgetUpdate}
+                                    onDelete={() => onWidgetDelete?.(widget.id)}
+                                />
+                            ) : (
+                                <WidgetComponent
+                                    id={widget.id}
+                                    mode={mode}
+                                    data={widget.configuration}
+                                    onUpdate={onWidgetUpdate}
+                                    onDelete={() => onWidgetDelete?.(widget.id)}
+                                />
+                            )}
                         </div>
                     );
                 })}

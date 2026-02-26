@@ -26,8 +26,9 @@ export default function AddWidgetModal({onAdd, onClose}) {
     useEffect(() => {
         if (selectedType) {
             const typeInfo = widgetTypes[selectedType];
-            if (typeInfo?.modes.length === 1) {
-                setSelectedMode(typeInfo.modes[0]);
+            const modes = (typeInfo && Array.isArray(typeInfo.modes)) ? typeInfo.modes : [];
+            if (modes.length === 1) {
+                setSelectedMode(modes[0]);
             } else {
                 setSelectedMode(typeInfo?.defaultMode || null);
             }
@@ -37,16 +38,14 @@ export default function AddWidgetModal({onAdd, onClose}) {
     }, [selectedType]);
 
     const needsCategory = selectedType === "news";
-    const needsModeSelection = selectedType && widgetTypes[selectedType]?.modes.length > 1;
+    const needsModeSelection = selectedType && ((widgetTypes[selectedType] && Array.isArray(widgetTypes[selectedType].modes) ? widgetTypes[selectedType].modes : []).length > 1);
 
-    const canAdd = selectedType && selectedMode && (!needsCategory || newsCategory);
+    const canAdd = selectedType && (!needsModeSelection || selectedMode) && (!needsCategory || newsCategory);
 
     const handleAdd = () => {
         if (!canAdd) return;
         const proceed = async () => {
-            let config = {
-                mode: selectedMode,
-            };
+            let config = {};
 
             if (needsCategory) {
                 config.category = newsCategory;
@@ -80,6 +79,14 @@ export default function AddWidgetModal({onAdd, onClose}) {
                 } catch (err) {
                     alert('Unable to determine location. Widget not added.');
                     return;
+                }
+            } else {
+                // for non-weather widgets include the selected mode
+                config.mode = selectedMode;
+                // if currency widget - add a sensible default configuration so it's persisted
+                if (selectedType === 'currency') {
+                    config.currency = 'USD';
+                    config.range = 'month';
                 }
             }
 

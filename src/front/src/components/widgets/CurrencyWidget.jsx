@@ -1,4 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
+import { updateWidget } from '../../services/dashboard';
 import Widget from './Widget';
 import PopularCurrenciesChart from '../economy/PopularCurrenciesChart';
 import {CURRENCY_OPTIONS} from '../../constants/api';
@@ -14,7 +15,7 @@ async function fetchRates(currency, from, to) {
     return data.rates || [];
 }
 
-export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
+export default function CurrencyWidget({id, mode = 'standard', data = {}, onUpdate}) {
     const rates = data && data.rates ? data.rates : [];
     const base = data?.base || (rates.length ? rates[0].code : 'USD');
 
@@ -26,6 +27,8 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
     const [series, setSeries] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState(null);
 
     // Load data when currency or range changes
     useEffect(() => {
@@ -96,14 +99,23 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
                         <select
                             className="currency-select"
                             value={selectedCurrency}
-                            onChange={e => {
-                                setSelectedCurrency(e.target.value);
-                                window.dispatchEvent(new CustomEvent('save-widget-settings', {
-                                    detail: {
-                                        widgetId: id,
-                                        settings: {currency: e.target.value, range: selectedRange}
-                                    }
-                                }));
+                            onChange={async e => {
+                                const newCur = e.target.value;
+                                setSelectedCurrency(newCur);
+                                setSaving(true);
+                                setSaveError(null);
+                                const newConfig = { ...data, currency: newCur, range: selectedRange, mode: data?.mode || mode };
+                                try {
+                                    await updateWidget(id, { configuration: newConfig });
+                                    if (typeof onUpdate === 'function') onUpdate(id, newConfig);
+                                    window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                        detail: { widgetId: id, settings: { currency: newCur, range: selectedRange } }
+                                    }));
+                                } catch (err) {
+                                    setSaveError('Error saving settings');
+                                } finally {
+                                    setSaving(false);
+                                }
                             }}
                             onMouseDown={e => e.stopPropagation()}
                             onPointerDown={e => e.stopPropagation()}
@@ -112,36 +124,65 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
                                 <option key={cur} value={cur}>{cur}</option>
                             ))}
                         </select>
+                        {saving && <span style={{ fontSize: 12, color: '#888' }}>Saving…</span>}
+                        {saveError && <div style={{ color: '#ef4444', fontSize: 12 }}>{saveError}</div>}
                     </label>
                     <div style={{display: 'flex', gap: 8}}>
-                        <button onClick={() => {
-                            setSelectedRange('week');
-                            window.dispatchEvent(new CustomEvent('save-widget-settings', {
-                                detail: {
-                                    widgetId: id,
-                                    settings: {range: 'week', currency: selectedCurrency}
-                                }
-                            }));
+                        <button onClick={async () => {
+                            const newRange = 'week';
+                            setSelectedRange(newRange);
+                            setSaving(true);
+                            setSaveError(null);
+                            const newConfig = { ...data, currency: selectedCurrency, range: newRange, mode: data?.mode || mode };
+                            try {
+                                await updateWidget(id, { configuration: newConfig });
+                                if (typeof onUpdate === 'function') onUpdate(id, newConfig);
+                                window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                    detail: { widgetId: id, settings: { range: newRange, currency: selectedCurrency } }
+                                }));
+                            } catch (err) {
+                                setSaveError('Error saving settings');
+                            } finally {
+                                setSaving(false);
+                            }
                         }} aria-pressed={selectedRange === 'week'}>Week
                         </button>
-                        <button onClick={() => {
-                            setSelectedRange('month');
-                            window.dispatchEvent(new CustomEvent('save-widget-settings', {
-                                detail: {
-                                    widgetId: id,
-                                    settings: {range: 'month', currency: selectedCurrency}
-                                }
-                            }));
+                        <button onClick={async () => {
+                            const newRange = 'month';
+                            setSelectedRange(newRange);
+                            setSaving(true);
+                            setSaveError(null);
+                            const newConfig = { ...data, currency: selectedCurrency, range: newRange, mode: data?.mode || mode };
+                            try {
+                                await updateWidget(id, { configuration: newConfig });
+                                if (typeof onUpdate === 'function') onUpdate(id, newConfig);
+                                window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                    detail: { widgetId: id, settings: { range: newRange, currency: selectedCurrency } }
+                                }));
+                            } catch (err) {
+                                setSaveError('Error saving settings');
+                            } finally {
+                                setSaving(false);
+                            }
                         }} aria-pressed={selectedRange === 'month'}>Month
                         </button>
-                        <button onClick={() => {
-                            setSelectedRange('year');
-                            window.dispatchEvent(new CustomEvent('save-widget-settings', {
-                                detail: {
-                                    widgetId: id,
-                                    settings: {range: 'year', currency: selectedCurrency}
-                                }
-                            }));
+                        <button onClick={async () => {
+                            const newRange = 'year';
+                            setSelectedRange(newRange);
+                            setSaving(true);
+                            setSaveError(null);
+                            const newConfig = { ...data, currency: selectedCurrency, range: newRange, mode: data?.mode || mode };
+                            try {
+                                await updateWidget(id, { configuration: newConfig });
+                                if (typeof onUpdate === 'function') onUpdate(id, newConfig);
+                                window.dispatchEvent(new CustomEvent('save-widget-settings', {
+                                    detail: { widgetId: id, settings: { range: newRange, currency: selectedCurrency } }
+                                }));
+                            } catch (err) {
+                                setSaveError('Error saving settings');
+                            } finally {
+                                setSaving(false);
+                            }
                         }} aria-pressed={selectedRange === 'year'}>Year
                         </button>
                     </div>

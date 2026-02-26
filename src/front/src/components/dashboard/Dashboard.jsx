@@ -31,9 +31,13 @@ export default function Dashboard() {
                 serverType = type;
             }
 
+            // Don't include `mode` in configuration for weather widgets (always standard)
+            const payloadConfig = { ...config };
+            if (type !== 'weather') payloadConfig.mode = mode;
+
             const created = await dashboardService.createWidget(dashboardId, {
                 type: serverType,
-                configuration: {...config, mode},
+                configuration: payloadConfig,
             });
 
             const newWidget = {
@@ -122,6 +126,8 @@ export default function Dashboard() {
                 }));
 
                 setWidgets(loadedWidgets);
+
+                
             } catch (err) {
                 console.error("Failed to load dashboard", err);
             }
