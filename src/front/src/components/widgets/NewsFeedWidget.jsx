@@ -122,7 +122,7 @@ export default function NewsFeedWidget({ widgetId, id, mode = 'feed', data: _dat
         height: '100%',
       }
     : {
-        paddingLeft: 16,
+        paddingLeft: 0,
         margin: 0,
         listStyle: 'none',
         display: 'flex',
@@ -181,7 +181,7 @@ export default function NewsFeedWidget({ widgetId, id, mode = 'feed', data: _dat
               <li key={item.url || item.id || i} style={itemStyle}>
                 <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>
                   {item.url ? (
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>{item.title || item.headline}</a>
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ color: '#000000', textDecoration: 'none' }}>{item.title || item.headline}</a>
                   ) : (
                     item.title || item.headline
                   )}

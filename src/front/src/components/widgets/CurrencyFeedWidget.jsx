@@ -182,13 +182,13 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
                             if (typeof value === 'number' && typeof prev === 'number') {
                                 diff = value - prev;
                                 if (diff > 0) {
-                                    diffStr = `+${diff.toFixed(2)}`;
+                                    diffStr = `+${diff.toFixed(4)}`;
                                     diffColor = '#10b981'; // green
                                 } else if (diff < 0) {
-                                    diffStr = `${diff.toFixed(2)}`;
+                                    diffStr = `${diff.toFixed(4)}`;
                                     diffColor = '#ef4444'; // red
                                 } else {
-                                    diffStr = '+0.00';
+                                    diffStr = '+0.0000';
                                     diffColor = '#888'; // gray
                                 }
                             }

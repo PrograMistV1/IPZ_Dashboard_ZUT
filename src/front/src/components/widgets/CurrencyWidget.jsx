@@ -1,14 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Widget from './Widget';
-import {
-    VictoryAxis,
-    VictoryChart,
-    VictoryLine,
-    VictoryScatter,
-    VictoryTheme,
-    VictoryTooltip,
-    VictoryVoronoiContainer
-} from 'victory';
+import PopularCurrenciesChart from '../economy/PopularCurrenciesChart';
 import {CURRENCY_OPTIONS} from '../../constants/api';
 
 async function fetchRates(currency, from, to) {
@@ -158,48 +150,12 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
         </div>
     );
 
-    // --- Dynamic chart size ---
-    const chartContainerRef = useRef(null);
-    const [chartSize, setChartSize] = useState({width: 400, height: 250});
-
-    useEffect(() => {
-        const node = chartContainerRef.current;
-        if (!node) return;
-
-        function updateSize() {
-            setChartSize({
-                width: node.clientWidth || 400,
-                height: node.clientHeight || 250
-            });
-        }
-
-        updateSize();
-        const resizeObserver = new window.ResizeObserver(updateSize);
-        resizeObserver.observe(node);
-        return () => resizeObserver.disconnect();
-    }, []);
-
-    // Chart rendering using Victory
-    const padding = {left: 40, top: 8, right: 8, bottom: 32};
-    const width = chartSize.width;
-    const height = chartSize.height;
-
-    const chartData = series.map((point) => ({x: point.date, y: point.value}));
+    // compute days for PopularCurrenciesChart
+    const days = useMemo(() => ({week: 7, month: 30, year: 365}[selectedRange] || 30), [selectedRange]);
 
     return (
         <Widget id={id} mode={mode} data={data} settings={settingsNode} className="widget--chart">
-            <div
-                ref={chartContainerRef}
-                style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    flex: 1,
-                    minHeight: 0,
-                    position: 'relative',
-                }}
-            >
-
+            <div style={{width: '100%', height: '100%', display: 'flex', flex: 1, minHeight: 0, position: 'relative'}}>
                 <div
                     style={{
                         position: 'absolute',
@@ -226,59 +182,7 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
                     ) : (!series || series.length === 0) ? (
                         <div style={{padding: 12}}>No data</div>
                     ) : (
-                        <VictoryChart
-                            theme={VictoryTheme.material}
-                            width={width}
-                            height={height}
-                            padding={padding}
-                            domainPadding={{y: 10}}
-                            style={{parent: {height: '100%', width: '100%', display: 'flex', flex: 1, minHeight: 0}}}
-                            containerComponent={
-                                <VictoryVoronoiContainer
-                                    labels={({datum}) => `${datum.x}\n${datum.y}`}
-                                    labelComponent={
-                                        <VictoryTooltip
-                                            flyoutStyle={{fill: '#fff', stroke: '#2563eb', strokeWidth: 1}}
-                                            style={{fontSize: 13, fill: '#222'}}
-                                            pointerLength={8}
-                                            cornerRadius={4}
-                                            constrainToVisibleArea
-                                            dx={0}
-                                            dy={-24}
-                                        />
-                                    }
-                                    voronoiDimension="x"
-                                    voronoiBlacklist={["line"]}
-                                />
-                            }
-                        >
-                            <VictoryAxis
-                                dependentAxis
-                                style={{
-                                    axis: {stroke: '#888'},
-                                    tickLabels: {fontSize: 10, padding: 4}
-                                }}
-                            />
-                            <VictoryAxis
-                                style={{
-                                    axis: {stroke: '#888'},
-                                    tickLabels: {fontSize: 10, padding: 4, angle: -45}
-                                }}
-                                fixLabelOverlap
-                            />
-                            <VictoryLine
-                                name="line"
-                                data={chartData}
-                                style={{data: {stroke: '#2563eb', strokeWidth: 2.2}}}
-                                voronoiBlacklist={["line"]}
-                            />
-                            <VictoryScatter
-                                name="points"
-                                data={chartData}
-                                size={3.5}
-                                style={{data: {fill: '#2563eb'}}}
-                            />
-                        </VictoryChart>
+                        <PopularCurrenciesChart currencies={[selectedCurrency]} days={days} highlight={selectedCurrency} />
                     )}
                 </div>
             </div>

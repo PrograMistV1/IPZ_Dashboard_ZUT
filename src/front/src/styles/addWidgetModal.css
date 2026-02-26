@@ -141,20 +141,20 @@
 }
 .widget-tile-icon {
     width: auto;
-    height: 76px; /* uniform image height; slightly reduced */
+    height: 86px; 
     max-width: calc(100% - 16px);
     object-fit: cover;
     object-position: center;
     display: block;
     border-radius: 6px;
-    margin: 0 auto;
+    margin: 10px;
 }
 .widget-tile-label {
-    margin-top: 8px;
+    margin-top: 0px;
     font-size: 14px;
-    color: #07202a; /* same text color as elsewhere */
-    background: transparent; /* inherit beige from parent .widget-tile */
-    padding: 6px 8px 10px 8px;
+    color: #07202a; 
+    background: transparent; 
+    padding: 0px 8px 10px 8px;
     border-radius: 6px;
     width: 100%;
     box-sizing: border-box;
@@ -247,9 +247,9 @@
     filter: brightness(0.82);
 }
 
-.modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 12px 18px; border-top: 2px solid #5980d5; background: transparent; }
+.modal-footer { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 12px 18px; border-top: 2px solid #5980d5; background: transparent; }
 
-.modal-btn { padding: 10px 18px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: transform 0.08s, box-shadow 0.12s; }
+.modal-btn { padding: 10px 18px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: transform 0.08s, box-shadow 0.12s; display: inline-flex; justify-content: center; align-items: center; }
 .modal-btn.cancel {
     background: linear-gradient(270deg, #f7efe0 0%, #efe2c9 50%, #f7efe0 100%);
     background-size: 200% 100%;
@@ -270,6 +270,15 @@
 }
 .modal-btn.add:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(2,6,23,0.06); }
 .modal-btn.add:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Make footer buttons expand to fill available width and appear centered
+     On narrow viewports they will stack vertically and occupy full width */
+.modal-footer .modal-btn { flex: 1 1 0; min-width: 120px; }
+
+@media (max-width: 420px) {
+    .modal-footer { flex-direction: column; gap: 10px; }
+    .modal-footer .modal-btn { width: 100%; }
+}
 
 /* Slide-in-from-right */
 .modal-content { /* ensure immediate visible without slide animation */ }

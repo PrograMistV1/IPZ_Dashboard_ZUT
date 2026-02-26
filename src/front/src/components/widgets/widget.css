@@ -3,7 +3,7 @@
 .widget__title{margin:0;font-size:1rem}
 .widget__controls{display:flex;gap:8px}
 .widget__btn{background:#f3f3f3;border:1px solid #ddd;padding:4px 8px;border-radius:4px;cursor:pointer}
-.widget__body{margin-top:8px;flex:1 1 auto;min-height:0}
+.widget__body{margin-top:0px;flex:1 1 auto;min-height:0}
 .widget__body > *{height:100%}
 .widget--feed .widget__body{max-height:100%;overflow:auto}
 

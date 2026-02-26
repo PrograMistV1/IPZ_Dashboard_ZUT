@@ -227,3 +227,14 @@
     background: rgba(255, 82, 82, 0.1);
     border-radius: 5px;
 }
+
+/* Force news links to be plain black (override previous blue rules) */
+.widget.news-widget .news-item a {
+    color: #000000 !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+}
+.widget.news-widget .news-item a:hover {
+    color: #000000 !important;
+    text-decoration: underline !important;
+}
