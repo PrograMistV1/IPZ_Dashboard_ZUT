@@ -4,6 +4,7 @@ import {useLocation} from "react-router-dom";
 import {createWeatherConfig, listWeatherConfigs, updateWeatherConfig} from "../../services/weather";
 import {apiFetch} from "../../services/api";
 import "./layout.css";
+import geoIcon from "../../assets/icons/geo.png";
 
 function TopBarCityControl() {
   const [val, setVal] = useState("");
@@ -55,13 +56,13 @@ function TopBarCityControl() {
   };
 
   return (
-    <div className="city-control">
+      <div className="city-control">
       <button
         className="geo-btn"
         title="Use my location"
         aria-label="Use my location"
         onClick={handleGeolocation}
-      >📍</button>
+      ><img src={geoIcon} alt="geo" className="geo-icon"/></button>
       <input
         value={val}
         onChange={(e) => setVal(e.target.value)}

@@ -75,8 +75,8 @@ export default function WeatherChart({rows, series}) {
           <div key={key} style={{padding:8}}>
             <div style={{fontSize:12, marginBottom:6}}>{key.replace('_',' ')}</div>
             <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`}>
-              {/* y axis ONLY for temperature chart */}
-              {key === 'temp' && (
+              {/* y axis for temperature and humidity charts */}
+              {(key === 'temp' || key === 'humidity') && (
                 <>
                   <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#ccc" />
                   {tickVals.map((tv, idx) => {
@@ -84,7 +84,7 @@ export default function WeatherChart({rows, series}) {
                     return (
                       <g key={idx}>
                         <line x1={padding - 6} x2={padding} y1={y} y2={y} stroke="#ccc" />
-                        <text x={padding - 10} y={y + 4} fontSize={10} textAnchor="end">{Math.round(Number(tv))}</text>
+                        <text x={padding - 10} y={y + 4} fontSize={10} textAnchor="end">{key === 'humidity' ? Math.round(Number(tv)) + '%' : Math.round(Number(tv))}</text>
                       </g>
                     );
                   })}

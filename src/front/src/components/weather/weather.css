@@ -21,7 +21,7 @@
 }
 
 .weather-clock {
-  background: #f6e1a0; /* pale yellow */
+  background: linear-gradient(180deg,#fff4e6,#ffd9b3); /* restored orange tint */
   border-radius: 18px;
   padding: 28px 22px;
   box-shadow: 0 6px 12px rgba(0,0,0,0.06);
@@ -49,7 +49,7 @@
 }
 
 .weather-current {
-  background: #bfe7ff; /* light blue */
+  background: linear-gradient(180deg,#d9f0ff,#9fd6ff); /* match hourly small cards */
   border-radius: 18px;
   padding: 20px;
   display: flex;
@@ -91,8 +91,15 @@
   gap: 18px;
 }
 
-.forecast-5days, .hourly-today {
-  background: #fff;
+.forecast-5days {
+  background: #ffffff; /* make forecast white */
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.04);
+}
+
+.hourly-today {
+  background: #ffffff;
   border-radius: 18px;
   padding: 18px;
   box-shadow: 0 6px 12px rgba(0,0,0,0.04);
@@ -106,20 +113,41 @@
 .hourly-list { display:flex; gap:12px; overflow:auto; padding-bottom:6px; }
 .hour-card {
   min-width: 92px;
-  background: linear-gradient(180deg,#ffd89b,#ffb06b);
+  background: linear-gradient(180deg,#fff4e6,#ffd9b3);
   border-radius: 14px;
   padding: 10px;
   text-align:center;
-  color: #222;
-  box-shadow: 0 6px 10px rgba(0,0,0,0.06);
+  color: #4b2a00;
+  box-shadow: 0 6px 10px rgba(75,42,0,0.06);
 }
 .hour-time { font-weight:700; margin-bottom:6px; }
 .hour-temp { font-size:18px; font-weight:800; }
 .hour-wind { font-size:12px; color:rgba(17,17,17,0.7); }
 
 .weather-bottom .charts-row { display:flex; gap:18px; }
-.chart-card { flex:1 1 0; background:#fff; border-radius:18px; padding:14px; box-shadow: 0 6px 12px rgba(0,0,0,0.04); }
-.chart-card h5 { margin:0 0 10px 0; font-size:16px; }
+.chart-card {
+  flex: 1 1 0;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.04);
+}
+.chart-card h5 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #442a10;
+}
+
+/* Specific chart colors */
+.chart-card.temp-card {
+  background: #ffffff;
+}
+.chart-card.temp-card h5 { color: #6b4500; }
+
+.chart-card.humidity-card {
+  background: #ffffff;
+}
+.chart-card.humidity-card h5 { color: #8b1a1a; }
 
 /* small screens */
 @media (max-width: 900px) {
@@ -164,4 +192,10 @@
 @media (max-width: 900px) {
   .weather-news .news-cards { flex-wrap: wrap; }
   .weather-news .news-card { flex: 1 1 45%; max-width: 45%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

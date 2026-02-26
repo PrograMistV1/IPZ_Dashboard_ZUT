@@ -125,7 +125,7 @@ export default function EconomyDashboard() {
                 setTopSelected(copy);
               }}
               showPrimaryButton={false}
-              onCardClick={(cur)=> setSelectedMain(cur)}
+              onCardClick={(cur) => setSelectedMain(cur)}
             />
           </div>
         ))}

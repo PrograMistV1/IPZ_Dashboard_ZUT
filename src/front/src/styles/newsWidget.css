@@ -36,7 +36,7 @@
     background-color: rgba(255, 255, 255, 0.45);
 }
 
-.news-header {
+.widget.news-widget::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.035); }
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -183,7 +183,7 @@
     background-color: rgba(255, 255, 255, 0.45);
 }
 
-.news-list {
+.widget.weather-widget::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.035); }
     list-style: none;
     padding: 0;
     margin: 0;

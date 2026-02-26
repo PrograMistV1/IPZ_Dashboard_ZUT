@@ -110,21 +110,59 @@ export default function DashboardInfoPanel({
                                 <div className="dashboard-widget-row">
                                     <span>{widget.type}</span>
 
-                                    <div style={{display: 'flex', gap: 8}}>
-                                        <button onClick={() => requestSettingsFor(widget.id)} title="Настроить">⚙
+                                        <div style={{display: 'flex', gap: 8}}>
+                                        <button onClick={() => requestSettingsFor(widget.id)} title="Settings" aria-label="Open widget settings">⚙
                                         </button>
-                                        <button onClick={() => onClearWidget(widget.id)} title="Удалить">🗑</button>
+                                        <button onClick={() => onClearWidget(widget.id)} title="Delete" aria-label="Delete widget">🗑</button>
                                     </div>
                                 </div>
 
                                 {/* container placed directly under the widget row — widget will portal its settings into the .body element */}
-                                <div className={`dashboard-widget-settings-container ${isActive ? 'active' : ''}`}>
+                                <div
+                                    className={`dashboard-widget-settings-container ${isActive ? 'active' : ''}`}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                >
                                     {/* body element used by widgets to portal settings into */}
                                     <div ref={(el) => {
-                                        containersRef.current[widStr] = el;
                                         try {
-                                            if (el instanceof Element && isActive) {
-                                                dispatchWidgetSettings(widStr, el);
+                                            const prev = containersRef.current[widStr];
+                                            if (prev && prev._rglStopper) {
+                                                try {
+                                                    prev.removeEventListener('pointerdown', prev._rglStopper, true);
+                                                    prev.removeEventListener('touchstart', prev._rglStopper, true);
+                                                    prev.removeEventListener('mousedown', prev._rglStopper, true);
+                                                } catch (err) {
+                                                    // ignore
+                                                }
+                                                try { delete prev._rglStopper; } catch (e) {}
+                                            }
+
+                                            containersRef.current[widStr] = el;
+
+                                            if (el instanceof Element) {
+                                                const stopper = (ev) => {
+                                                    try {
+                                                        ev.stopPropagation();
+                                                        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+                                                    } catch (err) {
+                                                        // ignore
+                                                    }
+                                                };
+                                                // store for cleanup
+                                                try { el._rglStopper = stopper; } catch (e) {}
+                                                try {
+                                                    el.addEventListener('pointerdown', stopper, true);
+                                                    el.addEventListener('touchstart', stopper, true);
+                                                    el.addEventListener('mousedown', stopper, true);
+                                                } catch (err) {
+                                                    // ignore
+                                                }
+
+                                                if (isActive) {
+                                                    try { dispatchWidgetSettings(widStr, el); } catch (err) {}
+                                                }
                                             }
                                         } catch (err) {
                                             // ignore

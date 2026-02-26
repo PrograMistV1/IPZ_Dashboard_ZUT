@@ -3,6 +3,10 @@ import {widgetTypes} from "../widgets/registry";
 import {apiFetch} from "../../services/api";
 import "../../styles/addWidgetModal.css";
 
+import weaIcon from "../../assets/icons/wea.png";
+import ratesIcon from "../../assets/icons/rates.png";
+import newsIcon from "../../assets/icons/news.png";
+
 export default function AddWidgetModal({onAdd, onClose}) {
     const [selectedType, setSelectedType] = useState(null);
     const [selectedMode, setSelectedMode] = useState(null);
@@ -94,23 +98,30 @@ export default function AddWidgetModal({onAdd, onClose}) {
                 <div className="modal-body">
                     {/* Step 1: Select data type */}
                     <p className="modal-label">1. Select data type:</p>
-                    <div className="widget-type-list">
-                        {Object.entries(widgetTypes).map(([key, typeInfo]) => (
-                            <button
-                                key={key}
-                                className={`widget-type-card ${selectedType === key ? "active" : ""}`}
-                                onClick={() => {
-                                    setSelectedType(key);
-                                    setNewsCategory(null);
-                                }}
-                            >
-                                <span className="widget-type-title">{typeInfo.title}</span>
-                                <span className="widget-type-desc">{typeInfo.description}</span>
-                                <span className="widget-type-modes">
-                                    {typeInfo.modes.map(m => m === "feed" ? "📜 Feed" : "📊 Standard").join(" • ")}
-                                </span>
-                            </button>
-                        ))}
+                    <div className="widget-type-grid">
+                        {Object.entries(widgetTypes).map(([key, typeInfo]) => {
+                            const iconMap = {
+                                news: newsIcon,
+                                currency: ratesIcon,
+                                weather: weaIcon,
+                            };
+                            const iconSrc = iconMap[key] || newsIcon;
+                            return (
+                                <button
+                                    key={key}
+                                    className={`widget-type-card ${selectedType === key ? "active" : ""}`}
+                                    onClick={() => {
+                                        setSelectedType(key);
+                                        setNewsCategory(null);
+                                    }}
+                                >
+                                    <div className="widget-tile">
+                                        <img src={iconSrc} alt={typeInfo.title} className="widget-tile-icon" />
+                                        <div className="widget-tile-label">{typeInfo.title}</div>
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
 
                     {/* Step 2: Select display mode (if multiple available) */}

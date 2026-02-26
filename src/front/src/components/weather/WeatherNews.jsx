@@ -34,7 +34,6 @@ export default function WeatherNews({category = "science", limit = 5}) {
 
     return (
         <div className="weather-news">
-            <h4>News</h4>
             <div className="news-cards">
                 {articles.map((a, i) => (
                     <a key={i} className="news-card" href={a.url} target="_blank" rel="noreferrer">

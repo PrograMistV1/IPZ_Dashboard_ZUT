@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import Widget from './Widget';
 import {getNews} from '../../services/news';
 import {updateWidget} from '../../services/dashboard';
@@ -70,10 +70,10 @@ export default function NewsFeedWidget({ widgetId, id, mode = 'feed', data: _dat
     <div className="widget-settings-portal">
       <div className="widget-settings-inner">
         <strong>Settings — {id}</strong>
-        <div style={{ marginTop: 8, display: 'flex', gap: 8, flexDirection: 'column' }}>
+        <div style={{ marginTop: 0, display: 'flex', gap: 8, flexDirection: 'column' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            Category:
-            <select
+            <span className="field-label">Category:</span>
+            <select className="news-select"
               value={category}
               onChange={handleCategoryChange}
               onMouseDown={e => e.stopPropagation()}
@@ -86,8 +86,8 @@ export default function NewsFeedWidget({ widgetId, id, mode = 'feed', data: _dat
             </select>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            Direction:
-            <select
+            <span className="field-label">Direction:</span>
+            <select className="news-select"
               value={direction}
               onChange={handleDirectionChange}
               onMouseDown={e => e.stopPropagation()}
@@ -166,6 +166,8 @@ export default function NewsFeedWidget({ widgetId, id, mode = 'feed', data: _dat
         flex: '0 1 auto',
       };
 
+  const listRef = useRef(null);
+
   return (
     <Widget id={widgetId || id} mode={mode} data={articles} settings={settingsNode}>
       {loading ? (
@@ -173,7 +175,7 @@ export default function NewsFeedWidget({ widgetId, id, mode = 'feed', data: _dat
       ) : error ? (
         <div style={{ padding: 12, color: '#ef4444' }}>Error: {error}</div>
       ) : (
-        <ul style={listStyle}>
+        <ul ref={listRef} className={isHorizontal ? 'news-list-horizontal' : 'news-list-vertical'} style={listStyle}>
           {Array.isArray(articles) && articles.length ? (
             articles.map((item, i) => (
               <li key={item.url || item.id || i} style={itemStyle}>

@@ -155,9 +155,9 @@ export default function Dashboard() {
                             onWidgetDelete={clearWidget}
                         />
                     ) : (
-                        <p className="dashboard-placeholder">
-                            No widgets yet. Click "Add Widget" to get started.
-                        </p>
+                        <div className="empty-add-card" onClick={() => setShowAddModal(true)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter' || e.key===' ') setShowAddModal(true); }}>
+                            <span>+ Add widget</span>
+                        </div>
                     )}
                 </>
             )}

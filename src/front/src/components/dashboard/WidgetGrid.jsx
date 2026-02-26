@@ -64,6 +64,8 @@ export default function WidgetGrid({
                 margin={GRID_MARGIN}
                 onLayoutChange={handleLayoutChange}
                 draggableHandle=".currency-header, .news-header"
+                /* cancel dragging when interacting with settings panel or form controls */
+                draggableCancel=".dashboard-widget-settings-container, .dashboard-widget-settings-container *, .dashboard-widget-settings-body, .dashboard-widget-settings-body *, input, textarea, select, button, a, .no-drag"
                 isResizable={true}
                 isDraggable={true}
                 compactType={null}

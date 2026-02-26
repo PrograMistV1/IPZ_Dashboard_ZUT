@@ -72,34 +72,39 @@ body {
   margin-right: 12px;
 }
 .city-control input {
-  height: 32px;
-  padding: 6px 10px;
-  border-radius: 6px;
+  height: 36px;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: 1px solid rgba(0,0,0,0.12);
   background: white;
   outline: none;
   min-width: 150px;
   font-size: 13px;
+  box-sizing: border-box;
 }
 .city-control input:focus { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 .city-control button {
-  height: 32px;
-  padding: 6px 10px;
-  border-radius: 6px;
+  height: 36px;
+  padding: 6px 12px;
+  border-radius: 8px;
   border: none;
-  background: #16a34a; /* green */
-  color: white;
+  background: linear-gradient(180deg,#e6f7ff,#bfe7ff); /* light blue */
+  color: #062036;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
-.city-control button:hover { background: #138a3d; }
+.city-control button:hover { background: linear-gradient(180deg,#d0efff,#9fd6ff); }
 
 /* smaller geolocation icon button placed left of input */
 .city-control .geo-btn {
-  height: 32px;
-  width: 36px;
-  padding: 0;
-  border-radius: 6px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -109,6 +114,14 @@ body {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+/* geo icon image sizing */
+.city-control .geo-btn .geo-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  object-fit: contain;
 }
 
 
@@ -367,10 +380,11 @@ body {
 
   height: 100vh;
   width: 260px;                 
-  background: #a8a8a8;
+  /* drawer background: white; boundary shadow replaces the stripe */
+  background: #ffffff;
 
-  border-left: 2px solid #d7a020;
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.25);
+  /* remove left stripe and add a softer left-edge shadow for separation */
+  box-shadow: -10px 0 24px rgba(0, 0, 0, 0.14);
 
   transform: translateX(100%); 
   transition: transform 0.3s ease;
@@ -391,29 +405,94 @@ body {
 .dashboard-info-handle {
   position: fixed;
   top: 20%;
-  right: 0;
+  /* make the handle protrude a bit less so the icon is visible when closed */
+  right: -6px;
 
-  width: 16px;                 
-  height: 80px;                
-  background: #1976d2;
+  /* slightly thinner handle */
+  width: 36px;
+  height: 110px;
+  /* subtle lighter gradient with a faint sheen */
+  background: linear-gradient(135deg, rgba(63,163,255,0.95) 0%, rgba(25,118,210,0.95) 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  position: fixed;
 
-  border-radius: 6px 0 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 8px 0 0 8px;
   cursor: pointer;
 
   transform: translateY(-50%);
   z-index: 2100;
 
-  transition: all 0.25s ease;
+  /* animate the handle 'right' position to match the drawer's transform timing */
+  transition: right 0.3s ease, background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 /* hover */
 .dashboard-info-handle:hover {
-  background: #f1c232;
+  /* slightly darker on hover to give a pressed/active feel */
+  background: linear-gradient(135deg, rgba(21,94,160,1) 0%, rgba(12,78,140,1) 100%);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+  transform: translateY(-50%) translateX(-2px);
+}
+
+/* subtle glossy sheen on top */
+.dashboard-info-handle::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 40%;
+  border-radius: 8px 0 0 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.02));
+  pointer-events: none;
 }
 
 /* gdy panel otwarty — przesuwamy uchwyt w lewo */
 .dashboard-info-handle.open {
-  right: 260px;                /* = szerokość panelu */
+  right: 260px;                /* = panel width (drawer) */
+}
+
+/* When the drawer is open, hovering the handle should NOT shift it; only darken */
+.dashboard-info-handle.open:hover {
+  transform: translateY(-50%);
+  /* keep the darker hover background and shadow but don't move horizontally */
+  background: linear-gradient(135deg, rgba(21,94,160,1) 0%, rgba(12,78,140,1) 100%);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+}
+
+/* Icon inside the handle */
+.dashboard-info-handle img.dashboard-info-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+  filter: brightness(0) invert(1); /* ensure icon appears light on colored background */
+}
+
+/* Style for Add Widget button inside the drawer to match the blue theme */
+.dashboard-info-drawer .add-widget-btn {
+  background: linear-gradient(135deg, #3fa3ff 0%, #1976d2 100%);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(25,118,210,0.15);
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.dashboard-info-drawer .add-widget-btn:hover {
+  filter: brightness(0.92);
+  transform: translateY(-1px);
+}
+
+.dashboard-info-drawer .add-widget-btn:active {
+  transform: translateY(0);
 }
 
 /* ===== CIEMNE TŁO POD MODALKĄ ===== */

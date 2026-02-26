@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import geoIcon from '../../assets/icons/geo.png';
 import Widget from './Widget';
 import {updateWidget} from '../../services/dashboard';
 import {apiFetch} from '../../services/api';
@@ -164,23 +165,25 @@ export default function WeatherWidget({id, mode = 'standard', data = {}, onUpdat
                 <div style={{marginTop: 8, display: 'flex', gap: 8, flexDirection: 'column'}}>
                     <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
                         City:
-                        <input
-                            type="text"
-                            value={selectedCity}
-                            onChange={handleCityInput}
-                            placeholder="Enter city"
-                            style={{fontSize: 14, minWidth: 120}}
-                            disabled={geoLoading}
-                        />
-                        <button
-                            type="button"
-                            style={{marginLeft: 8, fontSize: 12, padding: '2px 8px'}}
-                            onClick={handleGeolocation}
-                            disabled={geoLoading}
-                            title="Detect by geolocation"
-                        >
-                            {geoLoading ? '...' : '📍'}
-                        </button>
+                        <span className="city-control">
+                          <input
+                              type="text"
+                              value={selectedCity}
+                              onChange={handleCityInput}
+                              placeholder="Enter city"
+                              className="city-input"
+                              disabled={geoLoading}
+                          />
+                          <button
+                              type="button"
+                              className="geo-btn settings-geo-btn"
+                              onClick={handleGeolocation}
+                              disabled={geoLoading}
+                              title="Detect by geolocation"
+                          >
+                              {geoLoading ? '...' : <img src={geoIcon} alt="geo" className="geo-icon" />}
+                          </button>
+                        </span>
                     </label>
                     {/* Date is fixed to current date and not editable */}
                     <label style={{display:'flex', alignItems:'center', gap:8}}>

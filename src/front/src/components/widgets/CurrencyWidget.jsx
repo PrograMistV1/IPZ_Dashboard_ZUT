@@ -102,6 +102,7 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}}) {
                     <label style={{display: 'flex', alignItems: 'center', gap: 8}}>
                         Currency:
                         <select
+                            className="currency-select"
                             value={selectedCurrency}
                             onChange={e => {
                                 setSelectedCurrency(e.target.value);

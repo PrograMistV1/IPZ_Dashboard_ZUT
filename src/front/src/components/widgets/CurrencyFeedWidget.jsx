@@ -172,7 +172,7 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
             ) : error ? (
                 <div style={{ padding: 12, color: '#ef4444' }}>Error: {error}</div>
             ) : (
-                <ul style={listStyle}>
+                <ul className={isHorizontal ? 'h-scroll-visible' : ''} style={listStyle}>
                     {Array.isArray(data) && data.length ? (
                         data.map((r, i) => {
                             const code = r.code || '—';

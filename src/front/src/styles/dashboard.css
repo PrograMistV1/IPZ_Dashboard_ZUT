@@ -3,12 +3,32 @@
   padding: 16px;
   background: #d5e4ff; 
   min-height: 100%;
+  box-sizing: border-box;
 }
 
 .dashboard-header {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 16px;
+}
+
+/* Make all scrollbars inside dashboard invisible but keep scrolling */
+.dashboard-container, .dashboard-container * {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE 10+ */
+}
+.dashboard-container::-webkit-scrollbar,
+.dashboard-container *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+}
+.dashboard-container::-webkit-scrollbar-thumb,
+.dashboard-container *::-webkit-scrollbar-thumb {
+  background: transparent !important;
+}
+.dashboard-container::-webkit-scrollbar-track,
+.dashboard-container *::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
 .add-widget-btn {
@@ -28,13 +48,39 @@
 }
 
 .dashboard-placeholder {
-  font-size: 16px;
+  font-size: 18px;
   color: #333;
   text-align: center;
   padding: 40px;
-  background: #e0e0e0;
   border-radius: 8px;
 }
+
+/* Empty state add-card (when there are no widgets) */
+.empty-add-card {
+  width: 320px;
+  height: 420px;
+  /* align to left of the content area */
+  margin: 24px 0 32px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  /* light-blue background */
+  background: rgba(159,207,251,0.6);
+  /* dashed border that stands out from the light-blue */
+  border: 3px dashed rgba(15,76,140,0.9);
+  color: #06283d;
+  font-size: 28px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.08s;
+}
+.empty-add-card:hover {
+  background: rgba(159,207,251,0.75);
+  border-color: rgba(12,61,115,1);
+  transform: translateY(-3px);
+}
+.empty-add-card:active { transform: translateY(0); }
 
 /* Ensure widget root fills the slot */
 .widget {
@@ -148,12 +194,47 @@
   background: rgba(0,0,0,0.06) !important;
 }
 
+/* Make settings/delete buttons in the dashboard info panel match Add Widget */
+.dashboard-info .dashboard-widget-row > div > button {
+  background: linear-gradient(135deg, #3fa3ff 0%, #1976d2 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 6px !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  transition: background 0.12s ease !important;
+}
+.dashboard-info .dashboard-widget-row > div > button {
+  background: transparent !important;
+  color: #000 !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 6px !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  transition: background 0.14s ease, border-radius 0.14s ease !important;
+}
+.dashboard-info .dashboard-widget-row > div > button:hover {
+  background: rgba(0,0,0,0.06) !important;
+  border-radius: 8px !important;
+}
+
 /*DASHBOARD INFO*/
 .dashboard-info {
-  margin-top: 24px;
+  margin-top: 4px;
   padding: 16px;
-  background: #a8a8a8;
-  
+  /* make info background transparent so drawer white shows through */
+  background: transparent;
+
   border-radius: 8px;
   max-width: 420px;
 }
@@ -161,14 +242,19 @@
 .dashboard-info-section {
   margin-bottom: 12px;
   font-size: 14px;
-  color: #333;
 }
+
 
 .dashboard-info-row {
   display: flex;
   justify-content: space-between;
   margin-bottom: 12px;
   font-size: 14px;
+}
+
+/* Add spacing between Add Widget row and the following Widget list section */
+.dashboard-info .dashboard-info-row + .dashboard-info-section {
+  margin-top: 35px;
 }
 
 .dashboard-info-actions {
@@ -209,15 +295,16 @@
   cursor: pointer;
 }
 
-/* Settings container that appears under the widget row */
+/* Settings container that appears under the widget row (flat, light, no rounding) */
 .dashboard-widget-settings-container {
   margin-top: 6px;
   margin-bottom: 8px;
-  border-radius: 8px;
+  border-radius: 0 !important;
   overflow: hidden;
   transition: all 0.15s ease;
   height: 0;
   opacity: 0;
+  background: transparent;
 }
 
 .dashboard-widget-settings-container.active {
@@ -225,21 +312,107 @@
   opacity: 1;
 }
 
-.dashboard-widget-settings-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 10px;
-  background: #6a6a6a;
-  border-bottom: 1px solid #5a5a5a;
-  color: #fff;
+/* hide any widget-provided header text */
+.dashboard-widget-settings-header,
+.dashboard-widget-settings-body .widget-settings-inner strong,
+.dashboard-widget-settings-body .settings-header {
+  display: none !important;
 }
 
 .dashboard-widget-settings-body {
-  padding: 10px;
-  background: #5f5f5f;
-  color: #fff;
+  padding: 10px !important;
+  background: #eef3f8 !important;
+  color: #0f172a !important;
+  border-radius: 0 !important;
 }
+
+/* Stylish controls inside settings */
+.dashboard-widget-settings-body label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #0f172a; }
+
+/* Use native checkboxes/radios to match admin panel */
+.dashboard-widget-settings-body input[type="checkbox"],
+.dashboard-widget-settings-body input[type="radio"] {
+  -webkit-appearance: auto !important;
+  appearance: auto !important;
+  width: auto !important;
+  height: auto !important;
+  border: none !important;
+  background: transparent !important;
+}
+.dashboard-widget-settings-body input[type="checkbox"]::after,
+.dashboard-widget-settings-body input[type="checkbox"]:checked::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Select */
+.dashboard-widget-settings-body select {
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  background: #fff; border: 1px solid #dbe8f5; padding: 6px 30px 6px 8px; border-radius: 6px; color: #0f172a; font-size: 13px; position: relative;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23333' d='M0 0l5 6 5-6z'/></svg>");
+  background-repeat: no-repeat; background-position: right 8px center; background-size: 10px 6px;
+}
+
+/* Make form fields equal width */
+.dashboard-widget-settings-body select,
+.dashboard-widget-settings-body input[type="text"],
+.dashboard-widget-settings-body input[type="number"],
+.dashboard-widget-settings-body textarea {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Field label + selects layout: labels left, selects fill remaining width */
+.dashboard-widget-settings-body label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #0f172a; width: 100%; }
+.dashboard-widget-settings-body .field-label {
+  display: inline-block;
+  width: 3rem;
+  flex: 0 0 3rem;
+  text-align: left;
+  margin-right: 6px;
+  color: #0f172a;
+  font-size: 13px;
+}
+.dashboard-widget-settings-body .news-select,
+.dashboard-widget-settings-body .currency-select {
+  flex: 1 1 auto;
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 6px 8px !important;
+  box-sizing: border-box !important;
+}
+
+/* Style range buttons (Week/Month/Year) inside widget settings */
+.dashboard-widget-settings-body .widget-settings-inner > div > div > button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #dbe8f5;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.12s ease, transform 0.08s ease;
+}
+.dashboard-widget-settings-body .widget-settings-inner > div > div > button:hover {
+  background: #eef3f8;
+}
+.dashboard-widget-settings-body .widget-settings-inner > div > div > button[aria-pressed="true"] {
+  background: linear-gradient(135deg, #3fa3ff 0%, #1976d2 100%);
+  color: #fff;
+  border-color: transparent;
+  transform: translateY(-1px);
+}
+
+/* Buttons inside settings: primary and subtle */
+.dashboard-widget-settings-body .btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; font-size: 13px;
+}
+.dashboard-widget-settings-body .btn-primary { background: linear-gradient(135deg, #3fa3ff 0%, #1976d2 100%); color: #fff; }
+.dashboard-widget-settings-body .btn-ghost { background: #fff; border: 1px solid #dbe8f5; color: #0f172a; }
+
+/* Focus states */
+.dashboard-widget-settings-body input:focus, .dashboard-widget-settings-body select:focus, .dashboard-widget-settings-body .btn:focus { outline: 3px solid rgba(63,163,255,0.18); outline-offset: 2px; }
+
 
 /* News widget styles */
 .news-widget {
@@ -287,6 +460,46 @@
   border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
+/* City input + geo button inside widget settings (styled like other controls) */
+.dashboard-widget-settings-body .city-control {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+.dashboard-widget-settings-body .city-control .city-input {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #dbe8f5;
+  background: #fff;
+  font-size: 14px;
+  box-sizing: border-box;
+  min-width: 140px;
+}
+.dashboard-widget-settings-body .city-control .geo-btn {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.08s ease;
+}
+.dashboard-widget-settings-body .city-control .geo-btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.dashboard-widget-settings-body .city-control .geo-btn:hover {
+  background: rgba(0,0,0,0.04);
+}
+.dashboard-widget-settings-body .city-control .geo-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+  object-fit: contain;
+}
+
 /* Persistent elevation for dashboard widgets (always on) */
 .dashboard-grid .widget,
 .dashboard-container .widget {
@@ -299,4 +512,78 @@
 @media (prefers-reduced-motion: reduce) {
   .dashboard-grid .widget,
   .dashboard-container .widget { transition: none; }
+}
+
+/* Thin, nearly-transparent thumb-only scrollbars for dashboard and template dashboards */
+:root {
+  --thumb-transparent: rgba(255, 255, 255, 0.035);
+  --thumb-hover: rgba(0,0,0,0.04);
+}
+
+/* Page/dashboard scrollbar */
+.dashboard-container::-webkit-scrollbar { width: 6px; height: 6px; }
+.dashboard-container::-webkit-scrollbar-button { display: none; height: 0; }
+.dashboard-container::-webkit-scrollbar-track { background: transparent; }
+.dashboard-container::-webkit-scrollbar-thumb { background: var(--thumb-transparent); border-radius: 999px; border: none; }
+.dashboard-container::-webkit-scrollbar-thumb:hover { background: var(--thumb-hover); }
+
+/* Ensure body scrollbar matches dashboard style (some layouts scroll on body) */
+body::-webkit-scrollbar { width: 6px; height: 6px; }
+body::-webkit-scrollbar-button { display: none; height: 0; }
+body::-webkit-scrollbar-track { background: transparent; }
+body::-webkit-scrollbar-thumb { background: var(--thumb-transparent); border-radius: 999px; border: none; }
+body::-webkit-scrollbar-thumb:hover { background: var(--thumb-hover); }
+
+/* Economy and Weather dashboard templates */
+.economy-dashboard::-webkit-scrollbar, .weather-dashboard::-webkit-scrollbar { width: 6px; height: 6px; }
+.economy-dashboard::-webkit-scrollbar-button, .weather-dashboard::-webkit-scrollbar-button { display: none; height: 0; }
+.economy-dashboard::-webkit-scrollbar-track, .weather-dashboard::-webkit-scrollbar-track { background: transparent; }
+.economy-dashboard::-webkit-scrollbar-thumb, .weather-dashboard::-webkit-scrollbar-thumb { background: var(--thumb-transparent); border-radius: 999px; border: none; }
+.economy-dashboard::-webkit-scrollbar-thumb:hover, .weather-dashboard::-webkit-scrollbar-thumb:hover { background: var(--thumb-hover); }
+
+/* Thin widget internals (news lists, feed content, charts) inside dashboards */
+.dashboard-container .widget::-webkit-scrollbar, .economy-dashboard .widget::-webkit-scrollbar, .weather-dashboard .widget::-webkit-scrollbar { width: 3px; height: 3px; }
+.dashboard-container .widget::-webkit-scrollbar-button, .economy-dashboard .widget::-webkit-scrollbar-button, .weather-dashboard .widget::-webkit-scrollbar-button { display: none; height: 0; }
+.dashboard-container .widget::-webkit-scrollbar-track, .economy-dashboard .widget::-webkit-scrollbar-track, .weather-dashboard .widget::-webkit-scrollbar-track { background: transparent; }
+.dashboard-container .widget::-webkit-scrollbar-thumb, .economy-dashboard .widget::-webkit-scrollbar-thumb, .weather-dashboard .widget::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.03); border-radius: 999px; border: none; }
+.dashboard-container .widget::-webkit-scrollbar-thumb:hover, .economy-dashboard .widget::-webkit-scrollbar-thumb:hover, .weather-dashboard .widget::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.04); }
+
+/* Firefox fallbacks */
+.dashboard-container, .economy-dashboard, .weather-dashboard { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.035) transparent; }
+
+/* Horizontal news list: show a very thin bottom scrollbar (override hidden global rules) */
+.news-list-horizontal,
+.h-scroll-visible {
+  overflow-x: auto !important;
+  -ms-overflow-style: auto !important; /* IE */
+  scrollbar-width: thin !important; /* Firefox */
+}
+.news-list-horizontal::-webkit-scrollbar,
+.h-scroll-visible::-webkit-scrollbar {
+  height: 6px !important;
+}
+.news-list-horizontal::-webkit-scrollbar-track,
+.h-scroll-visible::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+.news-list-horizontal::-webkit-scrollbar-thumb,
+.h-scroll-visible::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.06) !important;
+  border-radius: 999px !important;
+  min-height: 6px !important;
+}
+.news-list-horizontal::-webkit-scrollbar-thumb:hover,
+.h-scroll-visible::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.10) !important;
+}
+.news-list-horizontal, .h-scroll-visible { scrollbar-color: rgba(0,0,0,0.06) transparent !important; }
+
+/* note: some system/OS-level scrollbars may still appear differently (Windows/macOS/Firefox differences) */
+
+/* Final override: ensure Currency select width is exactly 7rem */
+.dashboard-widget-settings-body .currency-select {
+  width: 7rem !important;
+  max-width: 7rem !important;
+  min-width: 7rem !important;
+  box-sizing: border-box !important;
 }

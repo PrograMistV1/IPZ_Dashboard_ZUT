@@ -38,6 +38,37 @@ body {
   background: #ffffff;     
 }
 
+/* Hide all scrollbars inside the app but keep scroll functionality */
+.app-content, .app-content * {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE 10+ */
+}
+.app-content::-webkit-scrollbar,
+.app-content *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+}
+.app-content::-webkit-scrollbar-thumb,
+.app-content *::-webkit-scrollbar-thumb {
+  background: transparent !important;
+}
+
+/* Defensive: ensure no visible track */
+.app-content::-webkit-scrollbar-track,
+.app-content *::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+/* Custom scrollbar for the main app content (thin, thumb-only) */
+.app-content::-webkit-scrollbar { width: 6px; height: 6px; }
+.app-content::-webkit-scrollbar-button { display: none; height: 0; }
+.app-content::-webkit-scrollbar-track { background: transparent; }
+.app-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.03); border-radius: 999px; border: none; }
+.app-content:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.04); }
+
+/* Firefox fallback */
+.app-content { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.03) transparent; }
+
 
 
 /* TOPBAR */
@@ -356,7 +387,6 @@ body {
   width: 260px;                 
   background: #a8a8a8;
 
-  border-left: 2px solid #d7a020;
   box-shadow: -4px 0 12px rgba(0, 0, 0, 0.25);
 
   transform: translateX(100%); 
