@@ -223,7 +223,6 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
                     <div>
                         {showCurrent && (
                             <div style={{padding: 8, borderBottom: '1px solid #eee', marginBottom: 8}}>
-                                <div style={{fontSize: 12, color: '#666'}}>Current:</div>
                                 {forecast.length ? (() => {
                                     const now = Date.now();
                                     let best = forecast[0];

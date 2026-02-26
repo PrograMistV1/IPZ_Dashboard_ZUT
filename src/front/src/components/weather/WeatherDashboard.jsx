@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from "react";
+import sunIcon from "../../assets/icons/sun.png";
 import {listWeatherConfigs} from "../../services/weather";
 import {apiFetch} from "../../services/api";
 import WeatherChart from "../widgets/WeatherChart";
@@ -220,7 +221,7 @@ export default function WeatherDashboard() {
                             </div>
                         </div>
                         <div className="current-right">
-                            <div className="big-icon">☀️</div>
+                            <div className="big-icon"><img src={sunIcon} alt="sun" style={{width: '64px', height: '64px'}}/></div>
                         </div>
                     </div>
                 </div>
