@@ -8,9 +8,9 @@ import WeatherChart from './WeatherChart';
 
 export default function WeatherWidget({id, data = {}, onUpdate}) {
     // data: { configuration: { city, date, ... }, forecast: [...] }
-    const config = data && (data.configuration || data) || {};
+    const config = data ? (data.configuration || data) : {};
     const [selectedCity, setSelectedCity] = useState(config.city || '');
-    const [selectedDate, setSelectedDate] = useState(() => {
+    const [selectedDate] = useState(() => {
         const today = new Date();
         return today.toISOString().slice(0, 10);
     });
@@ -115,10 +115,7 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
         // eslint-disable-next-line
     }, [selectedCity, selectedDate, showCurrent, showChart, chartSeries]);
 
-    // Handle date selection
-    const handleDateChange = (e) => {
-        setSelectedDate(e.target.value);
-    };
+    // Date selection is not editable in the widget UI; no handler required.
 
     // Handle manual city input
     const handleCityInput = (e) => {
@@ -265,7 +262,7 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
 
                         {showChart && (
                             <div style={{padding: 6, flex: 1, minHeight: 0}}>
-                                <WeatherChart rows={forecast} series={{ [chartSeries]: true }} />
+                                <WeatherChart rows={forecast} series={{ [chartSeries]: true }} height={180} />
                             </div>
                         )}
                         {!showChart && !showCurrent && (
