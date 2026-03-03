@@ -17,9 +17,12 @@ if errorlevel 1 (
   exit /b 127
 )
 
-REM Run bandit with explicit excludes
+REM Run bandit with explicit excludes.
+REM NOTE: pytest unit tests intentionally use `assert`; Bandit flags it as B101.
+REM This helper focuses on scanning app code, so tests are excluded.
 bandit -r "%TARGET_PATH%" ^
-  -x "%REPO_ROOT%\src\front,%REPO_ROOT%\Szkice,%REPO_ROOT%\logs,%REPO_ROOT%\.venv,%REPO_ROOT%\**\__pycache__" ^
+  -x "%REPO_ROOT%\src\front,%REPO_ROOT%\Szkice,%REPO_ROOT%\logs,%REPO_ROOT%\.venv,%REPO_ROOT%\tests,%REPO_ROOT%\**\__pycache__" ^
   -lll
 exit /b %errorlevel%
+
 

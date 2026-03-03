@@ -21,3 +21,4 @@ repos:
     hooks:
       - id: bandit
         args: [ "-r", "src/" ]
+        pass_filenames: false
