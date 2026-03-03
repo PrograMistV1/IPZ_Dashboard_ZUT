@@ -11,3 +11,5 @@ email-validator
 python-jose
 bcrypt
 starlette
+pytest
+pytest-cov
