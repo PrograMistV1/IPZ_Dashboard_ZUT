@@ -3,21 +3,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0f172a;
+  background: #d5e4ff;
 }
 
 .auth-box {
-  background: #020617;
-  padding: 32px;
-  width: 320px;
-  border-radius: 10px;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
-  color: #e5e7eb;
+  background: white;
+  padding: 36px;
+  width: 360px;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  color: #1e293b;
 }
 
 .auth-box h2 {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   text-align: center;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .auth-box form {
@@ -32,12 +34,11 @@
 }
 
 .auth-box input {
-  padding: 10px;
-  border-radius: 6px;
-  border: none;
-  background: #020617;
-  color: white;
-  outline: 1px solid #1e293b;
+  padding: 11px;
+  border-radius: 8px;
+  border: 1px solid #dbe4f0;
+  background: #f8fbff;
+  color: #0f172a;
 }
 
 .auth-box input.input-error {
@@ -45,7 +46,9 @@
 }
 
 .auth-box input:focus {
-  outline: 2px solid #2563eb;
+  outline: none;
+  border-color: #4a6fa5;
+  box-shadow: 0 0 0 2px rgba(74,111,165,0.15);
 }
 
 .auth-box input.input-error:focus {
@@ -61,12 +64,17 @@
 
 .auth-box button {
   margin-top: 10px;
-  padding: 10px;
-  background: #2563eb;
+  padding: 11px;
+  background: #3b6edc;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: white;
   cursor: pointer;
+  font-weight: 500;
+}
+
+.auth-box button:hover {
+  background: #2f5ec5;
 }
 
 .auth-box button:disabled {
