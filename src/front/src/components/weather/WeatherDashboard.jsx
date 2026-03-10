@@ -7,6 +7,13 @@ import WeatherNews from "./WeatherNews";
 import "./weather.css";
 
 export default function WeatherDashboard() {
+    // format a Date into local YYYY-MM-DD (avoid UTC .toISOString() behavior)
+    const formatLocalDate = (d) => {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
     const [city, setCity] = useState("");
     const [coords, setCoords] = useState(null);
 
@@ -80,14 +87,14 @@ export default function WeatherDashboard() {
             const datesFor5 = Array.from({length: 5}).map((_, i) => {
                 const d = new Date();
                 d.setDate(d.getDate() + i);
-                return d.toISOString().slice(0, 10);
+                return formatLocalDate(d);
             });
 
             // separate next 4 days starting tomorrow for forecast list
             const datesFor4Next = Array.from({length: 4}).map((_, i) => {
                 const d = new Date();
                 d.setDate(d.getDate() + i + 1);
-                return d.toISOString().slice(0, 10);
+                return formatLocalDate(d);
             });
 
             try {
@@ -134,7 +141,7 @@ export default function WeatherDashboard() {
             window.dispatchEvent(new CustomEvent('weather:refresh'));
             (async () => {
                 try {
-                    const today = new Date().toISOString().slice(0, 10);
+                    const today = formatLocalDate(new Date());
                     await apiFetch(`/api/weather?lat=${coords.lat}&lon=${coords.lon}&date=${encodeURIComponent(today)}`);
                     window.dispatchEvent(new CustomEvent('weather:dataRefreshed'));
                 } catch (e) { /* ignore */
@@ -144,7 +151,7 @@ export default function WeatherDashboard() {
         return () => clearInterval(interval);
     }, [coords]);
 
-    const todayKey = new Date().toISOString().slice(0, 10);
+    const todayKey = formatLocalDate(new Date());
     const allRows = Object.values(rowsByDate).flat().filter(Boolean).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     const currentPoint = (rowsByDate[todayKey] || []).reduce((best, cur) => {
