@@ -20,11 +20,25 @@ function AuthGate() {
     const {user, loading} = useAuth();
     const navigate = useNavigate();
 
+    const { logout } = useAuth();
+
     useEffect(() => {
         if (user && window.location.pathname.startsWith("/auth")) {
             navigate("/", {replace: true});
         }
     }, [user, navigate]);
+
+    useEffect(() => {
+        const onUnauth = () => {
+            try {
+                logout(true);
+            } catch (e) {
+            }
+            navigate('/auth/login', { replace: true });
+        };
+        window.addEventListener('unauthorized', onUnauth);
+        return () => window.removeEventListener('unauthorized', onUnauth);
+    }, [logout, navigate]);
 
     if (loading) {
         return (<div className="loading-container">Loading...</div>);
