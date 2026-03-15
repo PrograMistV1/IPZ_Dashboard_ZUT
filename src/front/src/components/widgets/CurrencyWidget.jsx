@@ -1,8 +1,8 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import { updateWidget } from '../../services/dashboard';
 import Widget from './Widget';
 import PopularCurrenciesChart from '../economy/PopularCurrenciesChart';
-import {CURRENCY_OPTIONS} from '../../constants/api';
+import { FULL_CURRENCY_OPTIONS } from '../../constants/api';
 
 async function fetchRates(currency, from, to) {
     const res = await fetch("http://127.0.0.1:8000/rates", {
@@ -77,7 +77,7 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}, onUpda
                 if (settings.range && ['week', 'month', 'year'].includes(settings.range)) {
                     setSelectedRange(settings.range);
                 }
-                if (settings.currency && CURRENCY_OPTIONS.includes(settings.currency)) {
+                if (settings.currency && FULL_CURRENCY_OPTIONS.includes(settings.currency)) {
                     setSelectedCurrency(settings.currency);
                 }
             } catch (err) {
@@ -120,7 +120,7 @@ export default function CurrencyWidget({id, mode = 'standard', data = {}, onUpda
                             onMouseDown={e => e.stopPropagation()}
                             onPointerDown={e => e.stopPropagation()}
                         >
-                            {CURRENCY_OPTIONS.map(cur => (
+                            {FULL_CURRENCY_OPTIONS.map(cur => (
                                 <option key={cur} value={cur}>{cur}</option>
                             ))}
                         </select>

@@ -9,13 +9,17 @@
 }
 
 /* ===== TOP ROW ===== */
+.economy-top-wrap {
+  position: relative;
+}
+
 .economy-top {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 12px 8px;
-  position: relative;
+  padding: 12px 52px;
   align-items: center;
+  scroll-behavior: smooth;
 }
 
 .economy-top-item { position: relative; }
@@ -106,7 +110,7 @@
 .add-square { width: 180px; height: 88px; border-radius: 12px; border: 2px dashed #057be9; display:flex; align-items:center; justify-content:center; color:#0284c7; font-size:36px; background: linear-gradient(90deg, #e6fffb, #f0f9ff); }
 
 /* scroll arrows */
-.top-scroll { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 6px; border: none; background: rgba(15,23,42,0.04); cursor: pointer; display:flex; align-items:center; justify-content:center; }
+.top-scroll { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 6px; border: none; background: rgba(15,23,42,0.04); cursor: pointer; display:flex; align-items:center; justify-content:center; z-index: 5; }
 .top-scroll.left { left: 8px; }
 .top-scroll.right { right: 8px; }
 

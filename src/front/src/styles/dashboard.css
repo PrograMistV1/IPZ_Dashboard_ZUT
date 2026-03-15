@@ -500,6 +500,9 @@
   object-fit: contain;
 }
 
+/* transparent square apply button matching geo footprint */
+.dashboard-widget-settings-body .city-control .apply-btn { display: none; }
+
 /* Persistent elevation for dashboard widgets (always on) */
 .dashboard-grid .widget,
 .dashboard-container .widget {

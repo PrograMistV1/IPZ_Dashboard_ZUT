@@ -15,6 +15,11 @@
     transition: box-shadow 200ms ease, transform 200ms ease;
 }
 
+/* ensure absolute-positioned number sits relative to the tile */
+.widget-grid-item {
+    position: relative;
+}
+
 .widget-grid-item > * {
     width: 100%;
     height: 100%;
@@ -58,4 +63,18 @@
 .currency-header:active,
 .news-header:active {
     cursor: grabbing;
+}
+
+/* small subtle numeric badge inside widget */
+.widget-number {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background: rgba(255, 255, 255, 0);
+    color: #76a0fb;
+    font-size: 10px;
+    padding: 0px 0px;
+    border-radius: 8px;
+    z-index: 6;
+    pointer-events: none;
 }
