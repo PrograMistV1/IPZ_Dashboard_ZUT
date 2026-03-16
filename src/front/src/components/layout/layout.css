@@ -382,6 +382,58 @@ body {
   display: block;
 }
 
+/* Inline create form under + Add dashboard */
+.sidebar-subitem.add-dashboard .add-form {
+  margin-top: 6px;
+  display: block;
+  width: calc(100% - 10px);
+}
+
+.sidebar-subitem.add-dashboard .add-form input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.95);
+  color: #0b2b4a;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+.sidebar-subitem.add-dashboard .add-form input:focus {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.sidebar-subitem.add-dashboard .add-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.sidebar-subitem.add-dashboard .create-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(180deg,#e6f7ff,#bfe7ff);
+  color: #062036;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sidebar-subitem.add-dashboard .create-btn {
+  margin-left: auto;
+}
+
+.sidebar-subitem.add-dashboard .cancel-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+}
+
+
 /* ===== PRAWA WYSUWANA MODALKA (Dashboard Info) ===== */
 
 .dashboard-info-drawer {

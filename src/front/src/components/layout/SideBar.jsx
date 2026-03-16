@@ -20,15 +20,32 @@ export default function SideBar() {
         deleteDashboard,
     } = useDashboards();
 
-    const handleCreate = async () => {
-        const name = prompt("New dashboard name");
+    const [creating, setCreating] = useState(false);
+    const [newName, setNewName] = useState("");
+
+    const handleCreateClick = () => {
+        setCreating(true);
+        setNewName("");
+    };
+
+    const handleCreateSubmit = async (e) => {
+        e && e.preventDefault && e.preventDefault();
+        const name = (newName || "").trim();
         if (!name) return;
 
         try {
-            await createDashboard({name});
+            await createDashboard({ name });
+            setCreating(false);
+            setNewName("");
         } catch (err) {
             console.error("Failed to create dashboard", err);
+            // keep the input open so user can retry
         }
+    };
+
+    const handleCreateCancel = () => {
+        setCreating(false);
+        setNewName("");
     };
 
     const handleDelete = async (id) => {
@@ -101,11 +118,22 @@ export default function SideBar() {
                         ))}
 
                         {/* ===== ADD DASHBOARD (ALWAYS LAST) ===== */}
-                        <li
-                            className="sidebar-subitem add-dashboard"
-                            onClick={handleCreate}
-                        >
-                            + Add dashboard
+                        <li className="sidebar-subitem add-dashboard">
+                            {!creating && (
+                                <div onClick={handleCreateClick} style={{cursor: 'pointer'}}>
+                                    + Add dashboard
+                                </div>
+                            )}
+
+                            {creating && (
+                                <form onSubmit={handleCreateSubmit} className="add-form">
+                                    <input autoFocus value={newName} onChange={e => setNewName(e.target.value)} placeholder="New dashboard name" />
+                                    <div className="add-actions">
+                                        <button type="button" className="cancel-btn" onClick={handleCreateCancel}>Cancel</button>
+                                        <button type="submit" className="create-btn">Create</button>
+                                    </div>
+                                </form>
+                            )}
                         </li>
                     </ul>
                 )}
