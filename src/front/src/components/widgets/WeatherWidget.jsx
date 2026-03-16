@@ -210,6 +210,7 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
                             <option value="humidity">Humidity</option>
                             <option value="pressure">Pressure</option>
                             <option value="wind_speed">Wind speed</option>
+                            <option value="pollution">Pollution</option>
                         </select>
                     </label>
                     {saving && <span style={{ fontSize: 12, color: '#888' }}>Saving…</span>}
@@ -264,6 +265,10 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
                                             <div className="current-block">
                                                 <div className="cb-title">Wind</div>
                                                 <div className="cb-value">{best.wind_speed} m/s</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Pollution</div>
+                                                <div className="cb-value">{best.pollution ?? best.aqi ?? '—'}</div>
                                             </div>
                                         </div>
                                     );
