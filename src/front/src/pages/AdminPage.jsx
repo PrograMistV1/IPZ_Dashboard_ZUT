@@ -162,13 +162,14 @@ function LogsTable() {
       </div>
       <table className="admin-table">
         <thead>
-          <tr><th>Id</th><th>User</th><th>Action</th><th>Time</th></tr>
+          <tr><th>Id</th><th>User</th><th>Role</th><th>Action</th><th>Time</th></tr>
         </thead>
         <tbody>
           {logs.map(entry => (
             <tr key={entry.id}>
               <td>{entry.id}</td>
               <td>{entry.user_id}</td>
+              <td>{entry.role || '-'}</td>
               <td>{entry.action}</td>
               <td>{entry.timestamp ? new Date(entry.timestamp).toLocaleString() : ''}</td>
             </tr>
