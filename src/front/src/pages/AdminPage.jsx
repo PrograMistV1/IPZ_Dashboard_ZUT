@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './auth/AuthContext';
-import { listUsers, createUser, updateUser, disableUser, listLogs } from '../services/admin';
+import { listUsers, createUser, updateUser, disableUser, listLogs, listLoginHistoryAll } from '../services/admin';
 import '../styles/admin.css';
 
 function UsersTable({ onEdit, currentUserId, onCreate }) {
@@ -179,10 +179,52 @@ function LogsTable() {
   );
 }
 
+function LoginsTable() {
+  const [items, setItems] = useState([]);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  const load = async () => {
+    const params = {};
+    if (dateFrom) params.dateFrom = dateFrom + 'T00:00:00';
+    if (dateTo) params.dateTo = dateTo + 'T23:59:59';
+    const data = await listLoginHistoryAll(params);
+    setItems(data || []);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <input type="date" placeholder="dateFrom" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+        <input type="date" placeholder="dateTo" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        <button onClick={load}>Filter</button>
+      </div>
+      <table className="admin-table">
+        <thead>
+          <tr><th>Date</th><th>User Id</th><th>IP</th><th>Device</th><th>Success</th></tr>
+        </thead>
+        <tbody>
+          {items.map(entry => (
+            <tr key={entry.id}>
+              <td>{entry.login_time ? new Date(entry.login_time).toLocaleString() : ''}</td>
+              <td>{entry.user_id}</td>
+              <td>{entry.ip_address || '-'}</td>
+              <td style={{maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis'}}>{entry.user_agent || '-'}</td>
+              <td>{entry.success ? 'Yes' : 'No'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [showLogs, setShowLogs] = useState(false);
+  const [view, setView] = useState('users');
   const [editing, setEditing] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -194,15 +236,18 @@ export default function AdminPage() {
       <h2>Admin Panel</h2>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button className="back-btn" onClick={() => navigate('/')}>Back to dashboard</button>
-        <button onClick={() => setShowLogs(false)}>Users</button>
-        <button onClick={() => setShowLogs(true)}>Logs</button>
+        <button onClick={() => setView('users')}>Users</button>
+        <button onClick={() => setView('logs')}>Logs</button>
+        <button onClick={() => setView('logins')}>Logins</button>
       </div>
 
-      {!showLogs && (
+      {view === 'users' && (
         <UsersTable key={reloadKey} currentUserId={user.id} onEdit={(u) => setEditing(u)} onCreate={() => setShowCreate(true)} />
       )}
 
-      {showLogs && <LogsTable />}
+      {view === 'logs' && <LogsTable />}
+
+      {view === 'logins' && <LoginsTable />}
 
       {showCreate && (
         <UserForm initial={null} onClose={() => setShowCreate(false)} onSaved={() => { setShowCreate(false); setReloadKey(k => k+1); }} />

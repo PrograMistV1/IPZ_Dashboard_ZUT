@@ -99,8 +99,6 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     db.add(dashboard)
     db.commit()
 
-    # Create default template configs for new user so Weather/Economy pages
-    # have their per-user templates present immediately (matches behavior in main).
     try:
         weather_cfg = WeatherConfig(
             user_id=user.id, name="weather-dashboard", configuration={}
@@ -119,28 +117,57 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     return {"message": "User registered successfully", "dashboard_id": dashboard.id}
 
 
-# noinspection PyTypeChecker
 @router.post("/login")
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username).first()
 
-    if not user or not user.check_password(req.password):
+    if user and not user.check_password(req.password):
+        try:
+            db.add(
+                LoginHistory(
+                    user_id=user.id,
+                    ip_address=request.client.host,
+                    user_agent=request.headers.get("user-agent"),
+                    success=False,
+                )
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
-    # Block login if account is disabled
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
     if not getattr(user, "is_enabled", True):
+        try:
+            db.add(
+                LoginHistory(
+                    user_id=user.id,
+                    ip_address=request.client.host,
+                    user_agent=request.headers.get("user-agent"),
+                    success=False,
+                )
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
         raise HTTPException(status_code=401, detail="Account disabled")
 
     token = create_access_token(user.id)
 
-    db.add(
-        LoginHistory(
-            user_id=user.id,
-            ip_address=request.client.host,
-            user_agent=request.headers.get("user-agent"),
+    try:
+        db.add(
+            LoginHistory(
+                user_id=user.id,
+                ip_address=request.client.host,
+                user_agent=request.headers.get("user-agent"),
+                success=True,
+            )
         )
-    )
-    db.commit()
+        db.commit()
+    except Exception:
+        db.rollback()
 
     return {
         "access_token": token,
@@ -173,8 +200,62 @@ def get_login_history(
             "login_time": h.login_time.isoformat(),
             "ip_address": h.ip_address,
             "user_agent": h.user_agent,
+            "success": bool(getattr(h, "success", False)),
         }
         for h in history
+    ]
+
+
+@router.get("/login-history/all")
+def get_all_login_history(
+    dateFrom: str | None = None,
+    dateTo: str | None = None,
+    user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current = db.query(User).filter(User.id == user_id).first()
+    if not current:
+        raise HTTPException(status_code=404, detail="Current user not found")
+    if current.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+
+    q = db.query(LoginHistory)
+
+    def _parse_iso_opt(s: str | None):
+        if not s:
+            return None
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        from datetime import datetime
+
+        return datetime.fromisoformat(s)
+
+    if dateFrom:
+        try:
+            dt_from = _parse_iso_opt(dateFrom)
+            q = q.filter(LoginHistory.login_time >= dt_from)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid dateFrom format")
+
+    if dateTo:
+        try:
+            dt_to = _parse_iso_opt(dateTo)
+            q = q.filter(LoginHistory.login_time <= dt_to)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid dateTo format")
+
+    entries = q.order_by(LoginHistory.login_time.desc()).all()
+
+    return [
+        {
+            "id": e.id,
+            "user_id": e.user_id,
+            "login_time": e.login_time.isoformat(),
+            "ip_address": e.ip_address,
+            "user_agent": e.user_agent,
+            "success": bool(getattr(e, "success", False)),
+        }
+        for e in entries
     ]
 
 

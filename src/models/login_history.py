@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Integer, String, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.db import Base
@@ -22,6 +22,8 @@ class LoginHistory(Base):
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
 
     user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     def __repr__(self):
         return (
