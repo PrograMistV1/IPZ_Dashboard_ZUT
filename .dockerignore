@@ -1,0 +1,30 @@
+# VCS
+.git
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node artifacts
+node_modules/
+src/front/node_modules/
+src/front/build/
+
+# Logs and reports
+logs/
+reports/
+
+# IDE
+.idea/
+.vscode/
+
+# Env files
+.env
+

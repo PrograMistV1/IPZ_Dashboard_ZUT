@@ -8,13 +8,13 @@ from src.back.logger.logger import BackendLogger
 from src.back.routes.auth import router as auth_router
 from src.back.routes.dashboard import router as dashboard_router
 from src.back.routes.economy import router as economy_router
+from src.back.routes.logs import router as logs_router
 from src.back.routes.news import router as news_router
 from src.back.routes.rates import router as rates_router
-from src.back.routes.weather import router as weather_router
-from src.back.routes.weather_read import router as weather_read_router
-from src.back.routes.weather_config import router as weather_config_router
 from src.back.routes.users import router as users_router
-from src.back.routes.logs import router as logs_router
+from src.back.routes.weather import router as weather_router
+from src.back.routes.weather_config import router as weather_config_router
+from src.back.routes.weather_read import router as weather_read_router
 from src.db import init_db
 
 log = BackendLogger()
@@ -64,4 +64,6 @@ if __name__ == "__main__":
     import uvicorn
 
     init_db()
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    host = os.getenv("BACKEND_HOST", "127.0.0.1")
+    port = int(os.getenv("BACKEND_PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)

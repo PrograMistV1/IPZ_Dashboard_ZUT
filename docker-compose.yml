@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: ipz_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD:-root}
+      MYSQL_DATABASE: ${DATABASE_NAME:-mydatabase}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DATABASE_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ipz_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+      DATABASE_HOST: db
+      DATABASE_PORT: 3306
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-root}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./src/front
+      dockerfile: Dockerfile
+    container_name: ipz_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      HOST: 0.0.0.0
+      WDS_SOCKET_PORT: 3000
+      REACT_APP_API_URL: http://127.0.0.1:8000
+    ports:
+      - "3000:3000"
+
+volumes:
+  mysql_data:
