@@ -10,6 +10,7 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
     // data: { configuration: { city, date, ... }, forecast: [...] }
     const config = data ? (data.configuration || data) : {};
     const [selectedCity, setSelectedCity] = useState(config.city || '');
+    const [inputCity, setInputCity] = useState(config.city || '');
     const [selectedDate] = useState(() => {
         const today = new Date();
         return today.toISOString().slice(0, 10);
@@ -62,7 +63,6 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
                     }
                 }));
 
-                // flatten
                 const all = results.flat().filter(Boolean);
                 if (mounted) setForecast(all);
             } catch (e) {
@@ -76,17 +76,17 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
         return () => { mounted = false; };
     }, [selectedCity, coords]);
 
-    // Restore settings from widget config on mount
     useEffect(() => {
-        if (config.city) setSelectedCity(config.city);
+        if (config.city) {
+            setSelectedCity(config.city);
+            setInputCity(config.city);
+        }
         if (config.lat != null && config.lon != null) setCoords({ lat: config.lat, lon: config.lon });
         if (typeof config.showCurrent === 'boolean') setShowCurrent(config.showCurrent);
         if (typeof config.showChart === 'boolean') setShowChart(config.showChart);
         if (config.chartSeries) setChartSeries(config.chartSeries);
-        // eslint-disable-next-line
     }, [id]);
 
-    // Auto-save config when city or date changes
     useEffect(() => {
         if (!selectedCity.trim()) return;
         let ignore = false;
@@ -94,7 +94,6 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
             setSaving(true);
             setSaveError(null);
             try {
-                // Do not persist `mode` for weather widgets (it's always standard).
                 const { mode: _discardMode, ...cfgBase } = config || {};
                 const configToSave = { ...cfgBase, city: selectedCity, showCurrent, showChart, chartSeries };
                 await updateWidget(id, { configuration: configToSave });
@@ -112,18 +111,26 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
         };
         save();
         return () => { ignore = true; };
-        // eslint-disable-next-line
     }, [selectedCity, selectedDate, showCurrent, showChart, chartSeries]);
 
-    // Date selection is not editable in the widget UI; no handler required.
-
-    // Handle manual city input
     const handleCityInput = (e) => {
-        setSelectedCity(e.target.value);
+        setInputCity(e.target.value);
         setError(null);
     };
 
-    // Geolocation button now just sets the found city in the input
+    const applyCity = () => {
+        const v = (inputCity || '').trim();
+        setSelectedCity(v);
+        if (v) setCoords({ lat: null, lon: null });
+    };
+
+    const handleCityKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            applyCity();
+        }
+    };
+
     const handleGeolocation = async () => {
         if (!navigator.geolocation) {
             setError('Geolocation is not supported by your browser');
@@ -139,6 +146,8 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
                     const res = await apiFetch(`/api/geocode/reverse?lat=${lat}&lon=${lon}`);
                     if (res && res.name) {
                         setSelectedCity(res.name);
+                        setInputCity(res.name);
+                        setCoords({ lat: null, lon: null });
                     } else {
                         setError('City not found for your location');
                     }
@@ -167,8 +176,9 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
                         <span className="city-control">
                           <input
                               type="text"
-                              value={selectedCity}
+                              value={inputCity}
                               onChange={handleCityInput}
+                              onKeyDown={handleCityKeyDown}
                               placeholder="Enter city"
                               className="city-input"
                               disabled={geoLoading}
@@ -182,6 +192,7 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
                           >
                               {geoLoading ? '...' : <img src={geoIcon} alt="geo" className="geo-icon" />}
                           </button>
+
                         </span>
                     </label>
                     {/* Date is fixed to current date and not editable */}
@@ -199,6 +210,7 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
                             <option value="humidity">Humidity</option>
                             <option value="pressure">Pressure</option>
                             <option value="wind_speed">Wind speed</option>
+                            <option value="pollution">Pollution</option>
                         </select>
                     </label>
                     {saving && <span style={{ fontSize: 12, color: '#888' }}>Saving…</span>}
@@ -253,6 +265,10 @@ export default function WeatherWidget({id, data = {}, onUpdate}) {
                                             <div className="current-block">
                                                 <div className="cb-title">Wind</div>
                                                 <div className="cb-value">{best.wind_speed} m/s</div>
+                                            </div>
+                                            <div className="current-block">
+                                                <div className="cb-title">Pollution</div>
+                                                <div className="cb-value">{best.pollution ?? best.aqi ?? '—'}</div>
                                             </div>
                                         </div>
                                     );

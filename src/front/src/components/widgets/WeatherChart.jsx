@@ -6,10 +6,10 @@ const COLORS = {
   pressure: "#60a5fa",
   humidity: "#34d399",
   wind_speed: "#a78bfa",
+  pollution: "#ef4444",
 };
 
 function lightenHex(hex, amount = 0.2) {
-  // amount: 0..1, mix with white
   const h = hex.replace('#', '');
   const bigint = parseInt(h, 16);
   const r = (bigint >> 16) & 255;
@@ -32,9 +32,9 @@ export default function WeatherChart({rows, series, height: overrideHeight}) {
       pressure: r.pressure,
       humidity: r.humidity,
       wind_speed: r.wind_speed,
+      pollution: r.pollution ?? r.aqi ?? null,
     }));
 
-    // group by UTC date string
     const groups = {};
     raw.forEach((p) => {
       const dateKey = p.t.toISOString().slice(0, 10);
@@ -42,7 +42,6 @@ export default function WeatherChart({rows, series, height: overrideHeight}) {
       groups[dateKey].push(p);
     });
 
-    // For each day pick the point closest to 12:00 UTC
     return Object.keys(groups)
         .sort()
         .map((dateKey) => {
@@ -57,12 +56,11 @@ export default function WeatherChart({rows, series, height: overrideHeight}) {
               bestDiff = d;
             }
           }
-          // keep the original UTC date key so labels can be produced consistently
+
           return {...best, dateKey};
         });
   }, [rows]);
 
-  // measure container so SVG uses exact pixel dimensions (prevents CSS-driven scaling artifacts)
   const containerRef = useRef(null);
   const [containerSize, setContainerSize] = useState({ width: 800, height: 360 });
 
@@ -76,7 +74,6 @@ export default function WeatherChart({rows, series, height: overrideHeight}) {
       }
     });
     ro.observe(el);
-    // initial
     const rect = el.getBoundingClientRect();
     setContainerSize({ width: Math.max(200, Math.floor(rect.width)), height: Math.max(120, Math.floor(rect.height)) });
     return () => ro.disconnect();
@@ -93,7 +90,6 @@ export default function WeatherChart({rows, series, height: overrideHeight}) {
 
   const xScale = (i) => padding + (i / (points.length - 1 || 1)) * (width - padding * 2);
 
-  // For each key we compute its own scale so charts are readable.
 
   return (
     <div ref={containerRef} style={{display:'flex', flexDirection:'column', gap:12}}>
@@ -106,8 +102,7 @@ export default function WeatherChart({rows, series, height: overrideHeight}) {
         const scaleYLocal = (v) => height - padding - ((v - min) / (max - min || 1)) * (height - padding * 2);
         const ticks = 4;
         const tickVals = Array.from({length: ticks + 1}).map((_,i) => min + ((max - min) * i) / ticks);
-        const units = { temp: '°C', feels_like: '°C', humidity: '%', pressure: ' hPa', wind_speed: ' m/s' };
-        // build coordinates for points (used for polyline, area and hover)
+        const units = { temp: '°C', feels_like: '°C', humidity: '%', pressure: ' hPa', wind_speed: ' m/s', pollution: ' AQI' };
         const coords = points.map((p,i)=>{
           const value = toNumber(p[key]);
           const safeValue = Number.isFinite(value) ? value : min;

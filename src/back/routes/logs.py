@@ -49,12 +49,17 @@ def get_logs(
 
     logs = q.order_by(AuditLog.timestamp.desc()).all()
 
-    return [
-        {
-            "id": entry.id,
-            "user_id": entry.user_id,
-            "action": entry.action,
-            "timestamp": entry.timestamp.isoformat(),
-        }
-        for entry in logs
-    ]
+    results = []
+    for entry in logs:
+        acting = db.query(User).filter(User.id == entry.user_id).first()
+        results.append(
+            {
+                "id": entry.id,
+                "user_id": entry.user_id,
+                "role": acting.role if acting else None,
+                "action": entry.action,
+                "timestamp": entry.timestamp.isoformat(),
+            }
+        )
+
+    return results

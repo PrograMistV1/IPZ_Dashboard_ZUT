@@ -10,6 +10,13 @@ export const API_ENDPOINTS = {
 
 export const CURRENCY_OPTIONS = ["USD", "EUR", "GBP", "CHF", "JPY", "UAH"];
 
+
+export const FULL_CURRENCY_OPTIONS = [
+    "THB","USD","AUD","HKD","CAD","NZD","SGD","EUR","HUF","CHF","GBP","UAH",
+    "JPY","CZK","DKK","ISK","NOK","SEK","RON","BGN","TRY","ILS","CLP","PHP",
+    "MXN","ZAR","BRL","MYR","IDR","INR","KRW","CNY","XDR",
+];
+
 export const ERROR_MESSAGES = {
     INVALID_CREDENTIALS: "Invalid username or password",
     REGISTRATION_FAILED: "Registration failed",

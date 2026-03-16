@@ -102,15 +102,22 @@ export default function DashboardInfoPanel({
                 <div className="dashboard-info-section">
                     <strong>Widget list</strong>
 
-                    {widgets.map((widget) => {
+                    {widgets.map((widget, index) => {
                         const widStr = String(widget.id);
                         const isActive = String(activeSettingsWidgetId) === widStr;
+                        const displayLabel = (() => {
+                            const t = (widget.type || '').toLowerCase();
+                            if (t.includes('weather')) return 'Weather';
+                            if (t.includes('news')) return 'News';
+                            if (t.includes('rate') || t.includes('currency') || t.includes('econom')) return 'Rates';
+                            return widget.type;
+                        })();
                         return (
                             <React.Fragment key={widStr}>
                                 <div className="dashboard-widget-row">
-                                    <span>{widget.type}</span>
+                                    <span>{displayLabel + ` (${index + 1})`}</span>
 
-                                        <div style={{display: 'flex', gap: 8}}>
+                                    <div style={{display: 'flex', gap: 8}}>
                                         <button onClick={() => requestSettingsFor(widget.id)} title="Settings" aria-label="Open widget settings">⚙
                                         </button>
                                         <button onClick={() => onClearWidget(widget.id)} title="Delete" aria-label="Delete widget">🗑</button>

@@ -20,3 +20,8 @@ export async function listLogs(params = {}) {
   const qp = new URLSearchParams(params).toString();
   return apiFetch(`/logs${qp ? '?' + qp : ''}`);
 }
+
+export async function listLoginHistoryAll(params = {}) {
+  const qp = new URLSearchParams(params).toString();
+  return apiFetch(`/auth/login-history/all${qp ? '?' + qp : ''}`);
+}

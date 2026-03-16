@@ -25,6 +25,10 @@ export async function apiFetch(path, options = {}) {
 
   if (res.status === 401) {
     tokenManager.clear();
+    try {
+      window.dispatchEvent(new CustomEvent('unauthorized', { detail: { path } }));
+    } catch (e) {
+    }
     throw new Error("UNAUTHORIZED");
   }
 

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from src.back.core.security import get_current_user
 from src.db import get_db
 from src.models.user import User
+from src.models.audit_log import AuditLog
 
 router = APIRouter(prefix="/users")
 
@@ -143,6 +144,19 @@ def create_user(
     db.commit()
     db.refresh(user)
 
+    try:
+        db.add(
+            AuditLog(
+                user_id=user_id,
+                dashboard_id=None,
+                widget_id=None,
+                action="create_user",
+            )
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+
     return {
         "id": user.id,
         "username": user.username,
@@ -181,6 +195,30 @@ def update_user(
     db.commit()
     db.refresh(user)
 
+    try:
+        if req.role is not None:
+            db.add(
+                AuditLog(
+                    user_id=user_id,
+                    dashboard_id=None,
+                    widget_id=user.id,
+                    action="change_role",
+                )
+            )
+        if req.isEnabled is not None:
+            action_name = "enable_user" if user.is_enabled else "disable_user"
+            db.add(
+                AuditLog(
+                    user_id=user_id,
+                    dashboard_id=None,
+                    widget_id=user.id,
+                    action=action_name,
+                )
+            )
+        db.commit()
+    except Exception:
+        db.rollback()
+
     return {
         "id": user.id,
         "username": user.username,
@@ -209,5 +247,19 @@ def disable_user(
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # audit for disable
+    try:
+        db.add(
+            AuditLog(
+                user_id=user_id,
+                dashboard_id=None,
+                widget_id=user.id,
+                action="disable_user",
+            )
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
 
     return {"id": user.id, "isEnabled": bool(user.is_enabled)}

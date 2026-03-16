@@ -41,6 +41,35 @@
   color: #0f172a;
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field .toggle-password {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.password-field .toggle-password[aria-pressed="true"] {
+  background: rgba(133, 132, 132, 0.2);
+  border-radius: 6px;
+}
+
+.password-field input {
+  padding-right: 42px;
+}
+
 .auth-box input.input-error {
   outline: 2px solid #ef4444;
 }
@@ -63,7 +92,6 @@
 }
 
 .auth-box button {
-  margin-top: 10px;
   padding: 11px;
   background: #3b6edc;
   border: none;
@@ -74,11 +102,11 @@
 }
 
 .auth-box button:hover {
-  background: #2f5ec5;
+  background: #9ba9b0;
 }
 
 .auth-box button:disabled {
-  background: #334155;
+  background: #000000;
   cursor: not-allowed;
 }
 

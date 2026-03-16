@@ -18,6 +18,7 @@ class Weather(Base):
     humidity: Mapped[int] = mapped_column(Integer, nullable=True)
     pressure: Mapped[int] = mapped_column(Integer, nullable=True)
     wind_speed: Mapped[float] = mapped_column(Float, nullable=True)
+    pollution: Mapped[float] = mapped_column(Float, nullable=True)
     weather_main: Mapped[str] = mapped_column(String(50), nullable=True)
     weather_description: Mapped[str] = mapped_column(String(255), nullable=True)
     source: Mapped[str] = mapped_column(
@@ -34,4 +35,14 @@ class Weather(Base):
     )
 
     def __repr__(self):
-        return f"Weather(id={self.id}, lat={self.lat}, lon={self.lon}, timestamp={self.timestamp}, temp={self.temp})"
+        return (
+            "Weather(id={id}, lat={lat}, lon={lon}, timestamp={ts}, "
+            "temp={temp}, pollution={poll})".format(
+                id=self.id,
+                lat=self.lat,
+                lon=self.lon,
+                ts=self.timestamp,
+                temp=self.temp,
+                poll=self.pollution,
+            )
+        )

@@ -71,7 +71,7 @@ export default function WidgetGrid({
                 compactType={null}
                 preventCollision={false}
             >
-                {widgets.map((widget) => {
+                {widgets.map((widget, index) => {
                     const WidgetComponent = serverTypeMap[widget.type];
                     if (!WidgetComponent) return null;
 
@@ -79,6 +79,7 @@ export default function WidgetGrid({
 
                     return (
                         <div key={String(widget.id)} className="widget-grid-item">
+                            <div className="widget-number">{index + 1}</div>
                             {widget.type === 'weather' ? (
                                 <WidgetComponent
                                     id={widget.id}

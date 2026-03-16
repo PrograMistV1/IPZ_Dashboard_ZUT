@@ -34,7 +34,8 @@ export default function LoginHistoryPage() {
                         <tr>
                             <th>Date</th>
                             <th>IP</th>
-                            <th>User agent</th>
+                            <th>Device</th>
+                            <th>Success</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -44,7 +45,8 @@ export default function LoginHistoryPage() {
                                     {new Date(h.login_time).toLocaleString()}
                                 </td>
                                 <td>{h.ip_address || "-"}</td>
-                                <td>{h.user_agent || "-"}</td>
+                                <td style={{maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis'}}>{h.user_agent || "-"}</td>
+                                <td>{h.success ? 'Yes' : 'No'}</td>
                             </tr>
                         ))}
                         </tbody>

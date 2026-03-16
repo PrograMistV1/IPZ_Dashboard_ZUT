@@ -121,6 +121,8 @@ def _upsert_weather_rows(db, rows: list[dict], context: str) -> int:
                 existing.pressure = row["pressure"]
                 existing.humidity = row["humidity"]
                 existing.wind_speed = row["wind_speed"]
+                # store pollution if present
+                existing.pollution = row.get("pollution")
                 existing.weather_main = row["weather_main"]
                 existing.weather_description = row["weather_description"]
                 existing.created_at = row["created_at"]
@@ -192,6 +194,15 @@ def fetch_and_store_forecast(
     if not rows:
         return {"inserted": 0}
 
+    # attempt to fetch air pollution (AQI) for this location and attach to rows
+    try:
+        aqi = _fetch_air_pollution(lat, lon)
+    except Exception:
+        aqi = None
+    if aqi is not None:
+        for r in rows:
+            r["pollution"] = aqi
+
     inserted = _upsert_weather_rows(db, rows, "by coords")
     return {"inserted": inserted}
 
@@ -250,5 +261,40 @@ def fetch_and_store_forecast_by_city(
     if not rows:
         return {"inserted": 0, "lat": lat, "lon": lon}
 
+    # fetch pollution (AQI) for resolved coords and attach to rows
+    try:
+        aqi = _fetch_air_pollution(lat, lon)
+    except Exception:
+        aqi = None
+    if aqi is not None:
+        for r in rows:
+            r["pollution"] = aqi
+
     inserted = _upsert_weather_rows(db, rows, f"by city '{city}'")
     return {"inserted": inserted, "lat": lat, "lon": lon}
+
+
+def _fetch_air_pollution(lat: float, lon: float) -> int | None:
+    """Fetch current air pollution (AQI) for given coordinates using OpenWeather Air Pollution API.
+
+    Returns AQI integer (1-5) or None on failure.
+    """
+    try:
+        url = f"{_get_base_url()}/air_pollution"
+        params = {"lat": lat, "lon": lon, "appid": OPENWEATHER_API_KEY}
+        data = _fetch_json(url, params, "air_pollution")
+        if not data:
+            return None
+        # data example: { 'coord': {...}, 'list': [ { 'main': {'aqi': 1}, 'components': {...}, 'dt': 12345 } ] }
+        lst = data.get("list") or []
+        if not lst:
+            return None
+        main = lst[0].get("main") or {}
+        aqi = main.get("aqi")
+        try:
+            return int(aqi) if aqi is not None else None
+        except (TypeError, ValueError):
+            return None
+    except Exception:
+        log.error("openweather", "Failed to fetch air pollution data")
+        return None

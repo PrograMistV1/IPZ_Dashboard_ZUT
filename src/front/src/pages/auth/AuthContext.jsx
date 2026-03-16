@@ -72,9 +72,11 @@ export function AuthProvider({children}) {
         }
     }, []);
 
-    const logout = useCallback(async () => {
+    const logout = useCallback(async (skipServer = false) => {
         try {
-            await apiFetch("/auth/logout", {method: "POST"});
+            if (!skipServer) {
+                await apiFetch("/auth/logout", {method: "POST"});
+            }
         } catch (err) {
             console.error("Logout error:", err);
         } finally {

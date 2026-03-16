@@ -4,9 +4,11 @@ import "./economy.css";
 import SmallCurrencyCard from "./SmallCurrencyCard";
 import PopularCurrenciesChart from "./PopularCurrenciesChart";
 import NewsHeadlines from "./NewsHeadlines";
+import { FULL_CURRENCY_OPTIONS } from '../../constants/api';
 
 export default function EconomyDashboard() {
-  const available = ["USD", "EUR", "GBP", "CHF", "JPY", "UAH"];
+  const available = FULL_CURRENCY_OPTIONS;
+  const topRowRef = useRef(null);
   const [topSelected, setTopSelected] = useState(available.slice(0, 6));
   const [configId, setConfigId] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -78,20 +80,6 @@ export default function EconomyDashboard() {
     }
   };
 
-  const saveAndReload = async () => {
-    if (creating) return;
-    try {
-      setCreating(true);
-      await saveConfig();
-      // after saving, re-load from server to reflect canonical state
-      await loadConfigs();
-    } catch (e) {
-      console.error('Save and reload failed', e);
-    } finally {
-      setCreating(false);
-    }
-  };
-
   // persist only topSelected and selectedMain when they change (replace config)
   React.useEffect(() => {
     if (!loaded) return; // wait until initial load completes
@@ -103,40 +91,42 @@ export default function EconomyDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMain, topSelected, loaded]);
 
+  const scrollTopRow = (delta) => {
+    const el = topRowRef.current;
+    if (!el) return;
+    el.scrollBy({ left: delta, behavior: 'smooth' });
+  };
+
   return (
     <div className="economy-dashboard">
 
       {/* ===== TOP ROW: selectable small cards (scrollable) ===== */}
-      <div className="economy-top" ref={topRowRef => { if (!topRowRef) return; if (!window.__economyTopRef) window.__economyTopRef = topRowRef; }}>
-        {/* left add tile */}
-        <div className="economy-top-item add-tile" onClick={() => setShowAddModal(true)}>
-          <div className="add-square">+</div>
-        </div>
-
-        {topSelected.map((c, i) => (
-          <div key={i} className="economy-top-item">
-            <SmallCurrencyCard
-              currency={c}
-              selected={selectedMain === c}
-              options={available}
-              onSelect={(newC) => {
-                const copy = [...topSelected];
-                copy[i] = newC;
-                setTopSelected(copy);
-              }}
-              showPrimaryButton={false}
-              onCardClick={(cur) => setSelectedMain(cur)}
-            />
+      <div className="economy-top-wrap">
+        <button className="top-scroll left" onClick={() => scrollTopRow(-220)}>{'<'}</button>
+        <div className="economy-top" ref={topRowRef}>
+          {/* left add tile */}
+          <div className="economy-top-item add-tile" onClick={() => setShowAddModal(true)}>
+            <div className="add-square">+</div>
           </div>
-        ))}
 
-        {/* scroll arrows */}
-        <button className="top-scroll left" onClick={() => {
-          const el = document.querySelector('.economy-top'); if (el) el.scrollBy({ left: -220, behavior: 'smooth' });
-        }}>{'<'}</button>
-        <button className="top-scroll right" onClick={() => {
-          const el = document.querySelector('.economy-top'); if (el) el.scrollBy({ left: 220, behavior: 'smooth' });
-        }}>{'>'}</button>
+          {topSelected.map((c, i) => (
+            <div key={i} className="economy-top-item">
+              <SmallCurrencyCard
+                currency={c}
+                selected={selectedMain === c}
+                options={available}
+                onSelect={(newC) => {
+                  const copy = [...topSelected];
+                  copy[i] = newC;
+                  setTopSelected(copy);
+                }}
+                showPrimaryButton={false}
+                onCardClick={(cur) => setSelectedMain(cur)}
+              />
+            </div>
+          ))}
+        </div>
+        <button className="top-scroll right" onClick={() => scrollTopRow(220)}>{'>'}</button>
       </div>
 
       {/* ===== MIDDLE AREA (2 COLUMNS) ===== */}

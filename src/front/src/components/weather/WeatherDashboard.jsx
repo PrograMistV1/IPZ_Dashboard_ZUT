@@ -225,6 +225,7 @@ export default function WeatherDashboard() {
                                 <div>Humidity: <b>{currentPoint ? currentPoint.humidity + '%' : '—'}</b></div>
                                 <div>Pressure: <b>{currentPoint ? currentPoint.pressure + ' hPa' : '—'}</b></div>
                                 <div>Wind: <b>{currentPoint ? currentPoint.wind_speed + ' m/s' : '—'}</b></div>
+                                <div>Pollution: <b>{currentPoint ? (currentPoint.pollution ?? currentPoint.aqi ?? '—') : '—'}</b></div>
                             </div>
                         </div>
                         <div className="current-right">

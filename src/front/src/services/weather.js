@@ -4,8 +4,8 @@ export async function listWeatherConfigs() {
   return apiFetch('/api/weather/configs');
 }
 
-export async function createWeatherConfig(widget_id, configuration) {
-  return apiFetch('/api/weather/configs', { method: 'POST', body: JSON.stringify({ widget_id, configuration }) });
+export async function createWeatherConfig(name, configuration) {
+  return apiFetch('/api/weather/configs', { method: 'POST', body: JSON.stringify({ name, configuration }) });
 }
 
 export async function getWeatherConfig(widget_id) {

@@ -5,13 +5,47 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from pydantic_core import PydanticCustomError
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from src.back.logger.logger import BackendLogger
 from src.db import get_db
 from src.models.currency_rate import CurrencyRate
 
-VALID_CURRENCIES = {"USD", "EUR", "GBP", "CHF", "JPY", "UAH"}
-
+VALID_CURRENCIES = {
+    "THB",
+    "USD",
+    "AUD",
+    "HKD",
+    "CAD",
+    "NZD",
+    "SGD",
+    "EUR",
+    "HUF",
+    "CHF",
+    "GBP",
+    "UAH",
+    "JPY",
+    "CZK",
+    "DKK",
+    "ISK",
+    "NOK",
+    "SEK",
+    "RON",
+    "BGN",
+    "TRY",
+    "ILS",
+    "CLP",
+    "PHP",
+    "MXN",
+    "ZAR",
+    "BRL",
+    "MYR",
+    "IDR",
+    "INR",
+    "KRW",
+    "CNY",
+    "XDR",
+}
 router = APIRouter()
 log = BackendLogger()
 
@@ -103,6 +137,7 @@ def fetch_rates_from_nbp(currency: str, start: date, end: date):
 def save_rates_to_db(db: Session, currency: str, rates: list[dict]):
     results = []
     try:
+        to_add = []
         for rate_entry in rates:
             rate_date = datetime.strptime(
                 rate_entry["effectiveDate"], "%Y-%m-%d"
@@ -121,11 +156,22 @@ def save_rates_to_db(db: Session, currency: str, rates: list[dict]):
                 obj = CurrencyRate(
                     currency=currency, date=rate_date, source="NBP", rate=rate
                 )
-                db.add(obj)
+                to_add.append(obj)
 
             results.append({"date": rate_date, "rate": rate})
 
-        db.commit()
+        try:
+            for o in to_add:
+                db.add(o)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            for o in to_add:
+                try:
+                    db.add(o)
+                    db.commit()
+                except IntegrityError:
+                    db.rollback()
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {exc}") from exc
@@ -134,8 +180,6 @@ def save_rates_to_db(db: Session, currency: str, rates: list[dict]):
 
 
 def backfill_missing_dates(db: Session, currency: str, start: date, end: date):
-    # Ensure every calendar date in [start, end] has a CurrencyRate entry.
-    # For missing dates, copy the most recent previous available rate.
     try:
         existing = (
             db.query(CurrencyRate)
@@ -150,7 +194,6 @@ def backfill_missing_dates(db: Session, currency: str, start: date, end: date):
 
         existing_map = {r.date: r for r in existing}
 
-        # find last known rate before start
         prev_obj = (
             db.query(CurrencyRate)
             .filter(CurrencyRate.currency == currency, CurrencyRate.date < start)
@@ -159,7 +202,6 @@ def backfill_missing_dates(db: Session, currency: str, start: date, end: date):
         )
         prev_rate = prev_obj.rate if prev_obj else None
 
-        # find first known rate on or after start (used to fill earlier missing days)
         first_known_date = None
         first_known_rate = None
         for k in sorted(existing_map.keys()):
@@ -177,18 +219,28 @@ def backfill_missing_dates(db: Session, currency: str, start: date, end: date):
                 if prev_rate is not None:
                     to_insert.append((d, prev_rate))
                 else:
-                    # no previous rate available; if we have a first known rate
-                    # within the requested range, use it to fill earlier missing days
                     if first_known_date and d < first_known_date:
                         to_insert.append((d, first_known_rate))
             d = d + timedelta(days=1)
 
+        to_add2 = []
         for dt, rate in to_insert:
             obj = CurrencyRate(currency=currency, date=dt, source="NBP", rate=rate)
-            db.add(obj)
+            to_add2.append(obj)
 
         if to_insert:
-            db.commit()
+            try:
+                for o in to_add2:
+                    db.add(o)
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+                for o in to_add2:
+                    try:
+                        db.add(o)
+                        db.commit()
+                    except IntegrityError:
+                        db.rollback()
 
         return [
             {"date": r.date, "rate": r.rate}
@@ -229,9 +281,7 @@ def get_rates(req: RateRequest, db: Session = Depends(get_db)):
 
     try:
         rates = fetch_rates_from_nbp(req.currency, start, end)
-        # save returned (working day) rates
         _ = save_rates_to_db(db, req.currency, rates)
-        # backfill missing calendar days (weekends/holidays) using previous working day's values
         final_results = backfill_missing_dates(db, req.currency, start, end)
         return {"source": "nbp_api", "currency": req.currency, "rates": final_results}
     except Exception as exc:
