@@ -377,7 +377,7 @@ def create_widget(
             user_id=user_id,
             dashboard_id=dashboard_id,
             widget_id=widget.id,
-            action="create",
+            action="create_widget",
         )
         db.add(audit)
         db.commit()
@@ -430,7 +430,7 @@ def delete_widget(
         user_id=user_id,
         dashboard_id=dashboard_id,
         widget_id=widget_id,
-        action="delete",
+        action="delete_widget",
     )
     db.add(audit)
 
