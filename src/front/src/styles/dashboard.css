@@ -581,12 +581,9 @@ body::-webkit-scrollbar-thumb:hover { background: var(--thumb-hover); }
 }
 .news-list-horizontal, .h-scroll-visible { scrollbar-color: rgba(0,0,0,0.06) transparent !important; }
 
-/* note: some system/OS-level scrollbars may still appear differently (Windows/macOS/Firefox differences) */
-
-/* Final override: ensure Currency select width is exactly 7rem */
 .dashboard-widget-settings-body .currency-select {
-  width: 7rem !important;
-  max-width: 7rem !important;
-  min-width: 7rem !important;
+  width: 11rem !important;
+  max-width: 11rem !important;
+  min-width: 11rem !important;
   box-sizing: border-box !important;
 }

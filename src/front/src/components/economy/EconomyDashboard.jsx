@@ -4,17 +4,17 @@ import "./economy.css";
 import SmallCurrencyCard from "./SmallCurrencyCard";
 import PopularCurrenciesChart from "./PopularCurrenciesChart";
 import NewsHeadlines from "./NewsHeadlines";
-import { FULL_CURRENCY_OPTIONS } from '../../constants/api';
+import { FULL_CURRENCY_LIST } from '../../constants/api';
 
 export default function EconomyDashboard() {
-  const available = FULL_CURRENCY_OPTIONS;
+  const available = FULL_CURRENCY_LIST; // array of {code,label}
   const topRowRef = useRef(null);
-  const [topSelected, setTopSelected] = useState(available.slice(0, 6));
+  const [topSelected, setTopSelected] = useState(available.slice(0, 6).map(o => o.code));
   const [configId, setConfigId] = useState(null);
   const [creating, setCreating] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const firstSaveRef = React.useRef(true);
-  const [selectedMain, setSelectedMain] = useState(available[0]);
+  const [selectedMain, setSelectedMain] = useState(available[0]?.code || 'USD');
   const [days, setDays] = useState(365);
 
   // load saved config (exposed so user can refresh without reloading page)
@@ -49,7 +49,7 @@ export default function EconomyDashboard() {
   // add-currency modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState("");
-  const allOptions = available; // for now use constants; could come from API
+  const allOptions = available; // array of {code,label}
 
   const addCurrencyToTop = (cur) => {
     setTopSelected((prev) => {
@@ -114,7 +114,7 @@ export default function EconomyDashboard() {
               <SmallCurrencyCard
                 currency={c}
                 selected={selectedMain === c}
-                options={available}
+                options={available.map(o => o.code)}
                 onSelect={(newC) => {
                   const copy = [...topSelected];
                   copy[i] = newC;
@@ -169,9 +169,11 @@ export default function EconomyDashboard() {
             <h3>Add currency</h3>
             <input className="add-currency-search" placeholder="Search" value={search} onChange={(e)=>setSearch(e.target.value)} />
             <div className="add-currency-list">
-              {allOptions.filter(c=>c.toLowerCase().includes(search.toLowerCase())).map((c)=> (
-                <div key={c} className="add-currency-item" onClick={()=>addCurrencyToTop(c)}>{c}</div>
-              ))}
+              {allOptions
+                .filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+                .map((o) => (
+                  <div key={o.code} className="add-currency-item" onClick={() => addCurrencyToTop(o.code)}>{o.label}</div>
+                ))}
             </div>
           </div>
         </div>
