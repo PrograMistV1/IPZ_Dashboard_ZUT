@@ -16,11 +16,11 @@ export default function Login() {
         e.preventDefault();
         setError("");
 
-        const success = await login(username, password);
-        if (success) {
+        const result = await login(username, password);
+        if (result && result.success) {
             navigate("/", {replace: true});
         } else {
-            setError("Invalid username or password");
+            setError((result && result.message) ? result.message : "Invalid username or password");
         }
     };
 

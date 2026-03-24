@@ -46,18 +46,48 @@ export function AuthProvider({children}) {
 
     const login = useCallback(async (username, password) => {
         try {
-
-            /** @type {LoginResponse} */
-            const data = await apiFetch("/auth/login", {
-                method: "POST", body: JSON.stringify({username, password}),
+            const res = await fetch("http://127.0.0.1:8000/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password }),
             });
 
-            if (!data?.access_token) {
-                console.error("Login error(NO_TOKEN): No access token in response");
-                return false;
+            let data = null;
+            try { data = await res.json(); } catch (e) { data = null; }
+
+            if (!res.ok) {
+                let msg = "Invalid username or password";
+                const detail = data?.detail;
+                if (detail) {
+                    if (typeof detail === 'string') {
+                        msg = detail;
+                    } else if (typeof detail === 'object') {
+                        const d = detail;
+                        if (d.locked_until) {
+                            try {
+                                const dt = new Date(d.locked_until);
+                                const formatted = dt.toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                msg = d.message ? `${d.message} ${formatted}` : `Account locked until ${formatted}`;
+                            } catch (e) {
+                                msg = d.message || JSON.stringify(d);
+                            }
+                        } else {
+                            msg = d.message || JSON.stringify(d);
+                        }
+                    } else {
+                        msg = JSON.stringify(detail);
+                    }
+                }
+                return { success: false, message: msg };
             }
 
-            tokenManager.set(data.access_token);
+            const token = data?.access_token;
+            if (!token) {
+                console.error("Login error(NO_TOKEN): No access token in response");
+                return { success: false, message: "Login failed" };
+            }
+
+            tokenManager.set(token);
             setUser({
                 id: data.user_id,
                 username: data.username,
@@ -65,10 +95,10 @@ export function AuthProvider({children}) {
                 isEnabled: data.isEnabled,
                 logged: true,
             });
-            return true;
+            return { success: true };
         } catch (err) {
             console.error("Login error:", err);
-            return false;
+            return { success: false, message: "Network or server error" };
         }
     }, []);
 
