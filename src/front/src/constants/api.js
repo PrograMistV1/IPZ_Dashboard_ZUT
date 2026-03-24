@@ -14,8 +14,53 @@ export const CURRENCY_OPTIONS = ["USD", "EUR", "GBP", "CHF", "JPY", "UAH"];
 export const FULL_CURRENCY_OPTIONS = [
     "THB","USD","AUD","HKD","CAD","NZD","SGD","EUR","HUF","CHF","GBP","UAH",
     "JPY","CZK","DKK","ISK","NOK","SEK","RON","BGN","TRY","ILS","CLP","PHP",
-    "MXN","ZAR","BRL","MYR","IDR","INR","KRW","CNY","XDR",
+    "MXN","ZAR","BRL","MYR","IDR","INR","KRW","CNY",
 ];
+
+export const CURRENCY_NAMES = {
+    THB: 'Thailand',
+    USD: 'United States',
+    AUD: 'Australia',
+    HKD: 'Hong Kong',
+    CAD: 'Canada',
+    NZD: 'New Zealand',
+    SGD: 'Singapore',
+    EUR: 'Eurozone',
+    HUF: 'Hungary',
+    CHF: 'Switzerland',
+    GBP: 'United Kingdom',
+    UAH: 'Ukraine',
+    JPY: 'Japan',
+    CZK: 'Czech Republic',
+    DKK: 'Denmark',
+    ISK: 'Iceland',
+    NOK: 'Norway',
+    SEK: 'Sweden',
+    RON: 'Romania',
+    BGN: 'Bulgaria',
+    TRY: 'Turkey',
+    ILS: 'Israel',
+    CLP: 'Chile',
+    PHP: 'Philippines',
+    MXN: 'Mexico',
+    ZAR: 'South Africa',
+    BRL: 'Brazil',
+    MYR: 'Malaysia',
+    IDR: 'Indonesia',
+    INR: 'India',
+    KRW: 'South Korea',
+    CNY: 'China',
+    
+};
+
+
+export const FULL_CURRENCY_LIST = FULL_CURRENCY_OPTIONS
+    .map(code => ({ code, label: `${code} (${CURRENCY_NAMES[code] || ''})` }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+export function getCurrencyLabel(code) {
+    return `${code} (${CURRENCY_NAMES[code] || ''})`;
+}
 
 export const ERROR_MESSAGES = {
     INVALID_CREDENTIALS: "Invalid username or password",

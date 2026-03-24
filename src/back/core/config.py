@@ -33,16 +33,10 @@ NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 if not NEWSAPI_KEY:
     raise RuntimeError("NEWSAPI_KEY is not set")
 
-# TTL (minutes) for news cache. When cached articles are older than this,
-# the service will re-fetch from the upstream NewsAPI.
 NEWS_CACHE_TTL_MINUTES = int(os.getenv("NEWS_CACHE_TTL_MINUTES", 180))
 
-# OpenWeather configuration. Set `OPENWEATHER_API_KEY` in environment (do NOT commit keys).
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
-# Base URL for OpenWeather API (can be overridden in env)
+
 OPENWEATHER_BASE_URL = os.getenv(
     "OPENWEATHER_BASE_URL", "https://api.openweathermap.org/data/2.5"
 )
-
-# Cache TTL (minutes) for OpenWeather DB cache. Can be overridden via env var.
-OPENWEATHER_CACHE_TTL_MINUTES = int(os.getenv("OPENWEATHER_CACHE_TTL_MINUTES", 30))

@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import Widget from './Widget';
-import {CURRENCY_OPTIONS, DIRECTIONS} from '../../constants/api';
+import {CURRENCY_OPTIONS, DIRECTIONS, FULL_CURRENCY_LIST, getCurrencyLabel} from '../../constants/api';
 import {updateWidget} from '../../services/dashboard';
 
 async function fetchRates(currency, from, to) {
@@ -22,6 +22,11 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
     const [direction, setDirection] = useState(config.direction || DIRECTIONS[0].value);
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState(null);
+    // currencies shown in the feed (array of codes) - persisted in widget configuration
+    // Start empty by default so only the add (+) tile is visible initially
+    const [currencies, setCurrencies] = useState(() => Array.isArray(config.currencies) && config.currencies.length ? config.currencies : []);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [addSearch, setAddSearch] = useState('');
 
     useEffect(() => {
         let mounted = true;
@@ -34,7 +39,7 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
                 yesterday.setDate(today.getDate() - 1);
                 const from = yesterday.toISOString().slice(0, 10);
                 const to = today.toISOString().slice(0, 10);
-                const promises = CURRENCY_OPTIONS.map(async (code) => {
+                const promises = currencies.map(async (code) => {
                     try {
                         const rates = await fetchRates(code, from, to);
                         let value = null, prevValue = null;
@@ -59,7 +64,7 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
         }
         load();
         return () => { mounted = false; };
-    }, []);
+    }, [currencies]);
 
     // Save direction to DB on change
     const handleDirectionChange = async (e) => {
@@ -67,7 +72,7 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
         setDirection(newDirection);
         setSaving(true);
         setSaveError(null);
-        const newConfig = { direction: newDirection };
+        const newConfig = { ...(config || {}), direction: newDirection, currencies };
         try {
             await updateWidget(id, { configuration: newConfig });
             if (typeof onUpdate === 'function') {
@@ -78,6 +83,39 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
         } finally {
             setSaving(false);
         }
+    };
+
+    const saveCurrencies = async (newCurrencies) => {
+        setSaving(true);
+        setSaveError(null);
+        try {
+            const newConfig = { ...(config || {}), currencies: newCurrencies, direction };
+            await updateWidget(id, { configuration: newConfig });
+            if (typeof onUpdate === 'function') onUpdate(id, newConfig);
+        } catch (err) {
+            setSaveError('Error saving currencies');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleAddCurrency = async (code) => {
+        if (!code) return;
+        if (currencies.includes(code)) {
+            setShowAddModal(false);
+            return;
+        }
+        const newList = [...currencies, code];
+        setCurrencies(newList);
+        setShowAddModal(false);
+        await saveCurrencies(newList);
+    };
+
+    const handleRemoveCurrency = async (code) => {
+        if (!code) return;
+        const newList = currencies.filter(c => c !== code);
+        setCurrencies(newList);
+        await saveCurrencies(newList);
     };
 
     const settingsNode = (
@@ -173,6 +211,19 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
                 <div style={{ padding: 12, color: '#ef4444' }}>Error: {error}</div>
             ) : (
                 <ul className={isHorizontal ? 'h-scroll-visible' : ''} style={listStyle}>
+                    {/* add-tile */}
+                    <li key="add-tile" style={{
+                        ...itemStyle,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px dashed #cbd5e1',
+                        background: 'transparent',
+                        color: '#0f172a',
+                        cursor: 'pointer'
+                    }} onClick={() => setShowAddModal(true)}>
+                        <div style={{fontSize: 20, fontWeight: 600}}>+</div>
+                    </li>
                     {Array.isArray(data) && data.length ? (
                         data.map((r, i) => {
                             const code = r.code || '—';
@@ -195,8 +246,31 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
                             return (
                                 <li key={code + i} style={{
                                     ...itemStyle,
+                                    position: 'relative',
                                     ...(isHorizontal && i === data.length - 1 ? { borderRight: 'none' } : { borderRight: '1px solid #eee' })
                             }}>
+                                    <button
+                                        aria-label={`Remove ${code}`}
+                                        onClick={(e) => { e.stopPropagation(); handleRemoveCurrency(code); }}
+                                        style={{
+                                            position: 'absolute',
+                                            top: 6,
+                                            right: 6,
+                                            width: 24,
+                                            height: 24,
+                                            borderRadius: 6,
+                                            border: 'none',
+                                            background: 'rgba(0,0,0,0.04)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: 12,
+                                            padding: 0
+                                        }}
+                                    >
+                                        ×
+                                    </button>
                                 <div style={{fontWeight: 500, fontSize: 15, minWidth: 38, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{code}</div>
                                 <div style={{display: 'flex', alignItems: 'center', gap: 8, width: '100%'}}>
                                     <span style={{fontWeight: 600, fontSize: 16, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{value}</span>
@@ -207,9 +281,24 @@ export default function CurrencyFeedWidget({id, mode = 'feed', data: _data, onUp
                             </li>
                             );
                         })
-                    ) : (
-                        <li>No currency feed</li>
-                    )}
+                    ) : null}
+                                        {showAddModal && (
+                                                <div className="add-currency-modal">
+                                                    <div className="add-currency-panel">
+                                                        <button className="modal-close" onClick={()=>setShowAddModal(false)} aria-label="Close">×</button>
+                                                        <h3>Add currency</h3>
+                                                        <input className="add-currency-search" placeholder="Search" value={addSearch} onChange={(e)=>setAddSearch(e.target.value)} />
+                                                        <div className="add-currency-list">
+                                                            {FULL_CURRENCY_LIST
+                                                                .filter(o => !currencies.includes(o.code))
+                                                                .filter(o => o.label.toLowerCase().includes(addSearch.toLowerCase()))
+                                                                .map(o => (
+                                                                    <div key={o.code} className="add-currency-item" onClick={()=>handleAddCurrency(o.code)}>{o.label}</div>
+                                                                ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                        )}
                 </ul>
             )}
         </Widget>

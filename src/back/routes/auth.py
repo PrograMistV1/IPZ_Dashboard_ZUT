@@ -13,6 +13,8 @@ from src.models.login_history import LoginHistory
 from src.models.user import User
 from src.models.weather_config import WeatherConfig
 from src.models.economy_config import EconomyConfig
+from src.models.config import Config
+from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/auth")
 
@@ -121,20 +123,19 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username).first()
 
-    if user and not user.check_password(req.password):
-        try:
-            db.add(
-                LoginHistory(
-                    user_id=user.id,
-                    ip_address=request.client.host,
-                    user_agent=request.headers.get("user-agent"),
-                    success=False,
-                )
-            )
-            db.commit()
-        except Exception:
-            db.rollback()
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+    try:
+        cfg_max = db.query(Config).filter(Config.name == "login.max_fail").first()
+        max_fail = int(cfg_max.value) if cfg_max and cfg_max.value is not None else 5
+    except Exception:
+        max_fail = 5
+
+    try:
+        cfg_ban = db.query(Config).filter(Config.name == "login.ban_minutes").first()
+        ban_minutes = (
+            int(cfg_ban.value) if cfg_ban and cfg_ban.value is not None else 30
+        )
+    except Exception:
+        ban_minutes = 30
 
     if not user:
         raise HTTPException(status_code=401, detail="Invalid username or password")
@@ -153,6 +154,79 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
         except Exception:
             db.rollback()
         raise HTTPException(status_code=401, detail="Account disabled")
+
+    if getattr(user, "locked_until", None) and user.locked_until > datetime.utcnow():
+        try:
+            db.add(
+                LoginHistory(
+                    user_id=user.id,
+                    ip_address=request.client.host,
+                    user_agent=request.headers.get("user-agent"),
+                    success=False,
+                )
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+        # return structured detail so frontend can format local time
+        locked_iso = user.locked_until.replace(microsecond=0).isoformat() + "Z"
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "message": "Account locked until",
+                "locked_until": locked_iso,
+            },
+        )
+
+    if not user.check_password(req.password):
+        try:
+            user.failed_logins = (getattr(user, "failed_logins", 0) or 0) + 1
+            if user.failed_logins >= max_fail:
+                user.locked_until = datetime.utcnow() + timedelta(minutes=ban_minutes)
+                user.failed_logins = 0
+                db.add(
+                    LoginHistory(
+                        user_id=user.id,
+                        ip_address=request.client.host,
+                        user_agent=request.headers.get("user-agent"),
+                        success=False,
+                    )
+                )
+                db.add(user)
+                db.commit()
+                locked_iso = user.locked_until.replace(microsecond=0).isoformat() + "Z"
+                raise HTTPException(
+                    status_code=401,
+                    detail={
+                        "message": f"Too many failed attempts. Account locked for {ban_minutes} minutes",
+                        "locked_until": locked_iso,
+                    },
+                )
+            else:
+                db.add(
+                    LoginHistory(
+                        user_id=user.id,
+                        ip_address=request.client.host,
+                        user_agent=request.headers.get("user-agent"),
+                        success=False,
+                    )
+                )
+                db.add(user)
+                db.commit()
+        except HTTPException:
+            raise
+        except Exception:
+            db.rollback()
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    try:
+        if getattr(user, "failed_logins", 0) or getattr(user, "locked_until", None):
+            user.failed_logins = 0
+            user.locked_until = None
+            db.add(user)
+            db.commit()
+    except Exception:
+        db.rollback()
 
     token = create_access_token(user.id)
 
