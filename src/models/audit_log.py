@@ -16,7 +16,7 @@ class AuditLog(Base):
     )
 
     dashboard_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("dashboards.id", ondelete="CASCADE"), nullable=True
+        Integer, ForeignKey("dashboards.id", ondelete="SET NULL"), nullable=True
     )
 
     widget_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
