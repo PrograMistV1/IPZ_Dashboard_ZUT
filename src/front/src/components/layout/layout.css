@@ -382,7 +382,6 @@ body {
   display: block;
 }
 
-/* Inline create form under + Add dashboard */
 .sidebar-subitem.add-dashboard .add-form {
   margin-top: 6px;
   display: block;
@@ -576,8 +575,8 @@ body {
 /* ===== IKONA ECONOMY – osobny styl ===== */
 
 .sidebar-menu-icon.economy-icon img {
-  width: 26px;   
-  height: 26px;
+  width: 22px;   
+  height: 22px;
 
   filter: brightness(2.1) contrast(1.5);
 }
