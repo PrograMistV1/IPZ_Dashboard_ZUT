@@ -168,7 +168,7 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
             db.commit()
         except Exception:
             db.rollback()
-        # return structured detail so frontend can format local time
+
         locked_iso = user.locked_until.replace(microsecond=0).isoformat() + "Z"
         raise HTTPException(
             status_code=401,
@@ -180,18 +180,45 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
     if not user.check_password(req.password):
         try:
-            user.failed_logins = (getattr(user, "failed_logins", 0) or 0) + 1
-            if user.failed_logins >= max_fail:
-                user.locked_until = datetime.utcnow() + timedelta(minutes=ban_minutes)
-                user.failed_logins = 0
-                db.add(
-                    LoginHistory(
-                        user_id=user.id,
-                        ip_address=request.client.host,
-                        user_agent=request.headers.get("user-agent"),
-                        success=False,
-                    )
+            try:
+                cfg_window = (
+                    db.query(Config)
+                    .filter(Config.name == "login.fail_window_minutes")
+                    .first()
                 )
+                window_minutes = (
+                    int(cfg_window.value)
+                    if cfg_window and cfg_window.value is not None
+                    else 60
+                )
+            except Exception:
+                window_minutes = 60
+
+            window_start = datetime.utcnow() - timedelta(minutes=window_minutes)
+
+            prev_fail_count = (
+                db.query(LoginHistory)
+                .filter(
+                    LoginHistory.user_id == user.id,
+                    LoginHistory.success.is_(False),
+                    LoginHistory.login_time >= window_start,
+                )
+                .count()
+            )
+
+            attempts = prev_fail_count + 1
+
+            db.add(
+                LoginHistory(
+                    user_id=user.id,
+                    ip_address=request.client.host,
+                    user_agent=request.headers.get("user-agent"),
+                    success=False,
+                )
+            )
+
+            if attempts >= max_fail:
+                user.locked_until = datetime.utcnow() + timedelta(minutes=ban_minutes)
                 db.add(user)
                 db.commit()
                 locked_iso = user.locked_until.replace(microsecond=0).isoformat() + "Z"
@@ -203,14 +230,6 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
                     },
                 )
             else:
-                db.add(
-                    LoginHistory(
-                        user_id=user.id,
-                        ip_address=request.client.host,
-                        user_agent=request.headers.get("user-agent"),
-                        success=False,
-                    )
-                )
                 db.add(user)
                 db.commit()
         except HTTPException:
@@ -220,8 +239,7 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     try:
-        if getattr(user, "failed_logins", 0) or getattr(user, "locked_until", None):
-            user.failed_logins = 0
+        if getattr(user, "locked_until", None):
             user.locked_until = None
             db.add(user)
             db.commit()

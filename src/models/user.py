@@ -15,7 +15,6 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="USER")
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    failed_logins: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     @validates("username")
