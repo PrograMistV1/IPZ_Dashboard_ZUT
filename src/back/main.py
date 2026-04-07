@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +22,13 @@ log = BackendLogger()
 
 log.info("main", "Starting backend and initializing logger")
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
+
 # FastAPI automatically generates an OpenAPI schema and serves Swagger UI
 # under /docs and ReDoc under /redoc.  We customise the metadata here so that
 # developers hitting the backend directly know how to interact with it.
@@ -32,6 +40,7 @@ app = FastAPI(
         "Use the Swagger UI at /docs to authenticate and call HTTP methods "
         "without any frontend."
     ),
+    lifespan=lifespan,
     # you can customise the docs path if desired, e.g. docs_url="/swagger"
 )
 
@@ -55,7 +64,6 @@ app.include_router(weather_config_router, tags=["Weather"])
 app.include_router(users_router, tags=["Users"])
 app.include_router(logs_router, tags=["Logs"])
 
-
 static_dir = "src/front/build"
 if os.path.isdir(static_dir):
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
@@ -63,7 +71,6 @@ if os.path.isdir(static_dir):
 if __name__ == "__main__":
     import uvicorn
 
-    init_db()
     host = os.getenv("BACKEND_HOST", "127.0.0.1")
     port = int(os.getenv("BACKEND_PORT", "8000"))
     uvicorn.run(app, host=host, port=port)
