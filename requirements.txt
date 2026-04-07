@@ -13,3 +13,4 @@ bcrypt
 starlette
 pytest
 pytest-cov
+cryptography
