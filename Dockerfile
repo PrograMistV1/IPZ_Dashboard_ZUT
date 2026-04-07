@@ -1,7 +1,8 @@
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 WORKDIR /app
 
@@ -13,5 +14,4 @@ COPY .env.example ./.env.example
 
 EXPOSE 8000
 
-CMD ["python", "-m", "src.back.main"]
-
+CMD ["python", "src/back/main.py"]

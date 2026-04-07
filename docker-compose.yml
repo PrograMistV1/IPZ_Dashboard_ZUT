@@ -11,7 +11,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DATABASE_PASSWORD:-root}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -47,7 +47,7 @@ services:
     environment:
       HOST: 0.0.0.0
       WDS_SOCKET_PORT: 3000
-      REACT_APP_API_URL: http://127.0.0.1:8000
+      REACT_APP_API_URL: http://backend:8000
     ports:
       - "3000:3000"
 
