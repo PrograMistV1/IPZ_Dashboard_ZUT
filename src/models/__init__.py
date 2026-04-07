@@ -1,0 +1,11 @@
+from src.models.audit_log import AuditLog  # noqa: F401
+from src.models.config import Config  # noqa: F401
+from src.models.currency_rate import CurrencyRate  # noqa: F401
+from src.models.dashboard import Dashboard  # noqa: F401
+from src.models.economy_config import EconomyConfig  # noqa: F401
+from src.models.login_history import LoginHistory  # noqa: F401
+from src.models.news_article import NewsArticle  # noqa: F401
+from src.models.user import User  # noqa: F401
+from src.models.weather import Weather  # noqa: F401
+from src.models.weather_config import WeatherConfig  # noqa: F401
+from src.models.widget import Widget  # noqa: F401

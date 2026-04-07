@@ -20,6 +20,9 @@ def init_db():
             conn.execute(text("SELECT 1"))
         print("Database connection successful!")
 
+        import src.models  # noqa: F401
+
+        print("Tables known to Base:", list(Base.metadata.tables.keys()))
         Base.metadata.create_all(bind=_engine)
         print("All tables are up-to-date.")
     except Exception as e:
